@@ -37,6 +37,9 @@ file`, and can have more than one credentials.
 The next command deploys a cluster based on `Ubuntu`_ images with `TORQUE`_::
 
    $ ec3 launch mycluster torque --add clues --add ubuntu-ec2 -a auth.txt 
+   Creating infrastructure
+   Infrastructure successfully created with ID: 60
+      ▄▟▙▄¨        Front-end state: running, IP: 158.42.105.28                     
 
 It can take several minutes... After that, open a ssh session to the front-end::
 
