@@ -9,13 +9,13 @@ of Infrastructure as a Service (IaaS) providers. The cluster can be self-managed
 Installation
 ------------
 
-The program :program:`ec3` requires Python 2.6+ and the python library `paramiko
+The program `ec3` requires Python 2.6+ and the python library `paramiko
 <http://www.lag.net/paramiko/>`_. The former library is available in Debian and Red Hat
 based distribution as ``python-paramiko``. Also can be installed from ``pip``::
 
    pip install parmiko
 
-:program:`ec3` can be download from `this <https://github.com/grycap/ec3>`_
+`ec3` can be download from `this <https://github.com/grycap/ec3>`_
 git repository::
 
    git clone https://github.com/grycap/ec3
@@ -31,8 +31,8 @@ First create a file ``auth.txt`` with a single line like this::
    id = provider ; type = EC2 ; username = <<Access Key ID>> ; password = <<Secret Access Key>>
 
 Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` by the corresponding values
-for the EC2 account where the cluster will be deployed. This file is the :ref:`authorization
-file <auth-file>`, and can have more than one credentials.
+for the EC2 account where the cluster will be deployed. This file is the `authorization
+file`, and can have more than one credentials.
 
 The next command deploys a cluster based on `Ubuntu`_ images with `TORQUE`_::
 
