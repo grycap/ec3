@@ -265,6 +265,7 @@ class ClusterStore:
                 if s0.hasFeature(prop):
                     r.get(system("front")).setValue(prop, s0.getValue(prop))
             r.get(system("front")).setValue("nodes", len(res["vm_list"])-1)
+            r.get(system("front")).setValue("contextualization_output", res["cont_out"])
             ClusterStore.save(clustername, r)
         except Exception, e:
             CLI.display("Error getting information from cluster '%s': %s" % (clustername, str(e)),
