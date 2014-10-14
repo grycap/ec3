@@ -1,0 +1,31 @@
+configure front (
+@begin
+---
+  - vars_files:
+    - [ "{{ ansible_distribution }}.yml", "osdefaults.yml" ]
+    tasks:
+    - service: name=torque-scheduler state=stopped pattern=/usr/sbin/pbs_sched enabled=no
+      when: debian_os
+    - action: apt pkg=libtorque2-dev,subversion
+      when: debian_os
+
+    - subversion: repo=svn://opensvn.adaptivecomputing.com/maui/branches/3.3.1 dest=/tmp/maui
+    - command: ./configure --prefix=/usr/local/maui chdir=/tmp/maui/ creates=/tmp/maui/Makefile
+    - command: make chdir=/tmp/maui creates=chdir=/tmp/maui/bin/maui
+    - command: make install chdir=/tmp/maui creates=/usr/local/maui/maui.cfg
+    - lineinfile: dest=/usr/local/maui/maui.cfg regexp=DEFERTIME line='DEFERTIME  0'
+    - lineinfile: dest=/usr/local/maui/maui.cfg regexp=DEFERCOUNT line='DEFERCOUNT  99999'
+
+    - name: kill maui if exists
+      shell: kill $(pgrep maui)
+      ignore_errors: yes
+
+    - name: start maui daemon
+      shell: /usr/local/maui/sbin/maui
+
+    - name: add maui commands to the bash
+      copy:
+         dest: /etc/profile.d/maui.sh
+         content: export PATH="$PATH:/usr/local/maui/bin"
+@end
+)

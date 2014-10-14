@@ -1,0 +1,16 @@
+## CentOS 6.5 64bits EC2
+
+system front (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'aws://us-east-1/ami-8997afe0' and
+    disk.0.os.credentials.username = 'root' and
+    disk.0.os.credentials.password = ''
+)
+
+system wn (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'aws://us-east-1/ami-8997afe0' and
+    disk.0.os.credentials.username = 'root' and
+    disk.0.os.credentials.password = ''
+)
+ 

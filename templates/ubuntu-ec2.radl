@@ -1,0 +1,14 @@
+## Ubuntu 14.04 EC2
+
+system front (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'aws://us-east-1/ami-30519058' and
+    disk.0.os.credentials.username = 'ubuntu'
+)
+
+system wn (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'aws://us-east-1/ami-30519058' and
+    disk.0.os.credentials.username = 'ubuntu'
+)
+ 

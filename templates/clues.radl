@@ -1,0 +1,84 @@
+configure front (
+@begin
+---
+  - vars_files:
+    - [ "{{ ansible_distribution }}.yml", "osdefaults.yml" ]
+    vars:
+      REPOSITORY: http://www.grycap.upv.es/clues/download
+      CLUES_FILE: CLUES-0.89
+      CLOUD_CONN_FILE: CLUES-CLOUD-0.92
+      PLUGIN_FILE: CLUES-PBS-0.88
+      AUTH:
+        ec3_xpath: /system/front/auth
+      RADL_SYSTEM_CONTENT_wn:
+        ec3_xpath: /system/wn/*
+
+    tasks:
+    - get_url: url={{REPOSITORY}}/{{item}} dest=/tmp/{{item}}
+      register: result
+      until: result|success
+      retries: 5
+      delay: 1
+      with_items:
+      - "{{CLUES_FILE}}.tar.gz"
+      - "{{CLOUD_CONN_FILE}}.tar.gz"
+      - "{{PLUGIN_FILE}}.tar.gz"
+
+    # CLUES requirements
+    - name: Apt install CLUES and IM requirements in Deb system
+      action: apt pkg=python-sqlite
+      when: debian_os
+      
+    - name: Yum install CLUES and IM requirements in REL system
+      action: yum pkg=python-sqlite
+      when: redhat_os
+
+    # CLUES installation
+    - command: tar -xzf /tmp/{{CLUES_FILE}}.tar.gz -C /usr/local creates=/usr/local/{{CLUES_FILE}}
+    - file: src=/usr/local/{{CLUES_FILE}} dest=/usr/local/clues state=link
+    - file: src=/usr/local/clues/clues dest=/etc/init.d/clues state=link
+    - command: tar -xzf /tmp/{{CLOUD_CONN_FILE}}.tar.gz -C /usr/local/clues/bin creates=/usr/local/clues/bin/{{CLOUD_CONN_FILE}}
+    - file: src=/usr/local/clues/bin/{{CLOUD_CONN_FILE}} dest=/usr/local/clues/bin/cloud state=link
+    - file: src=/usr/local/clues/bin/cloud/monitored_hook.py dest=/usr/local/clues/bin/hooks/monitored_hook.py state=link
+    
+    # CLUES Config file
+    - lineinfile: dest=/usr/local/clues/config.py regexp=HOOK_MONITORED line="HOOKS['HOOK_MONITORED']=('monitored_hook.py', True)"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^SECURITY_TOKEN_ENABLED line="SECURITY_TOKEN_ENABLED = False"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_TIME_IDLE line="MAX_TIME_IDLE = 240"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_TIME_BOOT line="MAX_TIME_BOOT = 3000"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_WAIT_JOB line="MAX_WAIT_JOB = 2500"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^SWITCH_ON_BLOCKSIZE line="SWITCH_ON_BLOCKSIZE = 1"
+    
+    # CLOUD connector Config file
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^IM_URL line="IM_URL = 'http://{{ IM_MASTER_FQDN }}:8899'"
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_WN_TIMEOUT line="CONFIGURE_WN_TIMEOUT = 3000"
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^RUNNING_WN_TIMEOUT line="RUNNING_WN_TIMEOUT = 3000"
+    - copy: dest=/usr/local/clues/bin/cloud/wn.radl content="{{RADL_SYSTEM_CONTENT_wn}}"
+    - copy:
+        dest: /usr/local/clues/bin/cloud/auth.dat
+        content: "{{AUTH}}"
+
+    - file: path=/usr/local/clues/bin/bootnode state=absent
+    - file: path=/usr/local/clues/bin/poweroff state=absent
+    - file: src=/usr/local/clues/bin/cloud/bootnode dest=/usr/local/clues/bin/bootnode state=link
+    - file: src=/usr/local/clues/bin/cloud/poweroff dest=/usr/local/clues/bin/poweroff state=link
+    
+    # PBS plugin installation
+    - command: tar -xzf /tmp/{{PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{PLUGIN_FILE}}
+    - file: src=/usr/local/clues/plugins/{{PLUGIN_FILE}} dest=/usr/local/clues/plugins/pbs state=link
+    # and configuration
+    - lineinfile: dest=/usr/local/clues/plugins/pbs/config.py regexp=^TORQUE_BIN_PATH line='TORQUE_BIN_PATH="/usr/bin"'
+    - lineinfile: dest=/usr/local/clues/plugins/pbs/config.py regexp=^DEFAULT_QUEUE line='DEFAULT_QUEUE="batch"'
+    # CLUES specific values for pbs plugin
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^MANAGERS line="MANAGERS=['pbs']"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^NODES_AVAILABLE..pbs.. line="NODES_AVAILABLE['pbs'] = 0"
+    # CLUES CLOUD specific values for pbs plugin
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_FILE line="CONFIGURE_FILE = '/tmp/conf/wn.yml'"
+    - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/local/clues/plugins/pbs/wrapper.py' create=yes mode=644
+    - service: name=clues state=started
+    
+    handlers:
+    - name: restart clues
+      service: name=clues state=restarted
+@end
+)

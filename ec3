@@ -1,0 +1,632 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# EC3 command-line interface
+# Copyright (C) 2014 - GRyCAP - Universitat Politecnica de Valencia
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import sys, time, logging, os, xmlrpclib, argparse, tempfile
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
+from IM2.auth import Authentication
+from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json
+import IM2.radl.radl as IM_RADL
+from IM2.radl.radl import RADL, system, network, configure, Features, Aspect
+
+
+# Our public IM service
+IM_URL = 'http://servproject.i3m.upv.es:7899'
+# RADL template path
+TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
+# Path where to store launched clusters
+CLUSTER_STORE_PATH = "~/.ec3/clusters"
+# Max time in seconds needed to deploy the front-end node
+TIMEOUT = 1200
+# Time in seconds between two consecutive requests to IM service
+DELAY = 5
+
+def dump_radl(r):
+    # In IM.radl net_interface.%d.connection is a network not a string, after
+    # calling RADL.check. Then this function turns back the feature to a string.
+
+    r = r.clone()
+    for s in r.gets(system):
+        i = 0
+        while True:
+            if not s.hasFeature("net_interface.%d.connection" % i):
+                break
+            elif isinstance(s.getValue("net_interface.%d.connection" % i), network):
+                s.setValue("net_interface.%d.connection" % i, s.getValue("net_interface.%d.connection" % i).getId())
+            i += 1
+    return dump_radl_future(r)
+
+def dump_json(d):
+    if json:
+        return json.dumps(d, indent=4, separators=(",", ": "))
+    return str(d)
+
+def dump_table(l, order):
+    widths = dict([ (f, max([ len(str(d[f])) for d in l ] + [len(f)])+2) for f in order ])
+    o = [ "".join([ "{0: ^{width}}".format(f, width=widths[f]) for f in order ]) ]
+    o.append("-"*sum(widths.values()))
+    o.extend([ "".join([ "{0: ^{width}}".format(d[f], width=widths[f]) for f in order ])
+               for d in l ])
+    return "\n".join(o)
+
+def getPublicIP(s):
+    for i in range(4):
+       if not s.hasFeature("net_interface.%d.connection" % i): break
+       if s.getValue("net_interface.%d.connection" % i, default=network("")).getValue("outbound") == "yes":
+           return s.getValue("net_interface.%d.ip" % i)
+    return None
+
+def get_content_from_template_file(filename):
+    t = [ os.path.join(base_path, filename) for base_path in TEMPLATE_PATHS
+          if os.path.isfile(os.path.join(base_path, filename)) ]
+    if not t: raise Exception("File not found in %s" % TEMPLATE_PATHS)
+    f = open(t[0], "r")
+    c = f.read()
+    f.close()
+    return c
+
+def ec3_xpath_radl(r, xpath):
+    xpath0 = [ a.strip() for a in xpath.split("/") ]
+    if len(xpath0) < 3: raise Exception("Invalid xpath: minimum xpath /<aspect>/<aspect_id>!")
+    if len(xpath0.pop(0)) != 0: raise Exception("Invalid xpath: expected it stars with '/'")
+    class_name = xpath0.pop(0)
+    if not hasattr(IM_RADL, class_name):
+        raise Exception("Invalid xpath: '%s' is not an aspect!" % class_name)
+    aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
+    if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
+    if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
+    if isinstance(aspect, Aspect):
+        aspect, is_configure = dump_radl(RADL([aspect])), isinstance(aspect, configure)
+        if len(xpath0) == 1 and xpath0[0] == "*":
+            s = slice(2, -2) if is_configure else slice(1, -1)
+            return "\n".join(aspect.split("\n")[s])
+    if not xpath0: return aspect
+    raise Exception("Invalid xpath: attributes can get from featured aspects only")
+    
+def ec3_xpath_features(features, xpath):
+    if len(xpath) == 0: return features
+    if not isinstance(features, Features):
+        raise Exception("Expected an aspect with features, not '%s'" % str(features))
+    if xpath[0] == "*": return features
+    elem = xpath.pop(0)
+    if features.hasFeature(elem):
+        return ec3_xpath_features(features.getValue(elem), xpath)
+    raise Exception("Invalid xpath: '%s' is not in '%s'" % (elem, str(features)))
+
+def apply_ec3_expressions(r):
+    def sanitize(cad):
+        return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
+    recipes_vars = [ (conf, d.get("vars", {})) for conf in r.gets(configure) if isinstance(conf.recipe, list)
+                                       for d in conf.recipe if isinstance(d, dict) ]
+    for conf, conf_vars in recipes_vars:
+        for k, v in conf_vars.items():
+            if not isinstance(v, dict): continue
+            try:
+                if v.get("ec3_file"):
+                    conf_vars[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
+                elif v.get("ec3_xpath"):
+                    conf_vars[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
+            except Exception, e:
+                raise Exception("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)))
+
+class Display:
+    # Private variables, just don't bother them!
+    LEN_SCREEN = 80
+    BACKGROUND = " "*LEN_SCREEN
+    state = 0
+    last_msg = None
+    please_clean_background = False
+    ANIMATION = ['\033[1;32m _____"         \033[m', # cute, isn't it?
+                 '\033[1;32m  _/\_"         \033[m',
+                 '\033[1;32m  _____"        \033[m',
+                 '\033[1;32m   _/\_"        \033[m',
+                 '\033[1;32m   _____"       \033[m',
+                 '\033[1;32m    _/\_"       \033[m',
+                 '\033[1;32m    _____"      \033[m',
+                 '\033[1;32m     _/\_"      \033[m',
+                 '\033[1;32m     _____"     \033[m',
+                 '\033[1;32m      _/\_"     \033[m',
+                 '\033[1;32m      _____"    \033[m',
+                 '\033[1;32m       _/\_"    \033[m',
+                 '\033[1;32m       _____"   \033[m',
+                 '\033[1;32m        _/\_"   \033[m',
+                 '\033[1;32m        _____"  \033[m',
+                 '\033[1;32m         _/\_"  \033[m',
+                 '\033[1;32m         _____" \033[m',
+                 '\033[1;32m          _/\_" \033[m',
+                 '\033[1;32m          _____"\033[m',
+                 '\033[1;32m          _____ \033[m',
+                 '\033[1;32m         "_____ \033[m',
+                 '\033[1;32m         "_/\_  \033[m',
+                 '\033[1;32m        "_____  \033[m',
+                 '\033[1;32m        "_/\_   \033[m',
+                 '\033[1;32m       "_____   \033[m',
+                 '\033[1;32m       "_/\_    \033[m',
+                 '\033[1;32m      "_____    \033[m',
+                 '\033[1;32m      "_/\_     \033[m',
+                 '\033[1;32m     "_____     \033[m',
+                 '\033[1;32m     "_/\_      \033[m',
+                 '\033[1;32m    "_____      \033[m',
+                 '\033[1;32m    "_/\_       \033[m',
+                 '\033[1;32m   "_____       \033[m',
+                 '\033[1;32m   "_/\_        \033[m',
+                 '\033[1;32m  "_____        \033[m',
+                 '\033[1;32m  "_/\_         \033[m',
+                 '\033[1;32m "_____         \033[m',
+                 '\033[1;32m "_/\_          \033[m',
+                 '\033[1;32m"_____          \033[m',
+                 '\033[1;32m _____          \033[m']
+    # Make worm fatter
+    if sys.stdout.encoding == "UTF-8":
+        ANIMATION = map(lambda s: s.replace("_", "▄").replace("/", "▟").replace("\\", "▙")
+                                   .replace('"', '¨'), ANIMATION)
+
+    @staticmethod
+    def _display_waiting_tty(msg, delay=0.):
+        time0 = time.time()
+        while time.time() - time0 < delay:
+            screen = Display.ANIMATION[Display.state] + msg
+            Display.clean()
+            sys.stdout.write(screen[0:Display.LEN_SCREEN])
+            sys.stdout.flush()
+            Display.please_clean_background = True
+            Display.state = (Display.state + 1) % len(Display.ANIMATION)
+            time.sleep(min(max(delay - (time.time() - time0), 0.), .7))
+
+    @staticmethod
+    def _display_waiting_notty(msg):
+        if msg == Display.last_msg: return
+        sys.stdout.write(msg)
+        sys.stdout.flush()
+        Display.last_msg = msg
+            
+    @staticmethod
+    def display_waiting(msg, delay=0.):
+        # Animations are funny, but only in proper consoles
+        if sys.stdout.isatty():
+            Display._display_waiting_tty(msg, delay)
+        else:
+            Display._display_waiting_notty(msg)
+
+    @staticmethod
+    def clean():
+        if not Display.please_clean_background: return
+        sys.stdout.write("\r" + Display.BACKGROUND + "\r")
+        Display.please_clean_background = False
+
+    @staticmethod
+    def display(msg):
+        Display.clean()
+        sys.stdout.write(msg + "\n")
+        sys.stdout.flush()
+
+class ClusterStore:
+    # Private variables, just don't bother them!
+    DIR = os.path.expanduser(CLUSTER_STORE_PATH)
+
+    @staticmethod
+    def _check_dir():
+        if not os.path.exists(ClusterStore.DIR):
+            os.makedirs(ClusterStore.DIR)
+
+    @staticmethod
+    def list():
+        ClusterStore._check_dir()
+        return os.listdir(ClusterStore.DIR)
+
+    @staticmethod
+    def save(clustername, r):
+        ClusterStore._check_dir()
+        f = open(os.path.join(ClusterStore.DIR, clustername), "w")
+        f.write(dump_radl(r))
+        f.close()
+
+    @staticmethod
+    def load(clustername, refresh=False):
+        ClusterStore._check_dir()
+        if clustername not in ClusterStore.list():
+            raise Exception("There is no cluster with name '%s'!" % clustername)
+        f = open(os.path.join(ClusterStore.DIR, clustername), "r")
+        r = parse_radl(f.read())
+        f.close()
+        r.check()
+        s0 = r.get(system("front"))
+        if not refresh or s0.getValue("state") not in system.IS_ACCESSIBLE: return r
+        try:
+            new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
+            success, res = new_im_server.GetInfrastructureInfo(infrId, auth)
+            if not success: raise Exception(res)
+            success, info = new_im_server.GetVMInfo(infrId, "0", auth)
+            if not success: raise Exception(info)
+            r = parse_radl(info)
+            r.check()
+            for prop in ("auth", "__im_server", "__infrastructure_id"):
+                if s0.hasFeature(prop):
+                    r.get(system("front")).setValue(prop, s0.getValue(prop))
+            r.get(system("front")).setValue("nodes", len(res["vm_list"])-1)
+            ClusterStore.save(clustername, r)
+        except Exception, e:
+            CLI.display("Error getting information from cluster '%s': %s" % (clustername, str(e)),
+                        level=logging.ERROR)
+            s0.setValue("state", system.UNKNOWN)
+        return r
+ 
+    @staticmethod
+    def remove(clustername):
+        ClusterStore._check_dir()
+        if clustername not in ClusterStore.list():
+            raise Exception("There is no cluster with name '%s'!" % clustername)
+        os.unlink(os.path.join(ClusterStore.DIR, clustername))
+
+    @staticmethod
+    def get_im_server_infrId_and_auth(r):
+        s0 = r.get(system("front"))
+        im_server_name = s0.getValue("__im_server", default="http://%s:8899" % getPublicIP(s0))
+        infrId = s0.getValue("__infrastructure_id", default=0)
+        auth = json.loads(s0.getValue("auth"))
+        return im_server_name, infrId, auth
+ 
+class CLI:
+    # Private variables, just don't bother them!
+    options = None
+
+    # Public variables
+    logger = None
+
+    @staticmethod
+    def run(commands):
+        parser = argparse.ArgumentParser(prog="ec3")
+        parser.add_argument("-l", "--log-file", dest="log_file", nargs=1, type=argparse.FileType('w'), default=[sys.stderr], help="Log output file")
+        parser.add_argument("-ll", "--log-level", dest="log_level", nargs=1, type=int, default=[5], help="1: debug; 2: info; 3: warning; 4: error")
+        parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False, help="Only print messages from front-end")
+        subparsers = parser.add_subparsers(title="subcommands", description="valid subcommands", help="additional help")
+        for cmd in commands:
+            cmd.parse(subparsers)
+        CLI.options = parser.parse_args()
+
+        # Set log
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S',
+                            stream=CLI.options.log_file[0], level=CLI.options.log_level[0]*10)
+        CLI.logger = logging.getLogger('ec3')
+
+        # Run command
+        CLI.options.func(CLI.options)
+
+    @staticmethod
+    def display(msg, alt=None, level=logging.INFO):
+        CLI.logger.log(level, msg)
+        if CLI.options.quiet:
+            if alt: msg = alt
+            else: return
+        Display.display(msg)
+
+    @staticmethod
+    def display_waiting(msg, delay=0.):
+        if CLI.options.quiet: return
+        Display.display_waiting(msg, delay)
+
+class CmdLaunch:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("launch", help="launch a new cluster")
+        parser.add_argument("clustername", help="name of the new cluster")
+        parser.add_argument("template", help="filename in `templates` without extension")
+        parser.add_argument("--add", action="append", help="add another template")
+        parser.add_argument("-n", "--not-store", action="store_true", default=False, help="do not store the cluster nor check the cluster name")
+        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="do not store the cluster nor check the cluster name")
+        parser.add_argument("--json", action="store_true", default=False, help="do not store the cluster nor check the cluster name")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service")
+        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="do not launch any cluster")
+        parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
+        parser.set_defaults(func=CmdLaunch.run)
+
+    @staticmethod
+    def run(options):
+        # Check cluster name, authentication and IM server
+        if not options.not_store and options.clustername in ClusterStore.list():
+            CLI.display("Cluster name already exists!", level=logging.ERROR)
+            sys.exit(1)
+        try:
+            if not options.auth_file: raise Exception("option is not set")
+            auth_content = options.auth_file[0].readlines()
+            auth_data = Authentication.read_auth_data(auth_content)
+        except Exception, e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+        try:
+            if not options.xmlrpc: raise Exception("option is not set")
+            im_server = xmlrpclib.ServerProxy(options.xmlrpc[0], allow_none=True)
+        except Exception, e:
+            CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+         
+        # Instantiate template
+        radl = RADL()
+        for r in [options.template] + (options.add if options.add else []):
+            try:
+                file_content = get_content_from_template_file(r + ".radl")
+                radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
+            except Exception, e:
+                CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR)
+                sys.exit(1)
+
+        # Set auth in system "front"
+        if radl.get(system("front")):
+            radl.get(system("front")).setValue("auth", "".join(auth_content))
+
+        # Replace "ec3_*" expression in YAML recipes
+        try:
+            apply_ec3_expressions(radl)
+        except Exception, e:
+            CLI.display(str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Finish if dry run
+        if options.dry_run:
+            if options.print_radl:
+                output = dump_radl_json(radl) if options.json else dump_radl(radl)
+                CLI.display(output + "\n")
+            sys.exit(0)
+
+        # Create infrastructure
+        CLI.display("Creating infrastructure")
+        try:
+            success, infrId = im_server.CreateInfrastructure(dump_radl(radl), auth_data)
+            if not success: raise Exception(infrId)
+            success, res = im_server.GetInfrastructureInfo(infrId, auth_data)
+            if not success: raise Exception(res)
+        except Exception, e:
+            CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+        CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
+        vm_ids = res['vm_list']
+
+        CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
+                                     options.not_store, options.clustername, options.print_radl, options.json)
+        sys.exit(0)
+
+    @staticmethod
+    def wait_transfer_save(infrId, vmId, auth_data, im_server_url, options_destroy, options_not_store,
+                           options_clustername, options_print_radl, options_json):
+        # Waiting for front-end configured
+        vm_ip = None
+        CLI.display_waiting("Front-end state: launching")
+        time0 = time.time()
+        system_front = None
+        res = None
+        im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+        try:
+            while True:
+                success, info = im_server.GetVMInfo(infrId, vmId, auth_data)
+                if not success: raise Exception(info)
+                CLI.logger.debug("Front-end info: %s" % info)
+                radl = parse_radl(info)
+                radl.check()
+                system_front = radl.get(system("front"))
+                vm_ip = getPublicIP(system_front)
+                state = system_front.getValue("state")
+                system_front.setValue("__im_server", im_server_url)
+                system_front.setValue("__infrastructure_id", infrId)
+                system_front.setValue("__vm_id", vmId)
+                if state == system.CONFIGURED: break
+                if state == system.FAILED:
+                    success, info = im_server.GetInfrastructureInfo(infrId, auth_data)
+                    raise Exception(info["cont_out"] if success else "unexpected failure")
+                if state not in system.IS_ACCESSIBLE: raise Exception("unexpected failure")
+                if time.time() - time0 > TIMEOUT:
+                    raise Exception("Time out! Infrastructure is not still configured!")
+                Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
+                                        DELAY)
+        except Exception, e:
+            CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR)
+            if options_destroy:
+                try:
+                    success, info = im_server.DestroyInfrastructure(infrId, auth_data)
+                    if not success: raise Exception(info)
+                    CLI.display("Infrastructure successfully destroyed")
+                except Exception, e:
+                    CLI.display("Error while destroying the infrastructure: %s" % str(e), level=logging.ERROR)
+                sys.exit(1)
+        else:
+            CLI.display("Front-end configured with IP %s" % vm_ip)
+
+            # Transfer infrastructure
+            CLI.display("Transferring infrastructure")
+            new_im_server_url = "http://%s:8899" % vm_ip
+            new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
+            try:
+                if new_im_server_url != im_server_url:
+                    success, strInf = im_server.ExportInfrastructure(infrId, False, auth_data)
+                    if not success: raise Exception(strInf)
+                    success, newInfrId = new_im_server.ImportInfrastructure(strInf, auth_data)
+                    if not success: raise Exception(newInfrId)
+                else:
+                    newInfrId = infrId
+                system_front.delValue("__im_server")
+                system_front.delValue("__infrastructure_id")
+                if new_im_server_url != im_server_url:
+                    success, _ = im_server.ExportInfrastructure(infrId, True, auth_data)
+                    if not success: raise Exception(res)
+                success, res = new_im_server.GetInfrastructureInfo(newInfrId, auth_data)
+                if not success: raise Exception(res)
+            except Exception, e:
+                CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
+            CLI.display("Front-end ready!")
+        finally:
+            # Save cluster
+            if system_front and not options_not_store:
+                system_front.setValue("auth", json.dumps(auth_data))
+                system_front.setValue("nodes", len(res["vm_list"] if res else [0])-1)
+                ClusterStore.save(options_clustername, radl)
+
+            # Print cluster
+            if radl and options_print_radl:
+                output = dump_radl_json(radl) if options_json else dump_radl(radl)
+                CLI.display(output + "\n")
+
+class CmdList:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("list", help="list launched clusters")
+        parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
+        parser.add_argument("--refresh", action="store_true", default=False, help="show current state of the clusters")
+        parser.set_defaults(func=CmdList.run)
+
+    @staticmethod
+    def run(options):
+        info = []
+        for clustername in ClusterStore.list():
+            s = ClusterStore.load(clustername, options.refresh).get(system("front"))
+            info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
+                         "nodes": s.getValue("nodes", "?")})
+        output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes"])
+        sys.stdout.write(output + "\n")
+
+class CmdShow:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("show", help="print RADL ")
+        parser.add_argument("clustername", help="name of the cluster to show")
+        parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
+        parser.add_argument("--refresh", action="store_true", default=False, help="show current state of the clusters")
+        parser.set_defaults(func=CmdShow.run)
+
+    @staticmethod
+    def run(options):
+        try:
+            r = ClusterStore.load(options.clustername, options.refresh)
+            output = dump_radl_json(r) if options.json else dump_radl(r)
+            CLI.display(output + "\n")
+        except Exception, e:
+            CLI.display("Error showing cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+
+class CmdSsh:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("ssh", help="connect to cluster via SSH")
+        parser.add_argument("clustername", help="name of the cluster to connect")
+        parser.add_argument("--show-only", action="store_true", dest="show_only", default=False, help="Show the command line invoking SSH, but do nothing")
+        parser.set_defaults(func=CmdSsh.run)
+
+    @staticmethod
+    def run(options):
+        try:
+            front_system = ClusterStore.load(options.clustername).get(system("front"))
+            if front_system.getValue("disk.0.os.credentials.private_key"):
+                ops = CmdSsh._connect_key(front_system)
+            else:
+                ops = CmdSsh._connect_password(front_system)
+            if options.show_only:
+                CLI.display(" ".join(ops))
+                sys.exit(0)
+            os.execlp(ops[0], *ops)
+        except OSError, e:
+            CLI.display("Error connecting to cluster '%s': %s\n"
+                        "Probably 'sshpass' or 'ssh' program is not installed!" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+            sys.exit(1)
+        except Exception, e:
+            CLI.display("Error connecting to cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+            sys.exit(1)
+
+    @staticmethod
+    def _connect_password(s):
+        return ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
+                "ssh", "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
+                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), getPublicIP(s))]
+
+    @staticmethod
+    def _connect_key(s):
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        f.write(s.getValue("disk.0.os.credentials.private_key"))
+        f.close()
+        return ["ssh", "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
+                "-o", "StrictHostKeyChecking=no",
+                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), getPublicIP(s))]
+
+class CmdDestroy:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("destroy", help="destroy a launched cluster")
+        parser.add_argument("clustername", help="name of the cluster to destroy")
+        parser.add_argument("--force", action="store_true", default=False, help="Destroy the local information of the cluster anyway")
+        parser.set_defaults(func=CmdDestroy.run)
+
+    @staticmethod
+    def run(options):
+        try:
+            r = ClusterStore.load(options.clustername)
+            new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
+            success, info = new_im_server.DestroyInfrastructure(infrId, auth)
+            if not success:
+                raise Exception(info)
+        except Exception, e:
+            CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+            if options.force:
+                ClusterStore.remove(options.clustername)
+            sys.exit(1)
+        ClusterStore.remove(options.clustername)
+
+class CmdReconfigure:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("reconfigure", help="reconfigure the cluster")
+        parser.add_argument("clustername", help="name of the cluster")
+        parser.set_defaults(func=CmdReconfigure.run)
+
+    @staticmethod
+    def run(options):
+        # Check cluster name, authentication and IM server
+        if options.clustername not in ClusterStore.list():
+            CLI.display("Cluster name does not exist!", level=logging.ERROR)
+            sys.exit(1)
+
+        # Reconfigure infrastructure
+        CLI.display("Reconfiguring infrastructure")
+        try:
+            r = ClusterStore.load(options.clustername)
+            im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            success, info = im_server.Reconfigure(infrId, "", auth)
+            if not success: raise Exception(info)
+        except Exception, e:
+            CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        CmdLaunch.wait_transfer_save(infrId, "0", auth, im_server_url, False, False,
+                                     options.clustername, False, False)
+        sys.exit(0)
+
+if __name__ == "__main__":
+    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy]
+    try:
+        CLI.run(commands)
+    except KeyboardInterrupt:
+        CLI.display("Execution interrupted! Operation may not have finished properly!")
+        sys.exit(1)
