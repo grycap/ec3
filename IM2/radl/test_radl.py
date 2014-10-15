@@ -60,6 +60,7 @@ disk.0.os.credentials.public_key = 'alucloud00-keypair' and
 disk.0.os.credentials.private_key = '-----BEGIN RSA PRIVATE KEY-----
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 -----END RSA PRIVATE KEY-----' and
+escape_var = 'this is a \\'test\\'' and
 soft 1 (
   cpu.count <= 10 and
   memory.size <= 1G and
@@ -106,7 +107,7 @@ deploy cursoaws 1
 		self.radl_check(r, [1, 1, 1, 2, 0])
 		s = r.get(system("cursoaws"))
 		self.assertIsInstance(s, system)
-		self.assertEqual(len(s.features), 12)
+		self.assertEqual(len(s.features), 13)
 		self.assertEqual(s.getValue("disk.0.os.name"), "linux")
 
 	def test_basic0(self):

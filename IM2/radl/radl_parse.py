@@ -303,7 +303,8 @@ def d_feature_number_string(a, enter, margin, indent):
 	assert isinstance(a, Feature) and isinstance(a.value, (int, float, str))
 	return "{margin}{prop} {op} {val}".format(
 		margin=margin, prop=a.prop, op=a.operator,
-		val="'%s'" % a.value if isinstance(a.value, str) else "%s%s" % (a.value, a.unit if a.unit else ""))
+		val="'%s'" % a.value.replace("'", "\\'") if isinstance(a.value, str)
+	            else "%s%s" % (a.value, a.unit if a.unit else ""))
 
 def d_feature_reference(a, enter, margin, indent):
 	assert isinstance(a, Feature) and isinstance(a.value, Aspect)

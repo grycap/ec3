@@ -106,9 +106,8 @@ def t_NUMBER(t):
 	return t
 
 def t_STRING(t):
-	r"'([^\\']+|\\'|\\\\)*'"  # I think this is right ...
-	#r'\'([^\\\n]|(\\.))*?\''
-	t.value = t.value[1:-1].decode("string-escape")  # .swapcase() # for fun
+	r"'([^\\']|\\.)*'"
+	t.value = t.value[1:-1].replace("\\'", "'")
 	return t
 
 reserved = {
@@ -140,7 +139,7 @@ def t_recipe_RECIPE_END(t):
 def t_recipe_RECIPE_LINE(t):
 	r'.*\n'
 	t.type = 'RECIPE_LINE'
-	t.lexer.lineno += len(t.value)
+	t.lexer.lineno += t.value.count("\n")
 	return t
 
 # Error handling rule
