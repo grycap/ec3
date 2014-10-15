@@ -3,15 +3,16 @@ Elastic Cloud Computing Cluster (EC3)
 =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
-of Infrastructure as a Service (IaaS) providers. The cluster can be self-managed with
-`CLUES`_.
+of Infrastructure as a Service (IaaS) providers. We offer recipes to deploy `TORQUE`_
+(optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
+working nodes are launched to fit increasing load or are undeployed when they are idle.
 
 Installation
 ------------
 
 The program `ec3` requires Python 2.6+ and the python library `paramiko
-<http://www.lag.net/paramiko/>`_. The former library is available in Debian and Red Hat
-based distribution as ``python-paramiko``. Also can be installed from ``pip``::
+<http://www.lag.net/paramiko/>`_. The library is available in Debian and Red Hat
+based distributions as ``python-paramiko``. Also can be installed from ``pip``::
 
    pip install parmiko
 
@@ -34,12 +35,12 @@ Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` by the corresponding
 for the EC2 account where the cluster will be deployed. This file is the `authorization
 file`, and can have more than one credentials.
 
-The next command deploys a cluster based on `Ubuntu`_ images with `TORQUE`_::
+The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
    $ ec3 launch mycluster torque --add clues --add ubuntu-ec2 -a auth.txt 
    Creating infrastructure
    Infrastructure successfully created with ID: 60
-      ▄▟▙▄¨        Front-end state: running, IP: 158.42.105.28                     
+      ▄▟▙▄¨        Front-end state: running, IP: 132.43.105.28                     
 
 It can take several minutes... After that, open a ssh session to the front-end::
 
@@ -49,12 +50,12 @@ It can take several minutes... After that, open a ssh session to the front-end::
    
    ubuntu@torqueserver:~$
 
-After that, you can execute the next command to show basic information about the deployed cluster::
+Also you can show basic information about the deployed clusters by executing::
 
     $ ec3 list
-     name    state          IP        nodes 
-    ----------------------------------------
-      c0   configured  158.42.105.11    0   
+       name       state          IP        nodes 
+    ---------------------------------------------
+     mycluster  configured  132.43.105.28    0   
 
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
