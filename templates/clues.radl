@@ -2,10 +2,12 @@ configure front (
 @begin
 ---
   - vars:
+      NNODES: 10
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-0.89
       CLOUD_CONN_FILE: CLUES-CLOUD-0.92
       PLUGIN_FILE: CLUES-PBS-0.88
+      #PLUGIN_FILE: CLUES-SLURM-0.1
       AUTH:
         ec3_xpath: /system/front/auth
       RADL_SYSTEM_CONTENT_wn:
@@ -28,7 +30,7 @@ configure front (
     - name: Apt install CLUES and IM requirements in Deb system
       apt: pkg=python-sqlite
       when: ansible_os_family == "Debian"
-      
+
     - name: Yum install CLUES and IM requirements in REL system
       yum: pkg=python-sqlite
       when: ansible_os_family == "RedHat"
@@ -40,7 +42,7 @@ configure front (
     - command: tar -xzf /tmp/{{CLOUD_CONN_FILE}}.tar.gz -C /usr/local/clues/bin creates=/usr/local/clues/bin/{{CLOUD_CONN_FILE}}
     - file: src=/usr/local/clues/bin/{{CLOUD_CONN_FILE}} dest=/usr/local/clues/bin/cloud state=link
     - file: src=/usr/local/clues/bin/cloud/monitored_hook.py dest=/usr/local/clues/bin/hooks/monitored_hook.py state=link
-    
+
     # CLUES Config file
     - lineinfile: dest=/usr/local/clues/config.py regexp=HOOK_MONITORED line="HOOKS['HOOK_MONITORED']=('monitored_hook.py', True)"
     - lineinfile: dest=/usr/local/clues/config.py regexp=^SECURITY_TOKEN_ENABLED line="SECURITY_TOKEN_ENABLED = False"
@@ -48,7 +50,7 @@ configure front (
     - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_TIME_BOOT line="MAX_TIME_BOOT = 3000"
     - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_WAIT_JOB line="MAX_WAIT_JOB = 2500"
     - lineinfile: dest=/usr/local/clues/config.py regexp=^SWITCH_ON_BLOCKSIZE line="SWITCH_ON_BLOCKSIZE = 1"
-    
+
     # CLOUD connector Config file
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^IM_URL line="IM_URL = 'http://{{ IM_MASTER_FQDN }}:8899'"
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_WN_TIMEOUT line="CONFIGURE_WN_TIMEOUT = 3000"
@@ -65,6 +67,9 @@ configure front (
 
     - include: pbs.yml
       when: "{{ QUEUE_SYSTEM == 'torque' }}"
+
+    - include: slurm.yml
+      when: "{{ QUEUE_SYSTEM == 'slurm' }}"
 
     - service: name=clues state=started
     
@@ -90,3 +95,24 @@ configure pbs (
     - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/local/clues/plugins/pbs/wrapper.py' create=yes mode=644
 @end
 )
+
+# SLURM plugin installation
+configure slurm (
+@begin
+    # SLURM plugin installation
+    - command: tar -xzf /tmp/{{PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{PLUGIN_FILE}}
+    - file: src=/usr/local/clues/plugins/{{PLUGIN_FILE}} dest=/usr/local/clues/plugins/slurm state=link
+    # CLUES specific values for slurm plugin
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^MANAGERS line="MANAGERS=['slurm']"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^NODES_AVAILABLE..pbs.. line="NODES_AVAILABLE['slurm'] = 0"
+    # CLUES CLOUD specific values for slurm plugin
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_FILE line="CONFIGURE_FILE = '/tmp/conf/slurmwn.yml'"
+    # Configure slurm.conf file
+    - name: configure compute nodes section of slurm.conf
+      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
+    # start SLURM slurmctld daemon
+    - command: slurmctld
+@end
+)
+
