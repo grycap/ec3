@@ -7,7 +7,8 @@ cpu.count>=1 and
 memory.size>=512m and
 net_interface.0.connection = 'publica' and
 net_interface.0.dns_name = 'slurmserver' and
-net_interface.1.connection = 'privada'
+net_interface.1.connection = 'privada' and
+queue_system = 'slurm'
 )
 
 configure Ubuntu (
@@ -239,7 +240,7 @@ configure front (
     #- lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
 
     # start SLURM slurmctld daemon
-    - command: slurmctld
+    #- command: slurmctld
 
     ############################################################################
     #              END LRMS Specific Section
