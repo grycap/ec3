@@ -100,12 +100,12 @@ configure slurmwn (
     - file: path=/var/log/slurm state=directory
     - command: chown -R slurm:slurm /var/log/slurm
 
-    - name: prepare epilog files
-      file: path=/usr/local/slurm state=directory
-    - command: chown -R slurm:slurm /usr/local/slurm
-    - name: copy epilog_controller file from the frontend
-      copy: src=/usr/local/slurm/epilog_controller dest=/usr/local/slurm/epilog_controller mode=0755
-    - command: chown slurm:slurm /usr/local/slurm/epilog_controller
+    #- name: prepare epilog files
+    #  file: path=/usr/local/slurm state=directory
+    #- command: chown -R slurm:slurm /usr/local/slurm
+    #- name: copy epilog_controller file from the frontend
+    #  copy: src=/usr/local/slurm/epilog_controller dest=/usr/local/slurm/epilog_controller mode=0755
+    #- command: chown slurm:slurm /usr/local/slurm/epilog_controller
 
     - name: start slurmd daemon
       command: slurmd
@@ -121,8 +121,8 @@ configure front (
       NNODES: 10
       VNODES_PREFIX: wnode
       VNODES_SUFFIX:  
-      EPILOG_FILE: 
-        ec3_file: epilog_controller
+      #EPILOG_FILE: 
+      #  ec3_file: epilog_controller
       SLURM_CONF_FILE:
         ec3_file: slurm.conf
 
@@ -224,14 +224,14 @@ configure front (
     - file: path=/var/slurm/checkpoint state=directory
     - command: chown -R slurm:slurm /var/slurm/checkpoint
 
-    - name: prepare epilog files
-      file: path=/usr/local/slurm state=directory
-    - command: chown -R slurm:slurm /usr/local/slurm
-    - copy:
-        dest: /usr/local/slurm/epilog_controller
-        content: "{{EPILOG_FILE}}"
-        mode: 0755
-    - command: chown slurm:slurm /usr/local/slurm/epilog_controller
+    #- name: prepare epilog files
+    #  file: path=/usr/local/slurm state=directory
+    #- command: chown -R slurm:slurm /usr/local/slurm
+    #- copy:
+    #    dest: /usr/local/slurm/epilog_controller
+    #    content: "{{EPILOG_FILE}}"
+    #    mode: 0755
+    #- command: chown slurm:slurm /usr/local/slurm/epilog_controller
 
     # Configure slurm.conf file
     #- name: configure compute nodes section of slurm.conf
