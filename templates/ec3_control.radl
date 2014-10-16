@@ -1,0 +1,45 @@
+system wn ( net_interface.0.dns_name = 'wn' )
+
+configure front (
+@begin
+---
+  - vars:
+      RADL_SYSTEM_wn:
+        ec3_xpath: /system/wn
+      RADL_CONF_wn:
+        ec3_xpath: /configure/wn
+      AUTH:
+        ec3_xpath: /system/front/auth
+      EC3_CONTROL_CONTENT:
+        ec3_file: ec3_control.py
+      EC3_CONTROL_WRAPPER_CONTENT:
+        ec3_file: ec3_torque.py
+    tasks:
+    - file: path=/usr/local/ec3 state=directory
+    - copy:
+         dest: /usr/local/ec3/ec3_control.py
+         content: "{{EC3_CONTROL_CONTENT}}"
+         mode: 0755
+    - copy:
+         dest: /usr/local/ec3/wrapper.py
+         content: "{{EC3_CONTROL_WRAPPER_CONTENT}}"
+         mode: 0755
+    - copy:
+         dest: /usr/local/ec3/auth.dat
+         content: "{{AUTH}}"
+    - copy:
+         dest: /usr/local/ec3/wn.radl
+         content: |
+            {{RADL_SYSTEM_wn}}
+            {{RADL_CONF_wn}}
+    - copy:
+         dest: /usr/local/ec3/ec3_control
+         content: |
+            #!/bin/bash
+            
+            cd /usr/local/ec3
+            pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py -l err -ll 0 >& out &
+         mode: 0755
+    - shell: /usr/local/ec3/ec3_control
+@end
+)
