@@ -1,20 +1,20 @@
-network publica (outbound = 'yes' and outports = '8899/tcp')
-network privada ()
+network public (
+      outbound = 'yes' and
+      outports = '8899/tcp,15001/tcp,15001/udp,15002/tcp,15002/udp,15003/tcp,15003/udp,15004/tcp,15004/udp'
+)
+network private ()
 
 system front (
-cpu.count>=1 and
-memory.size>=512m and
-net_interface.0.connection='publica' and
-net_interface.0.dns_name = 'pbsserver.i3m.upv.es' and
-net_interface.1.connection='privada' and
-net_interface.1.dns_name = 'torqueserver'
+      cpu.count>=1 and
+      memory.size>=512m and
+      net_interface.0.connection='public' and
+      net_interface.1.connection='private' and
+      net_interface.1.dns_name = 'torqueserver' and
+      queue_system = 'torque'
 )
 
-configure Ubuntu (
-@begin
-      TORQUE_PATH: /var/spool/torque
-      MOM_SERVICE: torque-mom
-@end
+system wn (
+      net_interface.0.connection='private'
 )
 
 configure Debian (
@@ -24,84 +24,66 @@ configure Debian (
 @end
 )
 
-configure Scientific (
+configure RedHat (
 @begin
       TORQUE_PATH: /var/lib/torque
       MOM_SERVICE: pbs_mom
 @end
 )
-
-configure CentOS (
-@begin
-      TORQUE_PATH: /var/lib/torque
-      MOM_SERVICE: pbs_mom
-@end
-)
-
-# Uso los de RHEL por defecto
-configure osdefaults (
-@begin
-      TORQUE_PATH: /var/lib/torque
-      MOM_SERVICE: pbs_mom
-@end
-)
-
 
 configure wn (
 @begin
 ---
   - vars_files:
-    - [ "{{ ansible_distribution }}.yml", "osdefaults.yml" ]
+    - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
     vars:
       USERS:
         - {name: user1, password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0}
 
     tasks:
-    - name: Apt install torque mom
-      action: apt pkg=torque-mom,torque-client
-      when: debian_os
-      
-    - name: create epel.repo
-      action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: redhat_os
-    - name: Yum install Torque in REL system
-      action: yum pkg=torque-mom,torque-client,openssh-clients
-      when: redhat_os
-
-    - command: /sbin/iptables -I INPUT 1 -p tcp --dport 15001:15004 -j ACCEPT
-    - command: /sbin/iptables -I INPUT 1 -p udp --dport 15001:15004 -j ACCEPT
-
-    - name: Set the Torque server name
-      action: copy content=torqueserver dest=/etc/torque/server_name
-      notify:
-      - restart {{MOM_SERVICE}}
-    
-    - copy: src=/etc/munge/munge.key dest=/etc/munge/munge.key owner=munge group=munge mode=0400
-      when: redhat_os
-      notify:
-      - restart munge
-
-    # Users creation
+    # Create users
     - name: Create User {{item.name}}
-      action: user name={{item.name}} password={{item.password}} shell=/bin/bash
+      user: name={{item.name}} password={{item.password}} shell=/bin/bash
       with_items: USERS
     - name: Add the authorized_key to the user {{item.name}}
-      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/home/' + item.name + '/.ssh/id_rsa.pub') }}"
       with_items: USERS
     - name: Copy the id_rsa.pub file to the user {{item.name}}
-      action: copy src=/tmp/{{item.name}}_id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644
+      copy: src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644
       with_items: USERS
     - name: Copy the id_rsa file to the user {{item.name}}
-      action: copy src=/tmp/{{item.name}}_id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600
+      copy: src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600
       with_items: USERS
     - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
-    - name: Create the mom_priv/config file
-      action: copy dest={{TORQUE_PATH}}/mom_priv/config content='$clienthost torqueserver' mode=0644 owner=root group=root
-      notify:
-      - restart {{MOM_SERVICE}}
-      - start {{MOM_SERVICE}}
+    # Installation of torque
+    - name: Apt install torque mom
+      apt: pkg=torque-mom,torque-client
+      when: ansible_os_family == "Debian"
+      
+    - name: create epel.repo
+      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
+      when: ansible_os_family == "RedHat"
+    - name: Yum install Torque in REL system
+      yum: pkg=torque-mom,torque-client,openssh-clients
+      when: ansible_os_family == "RedHat"
 
+    - command: |
+         /sbin/iptables -I INPUT 1 -p tcp --dport 15001:15004 -j ACCEPT;
+         /sbin/iptables -I INPUT 1 -p udp --dport 15001:15004 -j ACCEPT
+      ignore_errors: yes
+    
+    - copy: src=/etc/munge/munge.key dest=/etc/munge/munge.key owner=munge group=munge mode=0400
+      when: ansible_os_family == "RedHat"
+      notify:
+      - restart munge
+
+    - name: Set the Torque server name
+      copy: content=torqueserver dest=/etc/torque/server_name
+    - name: Create the mom_priv/config file
+      copy: dest={{TORQUE_PATH}}/mom_priv/config content='$clienthost torqueserver' mode=0644 owner=root group=root
+
+    - service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
     handlers:
     - name: restart {{MOM_SERVICE}}
       service: name={{MOM_SERVICE}} state=restarted pattern=/usr/sbin/pbs_mom
@@ -117,7 +99,7 @@ configure front (
 @begin
 ---
   - vars_files:
-    - [ "{{ ansible_distribution }}.yml", "osdefaults.yml" ]
+    - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
     vars:
       NNODES: 10
       VNODES_PREFIX: vnode
@@ -144,21 +126,14 @@ configure front (
     tasks:
     - name: create epel.repo
       action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
 
     # General tasks
     # Users creation
     - user: name={{item.name}} password={{item.password}} generate_ssh_key=yes shell=/bin/bash
       with_items: USERS
-    - local_action: shell cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
-      with_items: USERS
-    - local_action: shell cp /home/{{item.name}}/.ssh/id_rsa /tmp/{{item.name}}_id_rsa creates=/tmp/{{item.name}}_id_rsa
-      with_items: USERS
-    - name: Set the permissions of file /tmp/{{item.name}}_id_rsa
-      local_action: file path=/tmp/{{item.name}}_id_rsa mode=0644
-      with_items: USERS
     - name: Add the authorized_key to the user {{item.name}}
-      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/home/' + item.name + '.ssh/id_rsa.pub') }}"
       with_items: USERS
     - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
@@ -168,41 +143,32 @@ configure front (
            item="{{VNODES_PREFIX}}${i}{{VNODES_SUFFIX}}";
            grep -q ${item} /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
         done
-      args:
-        sudo: yes
 
     # Install IM
     - pip: name=IM version=0.1.1
-    - command: /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT
-      ignore_errors: yes
-    - command: /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT
+    - command: |
+         /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT || true;
+         /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT || true
       ignore_errors: yes
 
     - service: name=im state=started
 
-    
-    ############################################################################
-    #              LRMS Specific Section
-    ############################################################################
-    
     - command: hostname torqueserver
 
     # Torque configuration Specific tasks
     - name: Apt install Torque in Deb system
       action: apt pkg=torque-server,torque-client,g++,libtorque2-dev,make
-      when: debian_os
+      when: ansible_os_family == "Debian"
       
     - name: Yum install Torque in REL system
       action: yum pkg=torque-server,torque-client,openssh-clients,gcc-c++,make,libtorque-devel
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
     
-    - command: /sbin/iptables -I INPUT 2 -p tcp --dport 15001:15004 -j ACCEPT
-      ignore_errors: yes
-    - command: /sbin/iptables -I INPUT 2 -p udp --dport 15001:15004 -j ACCEPT
-      ignore_errors: yes
-    - command: /sbin/iptables -I INPUT -p tcp --dport 15001:15004 -j ACCEPT
-      ignore_errors: yes
-    - command: /sbin/iptables -I INPUT -p udp --dport 15001:15004 -j ACCEPT
+    - command: |
+         /sbin/iptables -I INPUT 2 -p tcp --dport 15001:15004 -j ACCEPT || true;
+         /sbin/iptables -I INPUT 2 -p udp --dport 15001:15004 -j ACCEPT || true;
+         /sbin/iptables -I INPUT -p tcp --dport 15001:15004 -j ACCEPT || true;
+         /sbin/iptables -I INPUT -p udp --dport 15001:15004 -j ACCEPT || true
       ignore_errors: yes
 
     - copy: dest=/etc/torque/server_name content=torqueserver
@@ -214,37 +180,31 @@ configure front (
         dest: "{{TORQUE_PATH}}/server_priv/nodes"
 
     - service: name=torque-server state=restarted pattern=/usr/sbin/pbs_server
-      when: debian_os
+      when: ansible_os_family == "Debian"
     - service: name=torque-server state=restarted pattern=/usr/sbin/pbs_server
-      when: debian_os
+      when: ansible_os_family == "Debian"
     - service: name=pbs_server state=restarted pattern=/usr/sbin/pbs_server
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
     - service: name=pbs_server state=restarted pattern=/usr/sbin/pbs_server
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
 
     - service: name=torque-server state=started pattern=/usr/sbin/pbs_server
-      when: debian_os
+      when: ansible_os_family == "Debian"
     - service: name=torque-scheduler state=started pattern=/usr/sbin/pbs_sched
-      when: debian_os
+      when: ansible_os_family == "Debian"
     - service: name=pbs_server state=started pattern=/usr/sbin/pbs_server
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
 
     - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
 
     - command: /usr/sbin/create-munge-key creates=/etc/munge/munge.key
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
       notify:
       - restart munge
     - file: path=/etc/munge/munge.key owner=munge group=munge mode=0400
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
       notify:
       - restart munge
-
-    - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
-
-    ############################################################################
-    #              END LRMS Specific Section
-    ############################################################################
 
     handlers:
     - name: restart munge

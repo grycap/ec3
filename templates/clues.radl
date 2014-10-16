@@ -1,9 +1,7 @@
 configure front (
 @begin
 ---
-  - vars_files:
-    - [ "{{ ansible_distribution }}.yml", "osdefaults.yml" ]
-    vars:
+  - vars:
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-0.89
       CLOUD_CONN_FILE: CLUES-CLOUD-0.92
@@ -12,6 +10,8 @@ configure front (
         ec3_xpath: /system/front/auth
       RADL_SYSTEM_CONTENT_wn:
         ec3_xpath: /system/wn/*
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
 
     tasks:
     - get_url: url={{REPOSITORY}}/{{item}} dest=/tmp/{{item}}
@@ -26,12 +26,12 @@ configure front (
 
     # CLUES requirements
     - name: Apt install CLUES and IM requirements in Deb system
-      action: apt pkg=python-sqlite
-      when: debian_os
+      apt: pkg=python-sqlite
+      when: ansible_os_family == "Debian"
       
     - name: Yum install CLUES and IM requirements in REL system
-      action: yum pkg=python-sqlite
-      when: redhat_os
+      yum: pkg=python-sqlite
+      when: ansible_os_family == "RedHat"
 
     # CLUES installation
     - command: tar -xzf /tmp/{{CLUES_FILE}}.tar.gz -C /usr/local creates=/usr/local/{{CLUES_FILE}}
@@ -62,8 +62,21 @@ configure front (
     - file: path=/usr/local/clues/bin/poweroff state=absent
     - file: src=/usr/local/clues/bin/cloud/bootnode dest=/usr/local/clues/bin/bootnode state=link
     - file: src=/usr/local/clues/bin/cloud/poweroff dest=/usr/local/clues/bin/poweroff state=link
+
+    - include: pbs.yml
+      when: "{{ QUEUE_SYSTEM == 'torque' }}"
+
+    - service: name=clues state=started
     
-    # PBS plugin installation
+    handlers:
+    - name: restart clues
+      service: name=clues state=restarted
+@end
+)
+
+# PBS plugin installation
+configure pbs (
+@begin
     - command: tar -xzf /tmp/{{PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{PLUGIN_FILE}}
     - file: src=/usr/local/clues/plugins/{{PLUGIN_FILE}} dest=/usr/local/clues/plugins/pbs state=link
     # and configuration
@@ -75,10 +88,5 @@ configure front (
     # CLUES CLOUD specific values for pbs plugin
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_FILE line="CONFIGURE_FILE = '/tmp/conf/wn.yml'"
     - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/local/clues/plugins/pbs/wrapper.py' create=yes mode=644
-    - service: name=clues state=started
-    
-    handlers:
-    - name: restart clues
-      service: name=clues state=restarted
 @end
 )
