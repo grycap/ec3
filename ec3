@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, time, logging, os, xmlrpclib, argparse, tempfile
+import sys, time, logging, os, xmlrpclib, argparse, tempfile, random
 try:
     import json
 except ImportError:
@@ -131,7 +131,7 @@ def apply_ec3_expressions(r):
 
 class Display:
     # Private variables, just don't bother them!
-    LEN_SCREEN = 80
+    LEN_SCREEN = 90
     BACKGROUND = " "*LEN_SCREEN
     state = 0
     last_msg = None
@@ -353,6 +353,11 @@ class CmdLaunch:
             if not options.auth_file: raise Exception("option is not set")
             auth_content = options.auth_file[0].readlines()
             auth_data = Authentication.read_auth_data(auth_content)
+            if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+                auth_data = Authentication.read_auth_data(auth_content)
+                
         except Exception, e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
