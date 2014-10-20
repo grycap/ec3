@@ -1,0 +1,38 @@
+configure im_devel_pip (
+@begin
+    - pip: name=IM version=0.1.1
+@end
+)
+
+configure im_devel_git (
+@begin
+    - apt: pkg=git
+      when: ansible_os_family == "Debian"
+    - yum: pkg=git
+      when: ansible_os_family == "RedHat"
+    - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
+    - command: python setup.py install
+      args:
+         chdir: /tmp/im
+@end
+)
+
+configure im_devel_git_virtualenv (
+@begin
+    - pip: name=virtualenv
+    - command: virtualenv /tmp/ec3env
+    - apt: pkg=git
+      when: ansible_os_family == "Debian"
+    - yum: pkg=git
+      when: ansible_os_family == "RedHat"
+    - git: repo=https://github.com/ansible/ansible.git dest=/tmp/ansible version=release1.7.2
+    - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
+    - shell: source /tmp/ec3env/bin/activate; python setup.py install
+      args:
+         chdir: /tmp/ansible
+    - shell: source /tmp/ec3env/bin/activate; python setup.py install
+      args:
+         chdir: /tmp/im
+    - file: src=/tmp/ec3env/bin/im_service.py dest=/usr/local/bin/im_service.py
+@end
+)
