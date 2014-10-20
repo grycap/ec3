@@ -15,6 +15,8 @@ configure front (
       EC3_CONTROL_WRAPPER_CONTENT:
         ec3_file: ec3_torque.py
     tasks:
+    - shell: python -m argparse || yum -y install python-argparse
+      when: ansible_os_family == "RedHat"
     - file: path=/usr/local/ec3 state=directory
     - copy:
          dest: /usr/local/ec3/ec3_control.py

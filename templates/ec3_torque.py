@@ -19,7 +19,8 @@ def get_queued_jobs():
         root = ET.fromstring(run_command(["qstat", "-x"]))
     except:
         return 0
-    return len([ state.text.strip().upper()[0] == "Q" for state in root.iter("job_state") ])
+    jobs = root.iter("job_state") if hasattr(root, "iter") else root.getiterator("job_state")
+    return len([ state.text.strip().upper()[0] == "Q" for state in jobs ])
 
 def get_meta_state():
     root = ET.fromstring(run_command(["qnodes", "-x"]))
