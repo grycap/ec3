@@ -129,6 +129,11 @@ def apply_ec3_expressions(r):
             except Exception, e:
                 raise Exception("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)))
 
+class include(IM_RADL.FeaturedAspect):
+    def check(self, r):
+        self.check_simple(dict(template=(str, lambda x,_: len(x.value.strip()))), r)
+IM_RADL.include = include
+    
 class Display:
     # Private variables, just don't bother them!
     LEN_SCREEN = 90
@@ -370,13 +375,15 @@ class CmdLaunch:
          
         # Instantiate template
         radl = RADL()
-        for r in [options.template] + (options.add if options.add else []):
+        def add_template(r):
             try:
                 file_content = get_content_from_template_file(r + ".radl")
                 radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
             except Exception, e:
                 CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR)
                 sys.exit(1)
+        for r in [options.template] + (options.add if options.add else []): add_template(r)
+        for a in radl.gets(include): add_template(a.getValue("template")); radl.delete(a)
 
         # Set auth in system "front"
         if radl.get(system("front")):
@@ -436,6 +443,9 @@ class CmdLaunch:
                 system_front.setValue("__im_server", im_server_url)
                 system_front.setValue("__infrastructure_id", infrId)
                 system_front.setValue("__vm_id", vmId)
+                system_front.setValue("auth", json.dumps(auth_data))
+                system_front.setValue("nodes", 0)
+                if not options_not_store: ClusterStore.save(options_clustername, radl)
                 if state == system.CONFIGURED: break
                 if state == system.FAILED:
                     success, info = im_server.GetInfrastructureInfo(infrId, auth_data)
@@ -483,7 +493,6 @@ class CmdLaunch:
         finally:
             # Save cluster
             if system_front and not options_not_store:
-                system_front.setValue("auth", json.dumps(auth_data))
                 system_front.setValue("nodes", len(res["vm_list"] if res else [0])-1)
                 ClusterStore.save(options_clustername, radl)
 
