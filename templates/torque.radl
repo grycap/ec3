@@ -20,6 +20,7 @@ system wn (
 configure Debian (
 @begin
       TORQUE_PATH: /var/spool/torque
+      TORQUE_SERVICE: torque-server
       MOM_SERVICE: torque-mom
 @end
 )
@@ -27,6 +28,7 @@ configure Debian (
 configure RedHat (
 @begin
       TORQUE_PATH: /var/lib/torque
+      TORQUE_SERVICE: pbs_server
       MOM_SERVICE: pbs_mom
 @end
 )
@@ -85,11 +87,6 @@ configure wn (
 
     - service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
     handlers:
-    - name: restart {{MOM_SERVICE}}
-      service: name={{MOM_SERVICE}} state=restarted pattern=/usr/sbin/pbs_mom
-    - name: start {{MOM_SERVICE}}
-      service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
-
     - name: restart munge
       service: name=munge state=restarted
 @end
@@ -187,14 +184,8 @@ configure front (
     - service: name=munge state=restarted
       when: ansible_os_family == "RedHat"
 
-    - service: name=torque-server state=restarted pattern=/usr/sbin/pbs_server
-      when: ansible_os_family == "Debian"
-    - service: name=pbs_server state=restarted pattern=/usr/sbin/pbs_server
-      when: ansible_os_family == "RedHat"
-    - service: name=torque-server state=started pattern=/usr/sbin/pbs_server
-      when: ansible_os_family == "Debian"
-    - service: name=pbs_server state=started pattern=/usr/sbin/pbs_server
-      when: ansible_os_family == "RedHat"
+    - service: name={{TORQUE_SERVICE}} state=restarted pattern=/usr/sbin/pbs_server
+    - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
     - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
 
     - service: name=torque-scheduler state=started pattern=/usr/sbin/pbs_sched
