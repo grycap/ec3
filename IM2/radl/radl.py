@@ -1181,7 +1181,7 @@ class RADL(object):
 	def __eq__(self, other):
 		return other is not None and isinstance(other, RADL) and self.props == other.props
 
-	def add(self, aspect, ifpresent="error", check=False, **kwargs):
+	def add(self, aspect, ifpresent="error", check=False, addaspects=True, **kwargs):
 		"""
 		Add an aspect.
 
@@ -1193,6 +1193,7 @@ class RADL(object):
 		   - ``"replace"``: replace the old aspect by the new aspect.
 		   - ``"merge"``: apply new aspect features to the old aspect.
 		   - ``"error"``: raise an error.
+                - addaspects: add also aspects in features.
 		- conflict, missing: args passed to ``merge`` if ``ifpresent`` is ``"merge"``.
 
 		Return(bool): True if aspect was added.
@@ -1222,7 +1223,7 @@ class RADL(object):
 		aspect = aspect0
 
 		# Otherwise add aspect
-		if isinstance(aspect, Features):
+		if addaspects and isinstance(aspect, Features):
 			fs = [f for f in aspect.features if isinstance(f.value, Aspect) and
 			      id(self.get(f.value)) != id(f.value) ]
 			for self0, i in ((self.clone(check=False), 0), (self, 1)):
@@ -1230,7 +1231,7 @@ class RADL(object):
 					self0.add(f.value, ifpresent=ifpresent, check=check, **kwargs)
 					if i == 1: f.value = self0.get(f.value)
 
-		if check: self.check()
+		if check and addaspects: self.check()
 		return True
 
 	def delete(self, aspect, ifnotpresent="error"):

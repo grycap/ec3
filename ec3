@@ -41,7 +41,7 @@ TIMEOUT = 1200
 # Time in seconds between two consecutive requests to IM service
 DELAY = 5
 
-def dump_radl(r):
+def dump_radl(r, aspect=None):
     # In IM.radl net_interface.%d.connection is a network not a string, after
     # calling RADL.check. Then this function turns back the feature to a string.
 
@@ -54,6 +54,8 @@ def dump_radl(r):
             elif isinstance(s.getValue("net_interface.%d.connection" % i), network):
                 s.setValue("net_interface.%d.connection" % i, s.getValue("net_interface.%d.connection" % i).getId())
             i += 1
+    if aspect:
+        r = RADL([r.get(aspect)], addaspects=False, check=False)
     return dump_radl_future(r)
 
 def dump_json(d):
@@ -96,8 +98,10 @@ def ec3_xpath_radl(r, xpath):
     if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
     if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
     if isinstance(aspect, Aspect):
-        aspect, is_configure = dump_radl(RADL([aspect])), isinstance(aspect, configure)
-        if len(xpath0) == 1 and xpath0[0] == "*":
+        ast = len(xpath0) == 1 and xpath0[0] == "*"
+        is_configure = isinstance(aspect, configure)
+        aspect = dump_radl(RADL([aspect]), aspect=aspect if ast else None)
+        if ast:
             s = slice(2, -2) if is_configure else slice(1, -1)
             return "\n".join(aspect.split("\n")[s])
     if not xpath0: return aspect
@@ -320,7 +324,8 @@ class CLI:
         CLI.options.func(CLI.options)
 
     @staticmethod
-    def display(msg, alt=None, level=logging.INFO):
+    def display(msg, alt=None, level=logging.INFO, exception=False):
+        if exception: CLI.logger.exception("")
         CLI.logger.log(level, msg)
         if CLI.options.quiet:
             if alt: msg = alt
@@ -456,7 +461,7 @@ class CmdLaunch:
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
                                         DELAY)
         except Exception, e:
-            CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR)
+            CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
                     success, info = im_server.DestroyInfrastructure(infrId, auth_data)
