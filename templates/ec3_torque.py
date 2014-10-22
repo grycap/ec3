@@ -52,7 +52,7 @@ def get_meta_state_cmd(_):
     sys.stdout.write("%s\n" % meta)
 
 def disable_node_cmd(options):
-    disble_node(options.hostname)
+    disable_node(options.hostname)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
