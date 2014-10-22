@@ -3,7 +3,9 @@ system wn ( net_interface.0.dns_name = 'wn' )
 configure front (
 @begin
 ---
-  - vars:
+  - vars_files:
+    - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
+    vars:
       RADL_SYSTEM_wn:
         ec3_xpath: /system/wn
       RADL_CONF_wn:
@@ -12,7 +14,9 @@ configure front (
         ec3_xpath: /system/front/auth
       EC3_CONTROL_CONTENT:
         ec3_file: ec3_control.py
-      EC3_CONTROL_WRAPPER_CONTENT:
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
+      EC3_CONTROL_TORQUE_WRAPPER_CONTENT:
         ec3_file: ec3_torque.py
     tasks:
     - shell: python -m argparse || yum -y install python-argparse
@@ -23,10 +27,6 @@ configure front (
          content: "{{EC3_CONTROL_CONTENT}}"
          mode: 0755
     - copy:
-         dest: /usr/local/ec3/wrapper.py
-         content: "{{EC3_CONTROL_WRAPPER_CONTENT}}"
-         mode: 0755
-    - copy:
          dest: /usr/local/ec3/auth.dat
          content: "{{AUTH}}"
     - copy:
@@ -34,14 +34,25 @@ configure front (
          content: |
             {{RADL_SYSTEM_wn}}
             {{RADL_CONF_wn}}
+    - include: ec3_control_pbs.yml
+      when: "{{ QUEUE_SYSTEM == 'torque' }}"
+    - shell: /usr/local/ec3/ec3_control
+@end
+)
+
+configure ec3_control_pbs (
+@begin
+    - copy:
+         dest: /usr/local/ec3/wrapper.py
+         content: "{{EC3_CONTROL_TORQUE_WRAPPER_CONTENT}}"
+         mode: 0755
     - copy:
          dest: /usr/local/ec3/ec3_control
          content: |
             #!/bin/bash
             
             cd /usr/local/ec3
-            pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py -l err -ll 0 >& out &
+            pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py -l err -ll 0 -c service {{TORQUE_SERVICE}} start >& out &
          mode: 0755
-    - shell: /usr/local/ec3/ec3_control
 @end
 )
