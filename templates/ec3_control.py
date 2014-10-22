@@ -2,7 +2,7 @@
 
 # Experimental control
 
-import sys, logging, xmlrpclib, argparse, time, imp
+import sys, logging, xmlrpclib, argparse, time, imp, threading, subprocess
 from IM.auth import Authentication
 from IM.radl.radl_parse import parse_radl
 from IM.radl.radl import RADL, system, configure, deploy
@@ -133,6 +133,16 @@ def loop_body(vmids):
     elif new_nodes < 0: destroy(vmids, -new_nodes)
     consistency(vmids)
 
+def loop_cmd(seconds, cmd):
+    if isinstance(cmd, list): cmd = " ".join(cmd)
+    while True:
+        time0 = time.time()
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except Exception, e:
+            logger.warning(str(e))
+        time.sleep(max(seconds - (time.time() - time0), 0))
+
 if __name__ == "__main__":
     def int_none(s):
         return None if s is None or s.lower() == "none" else int(s)
@@ -156,6 +166,8 @@ if __name__ == "__main__":
     parser.add_argument("-lc", "--limit-create", dest="limit_create", nargs=1, type=int_none, default=[None], help="maximum machines to launch at once")
     parser.add_argument("-di", "--destroy-interval", dest="destroy_interval", nargs=1, type=mins, default=[0],
                         help="destroy machines only when they are at the end of this interval")
+    parser.add_argument("-c", "--command", dest="cmds", action="append", nargs="+", help="execute command frequently", default=[])
+    parser.add_argument("-tc", "--timed-command", dest="timed_cmds", action="append", nargs="+", help="execute command every the number of seconds passed as the first item", default=[])
     options = parser.parse_args()
 
     logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S',
@@ -188,6 +200,18 @@ if __name__ == "__main__":
     DELAY = options.delay[0]
     LIMITS = (options.limit_create[0], options.limit_destroy[0])
     DESTROY_INTERVAL = options.destroy_interval[0]
+    commands = [ (DELAY, c) for c in options.cmds ]
+    try:
+        for c in options.timed_cmds:
+            if len(c) < 1: raise Exception("Please, two arguments at least")
+            try: commands.append((int(c[0]), c[1:]))
+            except: raise Exception("First argument should be a number!")
+    except Exception, e:
+        logger.error("Error in -tc/--timed-command: %s")
+    for tc in commands:
+        t = threading.Thread(target=loop_cmd, args=tc)
+        t.daemon = True
+        t.start()
     try:
         vmids = {}
         while True:
