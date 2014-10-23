@@ -94,6 +94,8 @@ def ec3_xpath_radl(r, xpath):
     class_name = xpath0.pop(0)
     if not hasattr(IM_RADL, class_name):
         raise Exception("Invalid xpath: '%s' is not an aspect!" % class_name)
+    if len(xpath0) == 1 and xpath0[0] == "*":
+        return dump_radl(RADL(r.gets(getattr(IM_RADL, class_name))))
     aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
     if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
     if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
@@ -388,7 +390,8 @@ class CmdLaunch:
                 CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR)
                 sys.exit(1)
         for r in [options.template] + (options.add if options.add else []): add_template(r)
-        for a in radl.gets(include): add_template(a.getValue("template")); radl.delete(a)
+        [ add_template(r) for a in radl.gets(include) for r in a.getValue("template").split(" ") if r ]
+        for a in radl.gets(include): radl.delete(a)
 
         # Set auth in system "front"
         if radl.get(system("front")):
