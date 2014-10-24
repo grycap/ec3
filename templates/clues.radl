@@ -6,10 +6,12 @@ configure front (
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-0.89
       CLOUD_CONN_FILE: CLUES-CLOUD-0.92
-      PLUGIN_FILE: CLUES-PBS-0.88
-      #PLUGIN_FILE: CLUES-SLURM-0.1
+      PBS_PLUGIN_FILE: CLUES-PBS-0.88
+      SLURM_PLUGIN_FILE: CLUES-SLURM-0.1
       AUTH:
         ec3_xpath: /system/front/auth
+      RADL_NETWORKS:
+        ec3_xpath: /network/*
       RADL_SYSTEM_CONTENT_wn:
         ec3_xpath: /system/wn/*
       QUEUE_SYSTEM:
@@ -24,7 +26,6 @@ configure front (
       with_items:
       - "{{CLUES_FILE}}.tar.gz"
       - "{{CLOUD_CONN_FILE}}.tar.gz"
-      - "{{PLUGIN_FILE}}.tar.gz"
 
     # CLUES requirements
     - name: Apt install CLUES and IM requirements in Deb system
@@ -52,9 +53,11 @@ configure front (
     - lineinfile: dest=/usr/local/clues/config.py regexp=^SWITCH_ON_BLOCKSIZE line="SWITCH_ON_BLOCKSIZE = 1"
 
     # CLOUD connector Config file
-    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^IM_URL line="IM_URL = 'http://{{ IM_MASTER_FQDN }}:8899'"
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^IM_URL line="IM_URL = 'http://localhost:8899'"
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_WN_TIMEOUT line="CONFIGURE_WN_TIMEOUT = 3000"
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^RUNNING_WN_TIMEOUT line="RUNNING_WN_TIMEOUT = 3000"
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^RADL_SYSTEM_STR line="RADL_SYSTEM_STR = \"system %s ( net_interface.0.dns_name = '%s' and %s )\"; '''"
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^RADL_NET_STR line="RADL_NET_STR = '''{{RADL_NETWORKS}}'''; '''"
     - copy: dest=/usr/local/clues/bin/cloud/wn.radl content="{{RADL_SYSTEM_CONTENT_wn}}"
     - copy:
         dest: /usr/local/clues/bin/cloud/auth.dat
@@ -65,10 +68,10 @@ configure front (
     - file: src=/usr/local/clues/bin/cloud/bootnode dest=/usr/local/clues/bin/bootnode state=link
     - file: src=/usr/local/clues/bin/cloud/poweroff dest=/usr/local/clues/bin/poweroff state=link
 
-    - include: pbs.yml
+    - include: clues_pbs.yml
       when: "{{ QUEUE_SYSTEM == 'torque' }}"
 
-    - include: slurm.yml
+    - include: clues_slurm.yml
       when: "{{ QUEUE_SYSTEM == 'slurm' }}"
 
     - service: name=clues state=started
@@ -80,10 +83,11 @@ configure front (
 )
 
 # PBS plugin installation
-configure pbs (
+configure clues_pbs (
 @begin
-    - command: tar -xzf /tmp/{{PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{PLUGIN_FILE}}
-    - file: src=/usr/local/clues/plugins/{{PLUGIN_FILE}} dest=/usr/local/clues/plugins/pbs state=link
+    - get_url: url={{REPOSITORY}}/{{PBS_PLUGIN_FILE}}.tar.gz dest=/tmp
+    - command: tar -xzf /tmp/{{PBS_PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{PBS_PLUGIN_FILE}}
+    - file: src=/usr/local/clues/plugins/{{PBS_PLUGIN_FILE}} dest=/usr/local/clues/plugins/pbs state=link
     # and configuration
     - lineinfile: dest=/usr/local/clues/plugins/pbs/config.py regexp=^TORQUE_BIN_PATH line='TORQUE_BIN_PATH="/usr/bin"'
     - lineinfile: dest=/usr/local/clues/plugins/pbs/config.py regexp=^DEFAULT_QUEUE line='DEFAULT_QUEUE="batch"'
@@ -97,22 +101,16 @@ configure pbs (
 )
 
 # SLURM plugin installation
-configure slurm (
+configure clues_slurm (
 @begin
-    # SLURM plugin installation
-    - command: tar -xzf /tmp/{{PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{PLUGIN_FILE}}
-    - file: src=/usr/local/clues/plugins/{{PLUGIN_FILE}} dest=/usr/local/clues/plugins/slurm state=link
+    - get_url: url={{REPOSITORY}}/{{SLURM_PLUGIN_FILE}}.tar.gz dest=/tmp
+    - command: tar -xzf /tmp/{{SLURM_PLUGIN_FILE}}.tar.gz -C /usr/local/clues/plugins creates=/usr/local/clues/plugins/{{SLURM_PLUGIN_FILE}}
+    - file: src=/usr/local/clues/plugins/{{SLURM_PLUGIN_FILE}} dest=/usr/local/clues/plugins/slurm state=link
     # CLUES specific values for slurm plugin
     - lineinfile: dest=/usr/local/clues/config.py regexp=^MANAGERS line="MANAGERS=['slurm']"
     - lineinfile: dest=/usr/local/clues/config.py regexp=^NODES_AVAILABLE..pbs.. line="NODES_AVAILABLE['slurm'] = 0"
     # CLUES CLOUD specific values for slurm plugin
-    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_FILE line="CONFIGURE_FILE = '/tmp/conf/slurmwn.yml'"
-    # Configure slurm.conf file
-    - name: configure compute nodes section of slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
-    # start SLURM slurmctld daemon
-    - command: slurmctld
+    - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_FILE line="CONFIGURE_FILE = '/tmp/conf/wn.yml'"
 @end
 )
 
