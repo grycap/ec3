@@ -1,10 +1,16 @@
 system wn ( net_interface.0.dns_name = 'wn' )
 
+configure none (
+@begin
+    caca: caca
+@end
+)
+
 configure front (
 @begin
 ---
   - vars_files:
-    - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
+    - [ "{{ ansible_os_family }}.yml", "RedHat.yml", "none.yml" ]
     vars:
       RADL_SYSTEM_wn:
         ec3_xpath: /system/wn
@@ -18,6 +24,8 @@ configure front (
         ec3_xpath: /system/front/queue_system
       EC3_CONTROL_TORQUE_WRAPPER_CONTENT:
         ec3_file: ec3_torque.py
+      EC3_CONTROL_SLURM_WRAPPER_CONTENT:
+        ec3_file: ec3_slurm.py
     tasks:
     - shell: python -m argparse || yum -y install python-argparse
       when: ansible_os_family == "RedHat"
@@ -36,6 +44,8 @@ configure front (
             {{RADL_CONF_wn}}
     - include: ec3_control_pbs.yml
       when: "{{ QUEUE_SYSTEM == 'torque' }}"
+    - include: ec3_control_slurm.yml
+      when: "{{ QUEUE_SYSTEM == 'slurm' }}"
     - shell: /usr/local/ec3/ec3_control
 @end
 )
@@ -53,6 +63,23 @@ configure ec3_control_pbs (
             
             cd /usr/local/ec3
             pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py -l err -ll 0 -c service {{TORQUE_SERVICE}} start >& out &
+         mode: 0755
+@end
+)
+
+configure ec3_control_slurm (
+@begin
+    - copy:
+         dest: /usr/local/ec3/wrapper.py
+         content: "{{EC3_CONTROL_SLURM_WRAPPER_CONTENT}}"
+         mode: 0755
+    - copy:
+         dest: /usr/local/ec3/ec3_control
+         content: |
+            #!/bin/bash
+            
+            cd /usr/local/ec3
+            pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py -l err -ll 0 >& out &
          mode: 0755
 @end
 )
