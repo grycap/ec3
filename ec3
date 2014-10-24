@@ -125,6 +125,7 @@ def apply_ec3_expressions(r):
     recipes_vars = [ (conf, d.get("vars", {})) for conf in r.gets(configure) if isinstance(conf.recipe, list)
                                        for d in conf.recipe if isinstance(d, dict) ]
     for conf, conf_vars in recipes_vars:
+        if not isinstance(conf_vars, dict): continue
         for k, v in conf_vars.items():
             if not isinstance(v, dict): continue
             try:
@@ -401,7 +402,7 @@ class CmdLaunch:
         try:
             apply_ec3_expressions(radl)
         except Exception, e:
-            CLI.display(str(e), level=logging.ERROR)
+            CLI.display(str(e), level=logging.ERROR, exception=True)
             sys.exit(1)
 
         # Finish if dry run
