@@ -1,69 +1,40 @@
-network publica (outbound = 'yes' and outports = '8899/tcp,6817/tcp,6818/tcp,111/tcp,111/udp,2046/tcp,2046/udp,2047/tcp,2047/udp,2048/tcp,2048/udp,2049/tcp,2049/udp')
-network privada ()
+network public (outbound = 'yes' and outports = '8899/tcp,6817/tcp,6818/tcp,111/tcp,111/udp,2046/tcp,2046/udp,2047/tcp,2047/udp,2048/tcp,2048/udp,2049/tcp,2049/udp')
+network private ()
 
 system front (
 cpu.arch='x86_64' and
 cpu.count>=1 and
 memory.size>=512m and
-net_interface.0.connection = 'publica' and
+net_interface.0.connection = 'public' and
 net_interface.0.dns_name = 'slurmserver' and
-net_interface.1.connection = 'privada' and
+net_interface.1.connection = 'private' and
 queue_system = 'slurm'
 )
 
-configure Ubuntu (
-@begin
-      SLURM_PATH: /home/ubuntu/slurm-2.5.7
-      HOME: /home/ubuntu
-@end
+system wn (
+  net_interface.0.connection='private'
 )
 
-configure Debian (
-@begin
-      SLURM_PATH: /home/ubuntu/slurm-2.5.7
-      HOME: /home/ubuntu
-@end
-)
-
-configure Scientific (
-@begin
-      SLURM_PATH: /root/slurm-2.5.7
-      HOME: /root
-@end
-)
-
-configure CentOS (
-@begin
-      SLURM_PATH: /root/slurm-2.5.7
-      HOME: /root
-@end
-)
-
-# Uso los de RHEL por defecto
-configure osdefaults (
-@begin
-      SLURM_PATH: /root/slurm-2.5.7
-      HOME: /root
-@end
-)
-
-configure slurmwn (
+configure wn (
 @begin
 ---
+  - vars:
+      SLURM_PATH: /tmp/slurm-2.5.7
+    tasks:
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
       action: apt pkg=libmunge2,libpq5,openssl-blacklist,munge,slurm-llnl-basic-plugins,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
-      when: debian_os
+      when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
       action: yum pkg=readline-devel,openssl-devel,munge-devel pam-devel perl-ExtUtils-MakeMaker,gcc-c++,make
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
 
     - name: download SLURM package
       get_url: url=http://www.schedmd.com/download/archive/slurm-2.5.7.tar.bz2 dest={{SLURM_PATH}}.tar.bz2
 
     - name: decompress SLURM package
-      command: tar --bzip -x -f slurm-2.5.7.tar.bz2 chdir={{HOME}} creates={{SLURM_PATH}}
+      command: tar --bzip -x -f slurm-2.5.7.tar.bz2 chdir={{ SLURM_PATH | dirname }} creates={{SLURM_PATH}}
 
     - name: configure SLURM
       command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
@@ -113,24 +84,27 @@ configure slurmwn (
 @end
 )
 
+include im (
+  template = 'im'
+)
+
 configure front (
 @begin
 ---
-  - vars_files:
-    - [ "{{ ansible_distribution }}.yml", "osdefaults.yml" ]
-    vars:
+  - vars:
       NNODES: 10
       VNODES_PREFIX: wnode
       VNODES_SUFFIX:  
       #EPILOG_FILE: 
       #  ec3_file: epilog_controller
+      SLURM_PATH: /tmp/slurm-2.5.7
       SLURM_CONF_FILE:
         ec3_file: slurm.conf
 
     tasks:
     - name: create epel.repo
       action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
 
     # General tasks
     # Manage the /etc/hosts file
@@ -140,18 +114,12 @@ configure front (
       with_items: groups.all
 
     # Install IM
-    - name: Install ansible with Pip
-      pip: name=IM version=0.1.1
-    - name: Give execution permissions to the IM daemon
-      file: path=/etc/init.d/im mode=755
-    - file: path=/usr/share/im/contextualization/ansible-playbook mode=755
-    - command: /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT
+    - include: im_devel_git.yml
+    - shell: |
+         /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT || true;
+         /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT || true
       ignore_errors: yes
-    - command: /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT
-      ignore_errors: yes
-
     - service: name=im state=started
-
     
     ############################################################################
     #              LRMS Specific Section
@@ -160,17 +128,17 @@ configure front (
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
       action: apt pkg=libmunge2,libpq5,openssl-blacklist,munge,slurm-llnl-basic-plugins,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
-      when: debian_os
+      when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
       action: yum pkg=readline-devel,openssl-devel,munge-devel pam-devel perl-ExtUtils-MakeMaker,gcc,make
-      when: redhat_os
+      when: ansible_os_family == "RedHat"
 
     - name: download SLURM package
       get_url: url=http://www.schedmd.com/download/archive/slurm-2.5.7.tar.bz2 dest={{SLURM_PATH}}.tar.bz2
 
     - name: decompress SLURM package
-      command: tar --bzip -x -f slurm-2.5.7.tar.bz2 chdir={{HOME}} creates={{SLURM_PATH}}
+      command: tar --bzip -x -f slurm-2.5.7.tar.bz2 chdir={{ SLURM_PATH | dirname }} creates={{SLURM_PATH}}
 
     - name: configure SLURM
       command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
@@ -207,10 +175,8 @@ configure front (
         content: "{{SLURM_CONF_FILE}}"
 
     - name: configure compute nodes section of slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{IM_WN_NUM_VMS|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-      when: IM_WN_NUM_VMS is defined
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{IM_WN_NUM_VMS|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
-      when: IM_WN_NUM_VMS is defined
+      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
 
     - name: create slurm user
       shell: echo "slurm:x:2000:2000:slurm admin:/home/slurm:/bin/bash" >> /etc/passwd
@@ -235,39 +201,16 @@ configure front (
     #- command: chown slurm:slurm /usr/local/slurm/epilog_controller
 
     # Configure slurm.conf file
-    #- name: configure compute nodes section of slurm.conf
-    #  lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-    #- lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
-
+    - name: configure compute nodes section of slurm.conf
+      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
     # start SLURM slurmctld daemon
-    #- command: slurmctld
+    - shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
+    - shell: scontrol reconfig
 
     ############################################################################
     #              END LRMS Specific Section
     ############################################################################
-
-    #Pyslurm section
-    #Pyslurm dependences 
-    - name: update repositories cache and apt install slurm dependences in Deb systems
-      action: apt pkg=python-dev,git,cython update_cache=yes cache_valid_time=3600
-      when: debian_os
-
-    - name: update repositories cache and yum install slurm dependences in REL systems
-      action: yum pkg=python-devel,git,python-pip
-      when: redhat_os
-    - name: install cython with pip
-      action: pip name=cython
-      when: redhat_os
-
-    - name: git checkout the pyslurm repository
-      git: repo=git://github.com/gingergeeks/pyslurm dest={{HOME}}/pyslurm accept_hostkey=yes
-
-    - name: build pyslurm
-      command: python setup.py build --slurm=/usr/local chdir={{HOME}}/pyslurm creates={{HOME}}/pyslurm/pyslurm/pyslurm.c
-
-    - name: install pyslurm
-      command: python setup.py install chdir={{HOME}}/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
-
 
 @end
 )

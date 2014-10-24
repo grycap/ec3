@@ -111,6 +111,27 @@ configure clues_slurm (
     - lineinfile: dest=/usr/local/clues/config.py regexp=^NODES_AVAILABLE..pbs.. line="NODES_AVAILABLE['slurm'] = 0"
     # CLUES CLOUD specific values for slurm plugin
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^CONFIGURE_FILE line="CONFIGURE_FILE = '/tmp/conf/wn.yml'"
+
+    #Pyslurm section
+    - name: update repositories cache and apt install slurm dependences in Deb systems
+      action: apt pkg=python-dev,git,cython update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+
+    - name: update repositories cache and yum install slurm dependences in REL systems
+      action: yum pkg=python-devel,git,python-pip
+      when: ansible_os_family == "RedHat"
+    - name: install cython with pip
+      action: pip name=cython
+      when: ansible_os_family == "RedHat"
+
+    - name: git checkout the pyslurm repository
+      git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes
+
+    - name: build pyslurm
+      command: python setup.py build --slurm=/usr/local chdir=/tmp/pyslurm creates=/tmp/pyslurm/pyslurm/pyslurm.c
+
+    - name: install pyslurm
+      command: python setup.py install chdir=/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
 @end
 )
 
