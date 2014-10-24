@@ -20,7 +20,7 @@ def get_queued_jobs():
     except:
         return 0
     jobs = root.iter("job_state") if hasattr(root, "iter") else root.getiterator("job_state")
-    return len([ state.text.strip().upper()[0] == "Q" for state in jobs ])
+    return len([ 0 for state in jobs if state.text.strip().upper()[0] == "Q" ])
 
 def get_meta_state():
     root = ET.fromstring(run_command(["qnodes", "-x"]))
@@ -29,8 +29,8 @@ def get_meta_state():
     PRIO = { "off": 2, "idle": 0, "idle-off": 1, "busy": 3 }
     def find_state(states):
         if not states: return "off"
-        states = [ s.strip() for s in states ]
-        return max([ (PRIO[STATES.get(s, "off")], STATES.get(s, "off")) for s in states ])[1]
+        states = [ STATES.get(s.strip(), "off") for s in states ]
+        return max([ (PRIO[s], s) for s in states ])[1]
     return dict([ (node.find("name").text, find_state(node.find("state").text.split(",")))
                   for node in root.findall("Node") ])
 
