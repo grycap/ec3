@@ -21,6 +21,7 @@ configure Debian (
 @begin
       TORQUE_PATH: /var/spool/torque
       TORQUE_SERVICE: torque-server
+      SCHED_SERVICE: torque-scheduler
       MOM_SERVICE: torque-mom
 @end
 )
@@ -29,6 +30,7 @@ configure RedHat (
 @begin
       TORQUE_PATH: /var/lib/torque
       TORQUE_SERVICE: pbs_server
+      SCHED_SERVICE: pbs_sched
       MOM_SERVICE: pbs_mom
 @end
 )
@@ -60,14 +62,14 @@ configure wn (
 
     # Installation of torque
     - name: Apt install torque mom
-      apt: pkg=torque-mom,torque-client
+      apt: name=torque-mom,torque-client
       when: ansible_os_family == "Debian"
       
     - name: create epel.repo
       template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
       when: ansible_os_family == "RedHat"
     - name: Yum install Torque in REL system
-      yum: pkg=torque-mom,torque-client,openssh-clients
+      yum: name=torque-mom,torque-client,openssh-clients
       when: ansible_os_family == "RedHat"
 
     - shell: |
@@ -152,11 +154,11 @@ configure front (
 
     # Torque configuration Specific tasks
     - name: Apt install Torque in Deb system
-      apt: pkg=torque-server,torque-client,g++,libtorque2-dev,make
+      apt: name=torque-server,torque-client,g++,libtorque2-dev,make
       when: ansible_os_family == "Debian"
       
     - name: Yum install Torque in REL system
-      yum: pkg=torque-server,torque-client,openssh-clients,gcc-c++,torque-devel,make
+      yum: name=torque-server,torque-scheduler,torque-client,openssh-clients,gcc-c++,torque-devel,make
       when: ansible_os_family == "RedHat"
     
     - shell: |
@@ -181,8 +183,7 @@ configure front (
     - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
     - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
 
-    - service: name=torque-scheduler state=started pattern=/usr/sbin/pbs_sched
-      when: ansible_os_family == "Debian"
+    - service: name={{SCHED_SERVICE}} state=started pattern=/usr/sbin/pbs_sched
 @end
 )
 

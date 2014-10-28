@@ -2,11 +2,10 @@ configure front (
 @begin
 ---
   - tasks:
-    - service: name=torque-scheduler state=stopped pattern=/usr/sbin/pbs_sched enabled=no
+    - service: name={{SCHED_SERVICE}} state=stopped pattern=/usr/sbin/pbs_sched enabled=no
+    - apt: name=libtorque2-dev,subversion
       when: ansible_os_family == "Debian"
-    - apt: pkg=libtorque2-dev,subversion
-      when: ansible_os_family == "Debian"
-    - yum: pkg=torque-devel,subversion
+    - yum: name=torque-devel,subversion
       when: ansible_os_family == "RedHat"
 
     - subversion: repo=svn://opensvn.adaptivecomputing.com/maui/branches/3.3.1 dest=/tmp/maui
