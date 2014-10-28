@@ -2,8 +2,8 @@
 configure sudo_copy (
 @begin
     - local_action: command sudo cp {{src}} /tmp/{{ src | basename }}
-    - local_action: command sudo chown ubuntu /tmp/{{ src | basename }}
-    - local_action: command sudo chmod u+r /tmp/{{ src | basename }}
+    - local_action: command sudo chown {{ansible_user_id}} /tmp/{{ src | basename }}
+    - local_action: command sudo chmod +r /tmp/{{ src | basename }}
     - copy:
         src: /tmp/{{ src | basename }}
         dest: "{{ dest }}"
