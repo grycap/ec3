@@ -1,0 +1,28 @@
+
+include munge_misc (
+    template = 'sudo-copy'
+)
+
+configure munge_repo_front (
+@begin
+    - apt: pkg=munge
+      when: ansible_os_family == "Debian"
+    - shell: create-munge-key < /dev/null
+    - file: path=/var/log/munge state=directory mode=0700
+    - file: path=/var/log state=directory mode=0755
+    - service: name=munge state=started
+@end
+)
+
+configure munge_repo_wn (
+@begin
+    - include: sudo_copy.yml
+      src: /etc/munge/munge.key
+      dest: /etc/munge/munge.key
+      owner: munge
+      group: munge
+      mode: 0400
+    #- copy: src=/etc/munge/munge.key dest=/etc/munge/munge.key owner=munge group=munge mode=0400
+    - service: name=munge state=restarted
+@end
+)

@@ -1,6 +1,7 @@
 configure im_devel_pip (
 @begin
     - pip: name=IM version=0.1.1
+    - include: im_epilog.yml
 @end
 )
 
@@ -14,6 +15,7 @@ configure im_devel_git (
     - command: python setup.py install
       args:
          chdir: /tmp/im
+    - include: im_epilog.yml
 @end
 )
 
@@ -34,5 +36,17 @@ configure im_devel_git_virtualenv (
       args:
          chdir: /tmp/im
     - file: src=/tmp/ec3env/bin/im_service.py dest=/usr/local/bin/im_service.py
+    - include: im_epilog.yml
+@end
+)
+
+configure im_epilog (
+@begin
+    - shell: |
+         /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT || true;
+         /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT || true
+      run_once: true
+      ignore_errors: yes
+    - service: name=im state=started
 @end
 )

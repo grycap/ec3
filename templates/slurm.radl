@@ -84,7 +84,7 @@ configure wn (
 @end
 )
 
-include im (
+include slurm_misc (
   template = 'im'
 )
 
@@ -113,13 +113,7 @@ configure front (
     - lineinfile: dest=/etc/hosts regexp='{{ hostvars[item]['IM_NODE_HOSTNAME'] }}' line='{{item}} {{ hostvars[item]['IM_NODE_FQDN'] }} {{ hostvars[item]['IM_NODE_HOSTNAME'] }}'
       with_items: groups.all
 
-    # Install IM
     - include: im_devel_git.yml
-    - shell: |
-         /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT || true;
-         /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT || true
-      ignore_errors: yes
-    - service: name=im state=started
     
     ############################################################################
     #              LRMS Specific Section
