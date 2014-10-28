@@ -126,15 +126,17 @@ def apply_ec3_expressions(r):
                                        for d in conf.recipe if isinstance(d, dict) ]
     for conf, conf_vars in recipes_vars:
         if not isinstance(conf_vars, dict): continue
+        conf_vars0 = {}
         for k, v in conf_vars.items():
             if not isinstance(v, dict): continue
             try:
                 if v.get("ec3_file"):
-                    conf_vars[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
+                    conf_vars0[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
                 elif v.get("ec3_xpath"):
-                    conf_vars[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
+                    conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
             except Exception, e:
                 raise Exception("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)))
+        conf_vars.update(conf_vars0)
 
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
@@ -391,8 +393,11 @@ class CmdLaunch:
                 CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR)
                 sys.exit(1)
         for r in [options.template] + (options.add if options.add else []): add_template(r)
-        [ add_template(r) for a in radl.gets(include) for r in a.getValue("template").split(" ") if r ]
-        for a in radl.gets(include): radl.delete(a)
+        while radl.gets(include):
+            for a in radl.gets(include):
+                for r in a.getValue("template").split(" "):
+                    if r: add_template(r)
+                radl.delete(a)
 
         # Set auth in system "front"
         if radl.get(system("front")):
