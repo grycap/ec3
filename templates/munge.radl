@@ -5,23 +5,29 @@ include munge_misc (
 
 configure munge_repo_front (
 @begin
-    - apt: pkg=munge
+    - apt: name=munge
       when: ansible_os_family == "Debian"
+    - yum: name=munge
+      when: ansible_os_family == "RedHat"
     - shell: create-munge-key < /dev/null
     - file: path=/var/log/munge state=directory mode=0700
     - file: path=/var/log state=directory mode=0755
-    - service: name=munge state=started
+    - service: name=munge state=restarted
 @end
 )
 
 configure munge_repo_wn (
 @begin
+    - apt: name=munge
+      when: ansible_os_family == "Debian"
+    - yum: name=munge
+      when: ansible_os_family == "RedHat"
     - include: sudo_copy.yml
       src: /etc/munge/munge.key
       dest: /etc/munge/munge.key
       owner: munge
       group: munge
-      mode: 0400
+      mode: "0400"
     #- copy: src=/etc/munge/munge.key dest=/etc/munge/munge.key owner=munge group=munge mode=0400
     - service: name=munge state=restarted
 @end
