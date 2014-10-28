@@ -5,7 +5,7 @@ include munge_misc (
 
 configure munge_repo_front (
 @begin
-    - apt: name=munge
+    - apt: name=munge update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
     - yum: name=munge
       when: ansible_os_family == "RedHat"
@@ -18,7 +18,7 @@ configure munge_repo_front (
 
 configure munge_repo_wn (
 @begin
-    - apt: name=munge
+    - apt: name=munge update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
     - yum: name=munge
       when: ansible_os_family == "RedHat"

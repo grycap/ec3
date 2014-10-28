@@ -7,9 +7,9 @@ configure im_devel_pip (
 
 configure im_devel_git (
 @begin
-    - apt: pkg=git
+    - apt: name=git update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
-    - yum: pkg=git
+    - yum: name=git
       when: ansible_os_family == "RedHat"
     - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
     - command: python setup.py install
@@ -23,9 +23,9 @@ configure im_devel_git_virtualenv (
 @begin
     - pip: name=virtualenv
     - command: virtualenv /tmp/ec3env
-    - apt: pkg=git
+    - apt: name=git update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
-    - yum: pkg=git
+    - yum: name=git
       when: ansible_os_family == "RedHat"
     - git: repo=https://github.com/ansible/ansible.git dest=/tmp/ansible version=release1.7.2
     - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel

@@ -62,7 +62,7 @@ configure wn (
 
     # Installation of torque
     - name: Apt install torque mom
-      apt: name=torque-mom,torque-client
+      apt: name=torque-mom,torque-client update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
       
     - name: create epel.repo
@@ -154,7 +154,7 @@ configure front (
 
     # Torque configuration Specific tasks
     - name: Apt install Torque in Deb system
-      apt: name=torque-server,torque-client,g++,libtorque2-dev,make
+      apt: name=torque-server,torque-client,g++,libtorque2-dev,make update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
       
     - name: Yum install Torque in REL system
