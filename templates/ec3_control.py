@@ -56,8 +56,7 @@ def get_launch_radl(hostname, r):
     for c in template.configures:
         c.name = hostname
         r.add(c)
-    return r
-        
+ 
 def launch(vmids, n):
     candidates = []
     STATES = frozenset(["pending", "running", "configured"])
