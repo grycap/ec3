@@ -6,7 +6,7 @@ configure blcr (
       #KERNEL_RELEASE para la imagen de EC2: 3.2.0-33-virtual
       #KERNEL_RELEASE para la imagen de ONE: 3.2.0-23-virtual
     - command: uname -r
-      register KERNEL_RELEASE
+      register: KERNEL_RELEASE
 
     - name: obtain the BLCR code
       get_url: url=http://crd.lbl.gov/assets/Uploads/FTG/Projects/CheckpointRestart/downloads/blcr-0.8.5.tar.gz dest=/tmp/blcr-0.8.5.tar.gz
