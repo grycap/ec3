@@ -1,10 +1,10 @@
 configure blcr (
 @begin
 ---
+  - tasks:
       #Se puede obtener con uname -r
       #KERNEL_RELEASE para la imagen de EC2: 3.2.0-33-virtual
-	  #KERNEL_RELEASE para la imagen de ONE: 3.2.0-23-virtual
-  - tasks:
+      #KERNEL_RELEASE para la imagen de ONE: 3.2.0-23-virtual
     - command: uname -r
       register KERNEL_RELEASE
 
