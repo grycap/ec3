@@ -20,7 +20,7 @@ configure blcr (
     - name: install all dependences of BLCR
       apt: pkg=make update_cache=yes cache_valid_time=3600
     - apt: pkg=gcc update_cache=yes cache_valid_time=3600
-    - apt: pkg=linux-headers-{{KERNEL_RELEASE}} update_cache=yes cache_valid_time=3600
+    - apt: pkg=linux-headers-{{KERNEL_RELEASE.rc}} update_cache=yes cache_valid_time=3600
 
     - name: configure blcr
       shell: ../configure chdir=/tmp/blcr-0.8.5/builddir creates=/tmp/blcr-0.8.5/builddir/config.log
