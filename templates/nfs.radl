@@ -44,6 +44,6 @@ configure nfs_wn (
       lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='TATDOPTS="--port 2046 --outgoing-port 2047"'
 
     - name: mount the shared directories
-      command: mount -t nfs {{ hostvars[groups['front'][0]]['IM_NODE_NET_1_IP']}}:/home /home creates=/home/ubuntu/pyslurm
+      command: mount -t nfs {{ hostvars[groups['front'][0]]['IM_NODE_NET_1_IP']}}:/home /home
 @end
 )

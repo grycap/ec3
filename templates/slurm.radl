@@ -93,6 +93,9 @@ configure wn (
     #  copy: src=/usr/local/slurm/epilog_controller dest=/usr/local/slurm/epilog_controller mode=0755
     #- command: chown slurm:slurm /usr/local/slurm/epilog_controller
 
+    - include: nfs_wn.yml
+      when: CHECKPOINTING
+
     - name: start slurmd daemon
       command: slurmd
 @end
@@ -219,6 +222,10 @@ configure front (
     - name: configure compute nodes section of slurm.conf
       lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
+
+    - include: nfs_front.yml
+      when: CHECKPOINTING
+
     # start SLURM slurmctld daemon
     - shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
     - shell: scontrol reconfig
