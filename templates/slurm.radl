@@ -1,14 +1,19 @@
-network public (outbound = 'yes' and outports = '8899/tcp,6817/tcp,6818/tcp,111/tcp,111/udp,2046/tcp,2046/udp,2047/tcp,2047/udp,2048/tcp,2048/udp,2049/tcp,2049/udp')
+network public (
+   outbound = 'yes' and 
+   outports contains '6818/tcp' and
+   outports contains '6817/tcp'
+)
 network private ()
 
 system front (
-cpu.arch='x86_64' and
-cpu.count>=1 and
-memory.size>=512m and
-net_interface.0.connection = 'public' and
-net_interface.0.dns_name = 'slurmserver' and
-net_interface.1.connection = 'private' and
-queue_system = 'slurm'
+   cpu.arch='x86_64' and
+   cpu.count>=1 and
+   memory.size>=512m and
+   net_interface.0.connection = 'public' and
+   net_interface.0.dns_name = 'slurmserver' and
+   net_interface.1.connection = 'private' and
+   queue_system = 'slurm' and
+   checkpointing = false
 )
 
 system wn (
@@ -20,7 +25,12 @@ configure wn (
 ---
   - vars:
       SLURM_PATH: /tmp/slurm-2.5.7
+      CHECKPOINTING:
+        ec3_xpath: /system/front/checkpointing
     tasks:
+    - include: blcr.yml
+      when: CHECKPOINTING
+
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
       action: apt pkg=libmunge2,libpq5,openssl-blacklist,munge,slurm-llnl-basic-plugins,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
@@ -38,6 +48,10 @@ configure wn (
 
     - name: configure SLURM
       command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
+      when: not CHECKPOINTING
+
+    - command: ./configure --with-blcr=/usr/local/bin/ chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
+      when: CHECKPOINTING
 
     - name: compile (make) SLURM
       command: make chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/src/slurmctld
@@ -114,6 +128,9 @@ configure front (
       with_items: groups.all
 
     - include: im_devel_git.yml
+
+    - include: blcr.yml
+      when: checkpointing
     
     ############################################################################
     #              LRMS Specific Section
@@ -136,6 +153,10 @@ configure front (
 
     - name: configure SLURM
       command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
+      when: not checkpointing
+
+    - command: ./configure --with-blcr=/usr/local/bin/ chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
+      when: checkpointing
 
     - name: comment "Unsupported option" line in select_linear.c
       lineinfile: dest={{SLURM_PATH}}/src/plugins/select/linear/select_linear.c regexp='Unsupported' line='//error("Unsupported option %d for get_nodeinfo.", dinfo);' state=present
