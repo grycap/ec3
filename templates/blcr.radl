@@ -33,12 +33,12 @@ configure blcr (
 #      shell: make insmod check > test.log chdir=/tmp/blcr-0.8.5/builddir creates=/tmp/blcr-0.8.5/builddir/test.log
 
     - name: install BLCR
-      command: make install chdir=/tmp/blcr-0.8.5/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE}}/blcr.ko
+      command: make install chdir=/tmp/blcr-0.8.5/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
 
     - name: load kernel modules
-      command: /sbin/insmod /usr/local/lib/blcr/{{KERNEL_RELEASE}}/blcr_imports.ko
+      command: /sbin/insmod /usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr_imports.ko
       ignore_errors: yes
-    - command: /sbin/insmod /usr/local/lib/blcr/{{KERNEL_RELEASE}}/blcr.ko
+    - command: /sbin/insmod /usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
       ignore_errors: yes
 
     - name: updating ld.so.cache
