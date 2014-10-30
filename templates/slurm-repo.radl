@@ -1,6 +1,7 @@
 network public (
     outbound = 'yes' and
-    outports = '8899/tcp,6817/tcp,6818/tcp,111/tcp,111/udp,2046/tcp,2046/udp,2047/tcp,2047/udp,2048/tcp,2048/udp,2049/tcp,2049/udp'
+    outports contains '6817/tcp' and
+    outports contains '6818/tcp'
 )
 network private ()
 
