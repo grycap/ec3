@@ -102,6 +102,7 @@ def ec3_xpath_radl(r, xpath):
     aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
     if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
     if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
+    if isinstance(aspect, (list,set)): aspect = ",".join(map(str, aspect))
     if isinstance(aspect, Aspect):
         ast = len(xpath0) == 1 and xpath0[0] == "*"
         is_configure = isinstance(aspect, configure)
@@ -398,7 +399,7 @@ class CmdLaunch:
                 file_content = get_content_from_template_file(r + ".radl")
                 radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
             except Exception, e:
-                CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR)
+                CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR, exception=True)
                 sys.exit(1)
         for r in [options.template] + (options.add if options.add else []): add_template(r)
         while radl.gets(include):
