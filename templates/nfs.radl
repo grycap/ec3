@@ -1,5 +1,4 @@
 network public (
-   outbound = 'yes' and 
    outports contains '111/tcp' and
    outports contains '111/udp' and
    outports contains '2046/tcp' and   

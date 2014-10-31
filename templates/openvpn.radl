@@ -1,6 +1,5 @@
 network public (
-   outbound = 'yes' and 
-   outports contains '1194/udp' and
+   outports contains '1194/udp'
 )
 
 configure openvpn_front (
