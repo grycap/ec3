@@ -1,0 +1,48 @@
+network public (
+   outports contains '111/tcp' and
+   outports contains '111/udp' and
+   outports contains '2046/tcp' and   
+   outports contains '2046/udp' and   
+   outports contains '2047/tcp' and
+   outports contains '2047/udp' and
+   outports contains '2048/tcp' and   
+   outports contains '2048/udp' and   
+   outports contains '2049/tcp' and
+   outports contains '2049/udp'
+)
+
+configure nfs_front (
+@begin
+---
+  - tasks:
+    - name: update repositories cache and install NFS
+      apt: pkg=nfs-kernel-server update_cache=yes cache_valid_time=3600
+
+    - name: specify the NFS port
+      lineinfile: dest=/etc/default/nfs-kernel-server regexp=^RPCMOUNTDOPTS line='RPCMOUNTDOPTS="--manage-gids --port 2048"'
+
+    - name: export the directories editing the file /etc/exports
+      lineinfile: dest=/etc/exports line="/home           10.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)"
+      #when: "cloud == 'one'"
+    - name: export the directories editing the file /etc/exports
+      lineinfile: dest=/etc/exports line="/home           10.0.0.0/8(rw,sync,no_root_squash,no_subtree_check)"
+      #when: "cloud == 'ec2'"
+    - name: export exports file
+      command: exportfs -ra chdir=/home/ubuntu/
+@end
+)
+
+configure nfs_wn (
+@begin
+---
+  - tasks:
+    - name: update repositories cache and install NFS
+      apt: pkg=nfs-common update_cache=yes cache_valid_time=3600
+
+    - name: specify the NFS port
+      lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='TATDOPTS="--port 2046 --outgoing-port 2047"'
+
+    - name: mount the shared directories
+      command: mount -t nfs {{ hostvars[groups['front'][0]]['IM_NODE_NET_1_IP']}}:/home /home
+@end
+)
