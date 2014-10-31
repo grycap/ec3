@@ -9,7 +9,7 @@ network public (
    outports contains '2048/tcp' and   
    outports contains '2048/udp' and   
    outports contains '2049/tcp' and
-   outports contains '2049/udp' and
+   outports contains '2049/udp'
 )
 
 configure nfs_front (
