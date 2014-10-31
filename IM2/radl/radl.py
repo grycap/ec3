@@ -414,7 +414,7 @@ class Features(object):
 	def setValue(self, prop, value, unit=None, operator="="):
 		"""Set the value of feature with that name."""
 
-		if isinstance(value, int) or isinstance(value, float):
+		if isinstance(value, (int, float)):
 			if prop in self.props:
 				for i, j in [(0, 1), (1, 0)]:
 					if self.props[prop][i] == None:
@@ -424,8 +424,6 @@ class Features(object):
 			else:
 				f = Feature(prop, "=", value, unit=unit)
 				self.props[prop] = (f, f)
-		elif prop in self.props:
-			self.props[prop].value, self.props[prop].operator, self.props[prop].unit = value, operator, unit
 		else:
 			self.props[prop] = Feature(prop, operator, value, unit=unit)
 
@@ -1170,7 +1168,7 @@ class RADL(object):
 		return self.props.values()
 
 	def keys(self):
-		return  self.props.keys()
+		return self.props.keys()
 
 	def __repr__(self):
 		return "RADL([ %s ])" % ", ".join(map(repr, self.props.values()))
@@ -1319,169 +1317,6 @@ class RADL(object):
 		for i in self.aspects:
 			i.check(self)
 		return True
-
-	def connected_groups(self):
-		"""
-		Return a partition of the RADL in which aspects do not refer aspects in other groups.
-		"""
-
-		featured_aspects = [ a for a in self.aspects if isinstance(a, Features) ]
-
-		# NOTE: g is a *Disjoint-set data structure*
-		g = dict([ (a.getKey(), a.getKey()) for a in featured_aspects ])
-		def root(n):
-			while True:
-				n0 = g[n]
-				if n0 == n: return n
-				n = n0
-
-		# Connect aspects with features that refer other aspects
-		for a in featured_aspects:
-			for d in [ f.value.getKey() for f in a.features if isinstance(f, Aspect) ]:
-				g[root(d)] = g[root(a.getKey())]
-		r = {}
-		for a in featured_aspects:
-			r.setdefault(g[root(a.getKey())], []).append(a)
-		return r.values()
-
-	def concrete(self, plan, target, missing="other", **kwargs):
-		"""
-		Concrete the aspect `target` with the given plan.
-
-		A ``plan`` is an iterable starting with either "or" or "xor" or "and", and followed
-		by functions to concrete aspects and other plans. If the plan starts
-		with "and" the first function receives the radl passed, and its result is
-		passed to the next one, and so on. A list with the value of the last function is
-		returned. If it starts with "or", all functions receive the original RADL,
-		and a list of all values returned is returned.
-
-		Functions in a plan receive this radl and the target and return a list of RADL.
-		If sub-plans are given, they are replaced by calls to ``concrete`` with the plan.
-
-		Args.:
-		- plan: iterable with the structured already described.
-		- target: aspect to be concreted.
-		- named arguments are passed to ``RADL.merge``.
-
-		Return(list of RADL): a list of RADL with the target concreted.
-		"""
-
-		assert plan[0] in frozenset(["or", "xor", "and"])
-
-		call = lambda _f, _r: _f(_r, target) if callable(_f) else _r.concrete(_f, target, missing=missing, **kwargs)
-		def merge(r0, r1):
-			r2 = r0.clone()
-			try:
-				r2.merge(r1, missing=missing, **kwargs)
-			except RADLConflict:
-				return r0
-			return r2
-		meta_call = lambda _rs, _f: set(filter(None,
-			[ merge(_r, _r0) for _r in _rs for _r0 in call(_f, _r) if _r0 ]))
-		if plan[0] == "or":
-			return set([ r for f in plan[1:] for r in meta_call([self], f) if r ])
-		elif plan[0] == "xor":
-			for f in plan[1:]:
-				r = meta_call([self], f)
-				if r: return set(r)
-			return []
-		else:
-			return reduce(meta_call, plan[1:], [self])
-
-	def do(self, plan, target, reverse=False, missing="other", **kwargs):
-		"""
-		Do the aspect `target` with the given plan.
-
-		A ``plan`` is an iterable starting with either "or" or "xor" or "and", and followed
-		by functions to concrete aspects and other plans. If the plan starts
-		with "and" the first function receives the radl passed, and its result is
-		passed to the next one, and so on. A list with the value of the last function is
-		returned. If it starts with "or" or "xor", iteratively the functions receive the
-		original RADL and it is returned the first non-empty returned value.
-
-		Functions in a plan receive this radl and the target and return a list of RADL.
-		If sub-plans are given, they are replaced by calls to ``do`` with the plan.
-
-		Args.:
-		- plan: iterable with the structured already described.
-		- target: aspect to be concreted.
-		- reverse: if True, plan is followed backward.
-		- named arguments are passed to ``RADL.merge``.
-
-		Return(RADL): .
-		"""
-
-		assert plan[0] in frozenset(["or", "xor", "and"])
-		if target is None:
-			return None
-
-		def merge(r0, r1):
-			if not r1: return None
-			if reverse:
-				return r0.diff(r1)
-			else:
-				r2 = r0.clone()
-				r2.merge(r1, missing=missing, **kwargs)
-				return r2
-		def call(_f, _r):
-			if not _r: return None
-			elif callable(_f): return merge(_r, _f(_r, target))
-			else: return _r.do(_f, target, reverse, missing=missing, **kwargs)
-		if plan[0] == "or" or plan[0] == "xor":
-			for f in plan[1:]:
-				r = call(f, self)
-				if r: return r
-			return None
-		else:
-			fplan = slice(None, 0, -1) if reverse else slice(1, None)
-			return reduce(lambda r, f: call(f, r), plan[fplan], self)
-
-	def alternative(self, aspectkeys, concretep, scoref, dos, bannings=[]):
-		"""
-		Return a concreted RADL.
-
-		Args.:
-		- aspectskeys(iterable): keys of the aspects to consider.
-		- concretep(plan): plan used in concrete step.
-		- scoref(callable): takes RADL and Aspect and return a tuple of score and RADL or none.
-		- dos(dict from aspect keys to RADL): partially done aspects.
-		- bannings(list of tuple of aspect and aspect): list of transitions from aspect to aspect that failed.
-
-		Return(tuple of RADL and list): a RADL and a list of aspect keys.
-		"""
-
-		aspectkeys = set(aspectkeys if aspectkeys is not None else self.props.keys())
-		concretes = dict([ (a, map(lambda r: scoref(r, a[1]), filter(None, self.concrete(concretep, a))))
-		                   for a in set([ (dos.get(k, None), self.props[k]) for k in aspectkeys ]) ])
-		if not concretes: return None, None
-		concretesk, concretesv = zip(*concretes.items())
-		for comb in _combinations(concretesv):
-			radl0 = self.clone()
-			concretes = dict(zip(concretesk, zip(concretesk, comb)))
-			doaspectkeys = set()
-			doskeys = set(dos.keys())
-			try:
-				for ak in aspectkeys:
-					a = self.props[ak]
-					(_, a0), r1 = concretes[(dos.get(ak), a)]
-					for b0, b1 in bannings:
-						if (b0 and dos[ak].get(ak).isMoreConcreteThan(b0) if ak in dos else not b0) and r1.get(a0).isMoreConcreteThan(b1):
-							raise RADLConflict("banned aspect!")
-					if a0.getId() != a.getId():
-						r1 = r1.clone()
-						r1.get(a0).setId(a.getId())
-					radl0.merge(r1, ifpresent="merge", missing="other", conflict="error")
-					doaspectkeys.add(a.getKey())
-			except RADLConflict, e:
-				continue
-					
-			new_aspectkeys = set([ a for a in radl0.diff(self).props.keys() if a not in aspectkeys ])
-			if not new_aspectkeys:
-				return radl0, doaspectkeys
-			r, a = radl0.alternative(new_aspectkeys, concretep, scoref, dos, bannings)
-			if r is None: continue
-			return r, a | doaspectkeys
-		return None, None
 
 # NOTE: deprecated
 class Application:
