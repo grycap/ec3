@@ -1,0 +1,97 @@
+
+system wn (
+      net_interface.0.connection='public'
+)
+
+
+configure wn (
+@begin
+---
+  - ec3_prio: -10
+    vars:
+      FRONT_PORTS:
+        ec3_xpath: /network/public/outports
+      FRONTEND:
+        ec3_xpath: /system/front/net_interface.0.dns_name
+    tasks:
+    - local_action: shell nohup /tmp/sshconnect.sh {{IM_NODE_USER}}@{{IM_NODE_HOSTNAME}} &
+    - apt: name=redsocks update_cache=yes cache_valid_time=3600
+    - shell: |
+            test -f /tmp/.iptables && exit
+            service redsocks stop || true
+            echo 'base { 
+                log_debug = off;
+                log_info = on;
+                log = "syslog:daemon";
+                daemon = on;
+                user = redsocks;
+                group = redsocks;
+                redirector = iptables;
+            }
+            redsocks {
+                local_ip = 127.0.0.1;
+                local_port = 12345;
+                ip = 127.0.0.1;
+                port = 9998;
+                type = socks5;
+            }' > /etc/redsocks.conf
+            port="12346"
+            UDPPORTS="`echo '{{FRONT_PORTS}}' | awk 'BEGIN {RS=","; FS="/"} /udp/ {print $1}'`"
+            for p in $UDPPORTS; do
+                echo "redudp {
+                        local_ip = 127.0.0.1;
+                        local_port = $port;
+                        ip = 127.0.0.1;
+                        port = 9998;
+                        dest_ip = `awk '/{{FRONTEND}}/ {print \$1}' /etc/hosts`;
+                        dest_port = $p;
+                        udp_timeout = 30;
+                        udp_timeout_stream = 180;
+                    }"
+                port="$(( port+1 ))"
+            done >> /etc/redsocks.conf
+            chgrp ssh /usr/sbin/sshd
+            chmod g+s /usr/sbin/sshd
+            service ssh stop
+            killall -9 sshd
+            /sbin/iptables -t nat -A OUTPUT -p tcp -d {{FRONTEND}} -m owner ! --gid-owner ssh -j REDIRECT --to-ports 12345;
+            port="12346";
+            for p in $UDPPORTS; do
+                /sbin/iptables -t nat -A OUTPUT -p udp --dport $p -d {{FRONTEND}} -m owner ! --gid-owner ssh -j REDIRECT --to-ports $port;
+                port="$(( port+1 ))";
+            done
+            /usr/sbin/redsocks -c /etc/redsocks.conf
+            service ssh start
+            touch /tmp/.iptables
+@end
+) 
+
+configure front (
+@begin
+  - vars:
+      FRONTEND:
+        ec3_xpath: /system/front/net_interface.0.dns_name
+    tasks:
+    - shell: nohup ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -D {{FRONTEND}}:9999 {{IM_NODE_USER}}@{{FRONTEND}} > /tmp/.step0 2>&1
+      args:
+         creates: /tmp/.step0
+      run_once: true
+    - copy:
+        content: |
+            #! /bin/bash
+            node="$1"
+            [ -f /tmp/sshconnect.${node}.lock ] && [ -d /proc/`cat /tmp/sshconnect.${node}.lock` ] && exit
+            echo $$ > /tmp/sshconnect.${node}.lock
+            pid="nnn"
+            while true; do
+                if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i /tmp/ansible_key $1 grep -q 0100007F:270E /proc/net/tcp; then
+                    test -d /proc/$pid && kill -9 $pid
+                    ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R 9998:{{FRONTEND}}:9999 $1 > /tmp/.ssh_$node 2>&1 &
+                    pid="$!"
+                fi
+                sleep 10
+            done
+        dest: /tmp/sshconnect.sh
+        mode: 0755
+@end
+) 
