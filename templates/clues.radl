@@ -51,6 +51,7 @@ configure front (
     - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_TIME_BOOT line="MAX_TIME_BOOT = 3000"
     - lineinfile: dest=/usr/local/clues/config.py regexp=^MAX_WAIT_JOB line="MAX_WAIT_JOB = 2500"
     - lineinfile: dest=/usr/local/clues/config.py regexp=^SWITCH_ON_BLOCKSIZE line="SWITCH_ON_BLOCKSIZE = 1"
+    - lineinfile: dest=/usr/local/clues/config.py regexp=^TIME_TO_EVALUATE line="TIME_TO_EVALUATE = 30"
 
     # CLOUD connector Config file
     - lineinfile: dest=/usr/local/clues/bin/cloud/config.py regexp=^IM_URL line="IM_URL = 'http://localhost:8899'"
