@@ -29,7 +29,7 @@ configure wn (
         ec3_xpath: /system/front/checkpointing
     tasks:
     - include: blcr.yml
-      when: CHECKPOINTING == "yes"
+      when: "{{ CHECKPOINTING == 'yes' }}"
 
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
@@ -48,10 +48,10 @@ configure wn (
 
     - name: configure SLURM
       command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: CHECKPOINTING == "no"
+      when: "{{ CHECKPOINTING == 'no' }}"
 
     - command: ./configure --with-blcr=/usr/local/bin/ chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: CHECKPOINTING == "yes"
+      when: "{{ CHECKPOINTING == 'yes' }}"
 
     - name: compile (make) SLURM
       command: make chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/src/slurmctld
@@ -94,7 +94,7 @@ configure wn (
     #- command: chown slurm:slurm /usr/local/slurm/epilog_controller
 
     - include: nfs_wn.yml
-      when: CHECKPOINTING == "yes"
+      when: "{{ CHECKPOINTING == 'yes' }}"
 
     - name: start slurmd daemon
       command: slurmd
@@ -117,6 +117,8 @@ configure front (
       SLURM_PATH: /tmp/slurm-2.5.7
       SLURM_CONF_FILE:
         ec3_file: slurm.conf
+      CHECKPOINTING:
+        ec3_xpath: /system/front/checkpointing
 
     tasks:
     - name: create epel.repo
@@ -133,8 +135,8 @@ configure front (
     - include: im_devel_git.yml
 
     - include: blcr.yml
-      when: checkpointing == "yes"
-    
+      when: "{{ CHECKPOINTING == 'yes' }}"
+
     ############################################################################
     #              LRMS Specific Section
     ############################################################################
@@ -156,10 +158,10 @@ configure front (
 
     - name: configure SLURM
       command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: checkpointing == "no"
+      when: "{{ CHECKPOINTING == 'no' }}"
 
     - command: ./configure --with-blcr=/usr/local/bin/ chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: checkpointing == "yes"
+      when: "{{ CHECKPOINTING == 'yes' }}"
 
     - name: comment "Unsupported option" line in select_linear.c
       lineinfile: dest={{SLURM_PATH}}/src/plugins/select/linear/select_linear.c regexp='Unsupported' line='//error("Unsupported option %d for get_nodeinfo.", dinfo);' state=present
@@ -224,7 +226,7 @@ configure front (
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
 
     - include: nfs_front.yml
-      when: CHECKPOINTING == "yes"
+      when: "{{ CHECKPOINTING == 'yes' }}"
 
     # start SLURM slurmctld daemon
     - shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
