@@ -14,7 +14,6 @@ network public (
 configure nfs_front (
 @begin
 ---
-  - tasks:
     - name: update repositories cache and install NFS
       apt: pkg=nfs-kernel-server update_cache=yes cache_valid_time=3600
 
@@ -35,7 +34,6 @@ configure nfs_front (
 configure nfs_wn (
 @begin
 ---
-  - tasks:
     - name: update repositories cache and install NFS
       apt: pkg=nfs-common update_cache=yes cache_valid_time=3600
 
