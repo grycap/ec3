@@ -1,0 +1,34 @@
+
+# Configure iptables to accept input connexions from ports indicated in the public network.
+# This has to be done on system with a default policy of rejecting.
+
+configure wn (
+@begin
+---
+  - ec3_prio: -10
+    vars:
+      OUTPORTS:
+        ec3_xpath: /network/public/outports
+    tasks:
+    - shell: echo '{{OUTPORTS}}' | awk 'BEGIN {RS=","; FS="/"} {
+                system("/sbin/iptables -I INPUT -p " $2 " --dport " $1 " -j ACCEPT"); }'
+      run_once: true
+      when: ansible_os_family == "RedHat"
+@end
+) 
+
+configure front (
+@begin
+---
+  - ec3_prio: -10
+    vars:
+      OUTPORTS:
+        ec3_xpath: /network/public/outports
+    tasks:
+    - shell: echo '{{OUTPORTS}}' | awk 'BEGIN {RS=","; FS="/"} {
+                system("/sbin/iptables -I INPUT -p " $2 " --dport " $1 " -j ACCEPT"); }'
+      run_once: true
+      when: ansible_os_family == "RedHat"
+@end
+)
+ 

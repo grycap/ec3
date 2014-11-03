@@ -46,11 +46,6 @@ configure im_devel_git_virtualenv (
 
 configure im_epilog (
 @begin
-    - shell: |
-         /sbin/iptables -I INPUT 2 -p tcp --dport 8899:8899 -j ACCEPT || true;
-         /sbin/iptables -I INPUT -p tcp --dport 8899:8899 -j ACCEPT || true
-      run_once: true
-      ignore_errors: yes
     - service: name=im state=started
 @end
 )
