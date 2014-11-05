@@ -239,4 +239,24 @@ configure front (
 @end
 )
 
+# A trick to fix an Ansible problem that needs all the include files
+# even if this includes are conditional
+configure blcr(
+@begin
+    - debug: msg=""
+@end
+)
+
+configure nfs_front(
+@begin
+    - debug: msg=""  
+@end
+)
+
+configure nfs_wn(
+@begin
+    - debug: msg=""
+@end
+)
+
 deploy front 1
