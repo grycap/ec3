@@ -27,7 +27,7 @@ except ImportError:
 from IM2.auth import Authentication
 from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json
 import IM2.radl.radl as IM_RADL
-from IM2.radl.radl import RADL, system, network, configure, Features, Aspect
+from IM2.radl.radl import RADL, system, network, configure, deploy, Features, Aspect, FeaturedAspect
 
 
 # Our public IM service
@@ -147,6 +147,15 @@ def apply_ec3_expressions(r):
                 raise Exception("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)))
         conf_vars.update(conf_vars0)
 
+def apply_ec3_features(r):
+    for a in list(r.aspects):
+        if not isinstance(a, FeaturedAspect) or not a.getValue("ec3_inherit_from"): continue
+        s = a.getValue("ec3_inherit_from").clone(); a.delValue("ec3_inherit_from")
+        r.delete(a)
+        s.merge(a, conflict="other", missing="other")
+        s.setId(a.getId())
+        r.add(s, ifpresent="merge")
+ 
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
         self.check_simple(dict(template=(str, lambda x,_: len(x.value.strip()))), r)
@@ -412,8 +421,9 @@ class CmdLaunch:
         if radl.get(system("front")):
             radl.get(system("front")).setValue("auth", "".join(auth_content))
 
-        # Replace "ec3_*" expression in YAML recipes
+        # Replace "ec3_*" expression in YAML recipes and systems
         try:
+            apply_ec3_features(radl)
             apply_ec3_expressions(radl)
         except Exception, e:
             CLI.display(str(e), level=logging.ERROR, exception=True)
