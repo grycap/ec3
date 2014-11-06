@@ -47,7 +47,7 @@ def disable_node(hostname):
     subprocess.check_call("scontrol update NodeName=%s State=DRAIN Reason=Ec3_control" % hostname, shell=True)
 
 def enable_node(hostname):
-    pass
+    subprocess.check_call("scontrol update NodeName=%s State=RESUME Reason=Ec3_control" % hostname, shell=True)
  
 def get_queued_jobs_cmd(_):
     sys.stdout.write("%d\n" % get_queued_jobs())
