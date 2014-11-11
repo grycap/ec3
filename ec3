@@ -25,7 +25,7 @@ except ImportError:
     import simplejson as json
 
 from IM2.auth import Authentication
-from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json
+from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
 import IM2.radl.radl as IM_RADL
 from IM2.radl.radl import RADL, system, network, configure, deploy, Features, Aspect, FeaturedAspect
 
@@ -90,7 +90,7 @@ def get_content_from_template_file(filename):
     f.close()
     return c
 
-def ec3_xpath_radl(r, xpath):
+def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl):
     xpath0 = [ a.strip() for a in xpath.split("/") ]
     if len(xpath0) < 3: raise Exception("Invalid xpath: minimum xpath /<aspect>/<aspect_id>!")
     if len(xpath0.pop(0)) != 0: raise Exception("Invalid xpath: expected it stars with '/'")
@@ -98,7 +98,7 @@ def ec3_xpath_radl(r, xpath):
     if not hasattr(IM_RADL, class_name):
         raise Exception("Invalid xpath: '%s' is not an aspect!" % class_name)
     if len(xpath0) == 1 and xpath0[0] == "*":
-        return dump_radl(RADL(r.gets(getattr(IM_RADL, class_name))))
+        return local_dump_radl(RADL(r.gets(getattr(IM_RADL, class_name))))
     aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
     if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
     if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
@@ -106,7 +106,7 @@ def ec3_xpath_radl(r, xpath):
     if isinstance(aspect, Aspect):
         ast = len(xpath0) == 1 and xpath0[0] == "*"
         is_configure = isinstance(aspect, configure)
-        aspect = dump_radl(RADL([aspect]), aspect=aspect if ast else None)
+        aspect = local_dump_radl(RADL([aspect]), aspect=aspect if ast else None)
         if ast:
             s = slice(2, -2) if is_configure else slice(1, -1)
             return "\n".join(aspect.split("\n")[s])
@@ -143,6 +143,8 @@ def apply_ec3_expressions(r):
                     conf_vars0[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
                 elif v.get("ec3_xpath"):
                     conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
+                elif v.get("ec3_jpath"):
+                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], dump_radl_simple)
             except Exception, e:
                 raise Exception("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)))
         conf_vars.update(conf_vars0)
