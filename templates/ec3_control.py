@@ -156,7 +156,7 @@ def consistency():
     INCONSISTENT_STATES = (
         (frozenset(["configured"]), frozenset(["off"]), Control.enable_node),
         (frozenset(["off"]), frozenset(["idle", "busy"]), Control.disable_node),
-        (frozenset(["pending", "running", "configured"]), frozenset(["idle-off"]), Control.remove_node)
+        (frozenset(["pending", "running", "configured"]), frozenset(["idle-off"]), Control.remove_node),
         (frozenset(["failed"]), frozenset(["off", "idle", "idle-off", "busy"]), Control.remove_node))
     for hostname, v in Control.vmids.items():
         for states, meta_states, f in INCONSISTENT_STATES:
