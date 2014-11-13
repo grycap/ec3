@@ -12,7 +12,6 @@ system wn (
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
     disk.0.os.credentials.username = 'ubuntu' and
-    net_interface.0.connection='public' and
     ec3_max_instances = 2 and               # maximum instances of this kind
     ec3_if_fail = 'wn_spot'
 )
