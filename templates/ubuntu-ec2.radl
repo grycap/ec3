@@ -7,6 +7,7 @@ system front (
 )
 
 system wn (
+    ec3_max_instances = 10 and # maximum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'aws://us-east-1/ami-30519058' and
     disk.0.os.credentials.username = 'ubuntu'
