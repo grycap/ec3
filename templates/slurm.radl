@@ -25,6 +25,8 @@ configure wn (
 ---
   - vars:
       SLURM_PATH: /tmp/slurm-2.5.7
+      #EPILOG_FILE: 
+      #  ec3_file: epilog_controller
       CHECKPOINTING:
         ec3_xpath: /system/front/checkpointing
     tasks:
@@ -90,7 +92,10 @@ configure wn (
     #  file: path=/usr/local/slurm state=directory
     #- command: chown -R slurm:slurm /usr/local/slurm
     #- name: copy epilog_controller file from the frontend
-    #  copy: src=/usr/local/slurm/epilog_controller dest=/usr/local/slurm/epilog_controller mode=0755
+    #- copy:
+    #    dest: /usr/local/slurm/epilog_controller
+    #    content: "{{EPILOG_FILE}}"
+    #    mode: 0755
     #- command: chown slurm:slurm /usr/local/slurm/epilog_controller
 
     - include: nfs_wn.yml
