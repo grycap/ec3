@@ -1,4 +1,3 @@
-system wn ( net_interface.0.dns_name = 'wn' )
 
 configure none (
 @begin
@@ -13,9 +12,9 @@ configure front (
     - [ "{{ ansible_os_family }}.yml", "RedHat.yml", "none.yml" ]
     vars:
       RADL_SYSTEM_wn:
-        ec3_xpath: /system/wn
+        ec3_xpath: /system/*
       RADL_CONF_wn:
-        ec3_xpath: /configure/wn
+        ec3_xpath: /configure/*
       AUTH:
         ec3_xpath: /system/front/auth
       EC3_CONTROL_CONTENT:
