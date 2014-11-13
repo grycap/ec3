@@ -1,0 +1,34 @@
+# Example of cluster with regular and spot instances: when there are two
+# regular instances running, next working nodes will be launched as spot
+# instances.
+
+system front (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
+    disk.0.os.credentials.username = 'ubuntu'
+)
+
+system wn (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
+    disk.0.os.credentials.username = 'ubuntu' and
+    net_interface.0.connection='public' and
+    ec3_max_instances = 2 and               # maximum instances of this kind
+    ec3_if_fail = 'wn_spot'
+)
+
+system wn_spot (
+    ec3_inherit_from = system wn and        # Copy features from system 'wn'
+    disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
+    disk.0.os.credentials.username = 'ubuntu' and
+    spot = 'yes' and price = 0.008 and      # indicate spot and maximum price
+    ec3_max_instances = 8 and               # maximum instances of this kind
+    ec3_if_fail = ''
+)
+
+# Configure wn_spot working nodes as wn.
+configure wn_spot (
+@begin
+    - include: wn.yml
+@end
+)
