@@ -26,11 +26,11 @@ include slurm_misc (
 configure front (
 @begin
   - vars:
-      NNODES: 10
-      VNODES_PREFIX: wnode
-      VNODES_SUFFIX:  
       SLURM_CONF_FILE:
         ec3_file: slurm-repo.conf
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
     tasks:
     - fail: msg="Sorry, Red Hat based distributions are not supported by this recipe, use 'slurm'."
       when: ansible_os_family == "RedHat"
@@ -40,9 +40,9 @@ configure front (
 
     # Manage the /etc/hosts file
     - shell: |
-        for i in `seq 0 {{NNODES-1}}`; do
-           item="{{VNODES_PREFIX}}${i}{{VNODES_SUFFIX}}";
-           grep -q ${item} /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
+        for i in `seq 1 {{NNODES}}`; do
+          item="vnode${i}";
+          grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
         done
 
     - apt: name=slurm-llnl
@@ -50,8 +50,8 @@ configure front (
     - copy:
         dest: /etc/slurm-llnl/slurm.conf
         content: "{{SLURM_CONF_FILE}}"
-    - lineinfile: dest=/etc/slurm-llnl/slurm.conf regexp='NodeName=' line='NodeName={{VNODES_PREFIX}}[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-    - lineinfile: dest=/etc/slurm-llnl/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes={{VNODES_PREFIX}}[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
+    - lineinfile: dest=/etc/slurm-llnl/slurm.conf regexp='NodeName=' line='NodeName=vnode[1-{{NNODES}}] CPUs=1 State=UNKNOWN' state=present
+    - lineinfile: dest=/etc/slurm-llnl/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=vnode[1-{{NNODES}}] Default=YES MaxTime=INFINITE State=UP' state=present
     - service: name=slurm-llnl state=started
     - shell: scontrol reconfig
 @end
