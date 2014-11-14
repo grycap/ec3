@@ -78,12 +78,14 @@ class Control:
         return dict([ (k,v[0]+s.get(k, [0])[0]) for k,v in r.items() ])
 
 def get_vmid(vmid):
-    success, info = IM_SERVER.GetVMInfo(0, str(vmid), AUTH)
+    vmid = str(vmid) # IM bug: some IM calls return an integer as VM id
+    success, info = IM_SERVER.GetVMInfo(0, vmid, AUTH)
     if not success or info.strip().startswith("Deleted VM") or info.strip().startswith("Invalid VM ID"):
-        s0 = system("dummy")
+        s0, hostname = system("dummy"), None
         for h, v in Control.vmids.items():
             if v.getValue("ec3_vmid") == vmid:
                 hostname = h; break
+        if not hostname: return
     else: 
         s0 = parse_radl(info).systems[0]
         hostname = s0.getValue("net_interface.0.dns_name")
