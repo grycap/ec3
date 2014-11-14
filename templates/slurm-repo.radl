@@ -59,10 +59,8 @@ configure front (
 
 configure wn (
 @begin
-  - vars:
-    tasks:
+  - tasks:
     - include: munge_repo_wn.yml
-
     - apt: name=slurm-llnl
       when: ansible_os_family == "Debian"
     - copy: src=/etc/slurm-llnl/slurm.conf dest=/etc/slurm-llnl/slurm.conf owner=slurm

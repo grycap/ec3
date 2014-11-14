@@ -2,7 +2,6 @@ configure front (
 @begin
 ---
   - vars:
-      NNODES: 10
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-0.89
       CLOUD_CONN_FILE: CLUES-CLOUD-0.92
