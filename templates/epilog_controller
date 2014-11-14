@@ -1,0 +1,4 @@
+#!/bin/bash
+
+#echo $SLURM_JOB_ID >> /tmp/terminated_jobs
+echo $SLURM_JOB_ID >> /home/ubuntu/terminated_jobs
