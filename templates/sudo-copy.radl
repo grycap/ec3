@@ -1,15 +1,16 @@
 
 configure sudo_copy (
 @begin
-    - local_action: command sudo cp {{src}} /tmp/{{ src | basename }}
-    - local_action: command sudo chown {{ansible_user_id}} /tmp/{{ src | basename }}
-    - local_action: command sudo chmod +r /tmp/{{ src | basename }}
+    - local_action: command sudo cp {{src}} /tmp/._sudo_cp_{{ src | basename }}
+      with_items: loop|default([0])
+    - local_action: command sudo chmod +r /tmp/._sudo_cp_{{ src | basename }}
+      with_items: loop|default([0])
     - copy:
-        src: /tmp/{{ src | basename }}
+        src: /tmp/._sudo_cp_{{ src | basename }}
         dest: "{{ dest }}"
         owner: "{{ owner | default(None) }}"
         group: "{{ group | default(None) }}"
         mode: "{{ mode | default(None) }}"
-    - local_action: command sudo rm /tmp/{{ src | basename }}
+      with_items: loop|default([0])
 @end
 )
