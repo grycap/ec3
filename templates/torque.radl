@@ -61,12 +61,10 @@ configure wn (
     - name: Add the authorized_key to the user {{item.name}}
       authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
       with_items: USERS
-    - name: Copy the id_rsa.pub file to the user {{item.name}}
-      copy: src=/tmp/{{item.name}}_id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644
-      with_items: USERS
-    - name: Copy the id_rsa file to the user {{item.name}}
-      copy: src=/tmp/{{item.name}}_id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600
-      with_items: USERS
+    - name: Copy the id_rsa.pub file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
+    - name: Copy the id_rsa file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
     - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
     # Installation of torque
@@ -101,7 +99,7 @@ configure wn (
 )
 
 include torque_misc (
-  template = 'im munge openports'
+  template = 'im munge openports sudo-copy'
 )
 
 configure front (
@@ -110,9 +108,9 @@ configure front (
   - vars_files:
     - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
     vars:
-      NNODES: 10
-      VNODES_PREFIX: vnode
-      VNODES_SUFFIX: n
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
       PBS_SERVER_CONF: |
         create queue batch
         set queue batch queue_type = Execution
@@ -128,7 +126,7 @@ configure front (
         set server resources_default.nodes = 1
         set server query_other_jobs = True
         set server node_pack = False
-        set server job_stat_rate = 300
+        set server job_stat_rate = 30
         set server mom_job_sync = True
         set server poll_jobs = True
         set tcp_timeout = 600
@@ -148,12 +146,7 @@ configure front (
     # Users creation
     - user: name={{item.name}} password={{item.password}} generate_ssh_key=yes shell=/bin/bash
       with_items: USERS
-    - local_action: shell cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
-      with_items: USERS
-    - local_action: shell cp /home/{{item.name}}/.ssh/id_rsa /tmp/{{item.name}}_id_rsa creates=/tmp/{{item.name}}_id_rsa
-      with_items: USERS
-    - name: Set the permissions of file /tmp/{{item.name}}_id_rsa
-      local_action: file path=/tmp/{{item.name}}_id_rsa mode=0644
+    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
       with_items: USERS
     - name: Add the authorized_key to the user {{item.name}}
       authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
@@ -162,9 +155,9 @@ configure front (
 
     # Manage the /etc/hosts file
     - shell: |
-        for i in `seq 0 {{NNODES-1}}`; do
-           item="{{VNODES_PREFIX}}${i}{{VNODES_SUFFIX}}";
-           grep -q ${item} /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
+        for i in `seq 1 {{NNODES}}`; do
+          item="vnode${i}";
+          grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
         done
 
     # Torque configuration Specific tasks
@@ -179,8 +172,8 @@ configure front (
     - copy: dest=/etc/torque/server_name content=torqueserver
     - copy:
         content: |
-           {% for number in range(NNODES) %}
-           {{ VNODES_PREFIX }}{{ number }}{{ VNODES_SUFFIX }}
+           {% for number in range(1, NNODES|int + 1) %}
+           vnode{{number}}
            {% endfor %}
         dest: "{{TORQUE_PATH}}/server_priv/nodes"
 

@@ -18,9 +18,9 @@ def get_queued_jobs():
     try:
         root = ET.fromstring(run_command(["qstat", "-x"]))
     except:
-        return 0
+        return {"wn": 0}
     jobs = root.iter("job_state") if hasattr(root, "iter") else root.getiterator("job_state")
-    return len([ 0 for state in jobs if state.text.strip().upper()[0] == "Q" ])
+    return {"wn": len([ 0 for state in jobs if state.text.strip().upper()[0] == "Q" ]) }
 
 def get_meta_state():
     root = ET.fromstring(run_command(["qnodes", "-x"]))
@@ -35,21 +35,32 @@ def get_meta_state():
                   for node in root.findall("Node") ])
 
 def disable_node(hostname):
-    cmd = "qnodes -o %s" % hostname
-    r = subprocess.call(cmd.split(" "))
-    if r != 0: raise Exception("Error executing: %s" % cmd)
+    subprocess.check_call("qnodes -o %s" % hostname, shell=True)
 
-def enable_node(hostname):
-    cmd = "qnodes -c %s" % hostname
-    r = subprocess.call(cmd.split(" "))
-    if r != 0: raise Exception("Error executing: %s" % cmd)
+def enable_node(hostname, _=None):
+    subprocess.check_call("qnodes -c %s" % hostname, shell=True)
+
+def remove_node(hostname, alsodo=None):
+    if alsodo: alsodo(hostname)
+    enable_node(hostname)
+
+def ec3_init(Control):
+    Control.get_meta_state = staticmethod(get_meta_state)
+    Control.get_queued_jobs = staticmethod(get_queued_jobs)
+    Control.enable_node = staticmethod(enable_node)
+    Control.disable_node = staticmethod(disable_node)
+    old_remove_node = Control.remove_node
+    Control.remove_node = staticmethod(lambda h: remove_node(h, old_remove_node))
  
 def get_queued_jobs_cmd(_):
-    sys.stdout.write("%d\n" % get_queued_jobs())
+    sys.stdout.write("%s\n" % get_queued_jobs())
 
 def get_meta_state_cmd(_):
     meta = get_meta_state()
     sys.stdout.write("%s\n" % meta)
+
+def enable_node_cmd(options):
+    enable_node(options.hostname)
 
 def disable_node_cmd(options):
     disable_node(options.hostname)
@@ -64,6 +75,9 @@ if __name__ == "__main__":
     parser0 = subparsers.add_parser("disable_node", help="disable a node")
     parser0.add_argument("hostname", help="node's hostname")
     parser0.set_defaults(func=disable_node_cmd)
+    parser0 = subparsers.add_parser("enable_node", help="enable a node")
+    parser0.add_argument("hostname", help="node's hostname")
+    parser0.set_defaults(func=enable_node_cmd)
     options = parser.parse_args()
     try:
         options.func(options)
