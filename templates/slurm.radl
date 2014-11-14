@@ -98,7 +98,7 @@ configure wn (
         dest: /usr/local/slurm/epilog_controller
         content: "{{EPILOG_FILE}}"
         mode: 0755
-        when: "{{ CHECKPOINTING == 'yes' }}"
+      when: "{{ CHECKPOINTING == 'yes' }}"
     - command: chown slurm:slurm /usr/local/slurm/epilog_controller
       when: "{{ CHECKPOINTING == 'yes' }}"
 
@@ -236,7 +236,7 @@ configure front (
         dest: /usr/local/slurm/epilog_controller
         content: "{{EPILOG_FILE}}"
         mode: 0755
-        when: "{{ CHECKPOINTING == 'yes' }}"
+      when: "{{ CHECKPOINTING == 'yes' }}"
     - command: chown slurm:slurm /usr/local/slurm/epilog_controller
       when: "{{ CHECKPOINTING == 'yes' }}"
 
