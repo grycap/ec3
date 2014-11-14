@@ -47,8 +47,8 @@ def disable_node(hostname):
     subprocess.check_call("scontrol update NodeName=%s State=DRAIN Reason=Ec3_control" % hostname, shell=True)
 
 def remove_node(hostname, alsodo=None):
-    subprocess.check_call("scontrol update NodeName=%s State=RESUME Reason=Ec3_control" % hostname, shell=True)
     if alsodo: alsodo(hostname)
+    subprocess.check_call("scontrol update NodeName=%s State=RESUME Reason=Ec3_control" % hostname, shell=True)
 
 def enable_node(hostname, _=None): pass
 
