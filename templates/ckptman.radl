@@ -1,0 +1,53 @@
+configure ckptman (
+@begin
+---
+    # install dependences
+    - include: pyslurm.yml
+
+    # download ckptman
+    - name: obtain the ckptman code
+      #get_url: url=https://s3.amazonaws.com/amcaar/ckptman.tar.gz dest=/tmp/ckptman.tar.gz
+      git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local version=devel
+
+    # ckptman installation
+    #- command: tar -xzf /tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
+    - file: src=/usr/local/ckptman/ckptman dest=/etc/init.d/ckptman state=link
+
+    # ckptman config file
+    #- lineinfile: dest=/usr/local/ckptman/config.py regexp=CKPT_ALGORITHM line="CKPT_ALGORITHM = 'HOUR'"
+
+    - name: install iso8601 library to process the timestamps of EC2
+      pip: name=iso8601
+
+    # Start ckptman service
+    - command: ./launcher chdir=/usr/local/ckptman creates=/usr/local/ckptman/log
+      async: 120
+      poll: 0
+@end
+)
+
+configure pyslurm (
+@begin
+---
+    - name: update repositories cache and apt install slurm dependences in Deb systems
+      action: apt pkg=python-dev,git,cython update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+
+    - name: update repositories cache and yum install slurm dependences in REL systems
+      action: yum pkg=python-devel,git,python-pip
+      when: ansible_os_family == "RedHat"
+
+    - name: install cython with pip
+      action: pip name=cython
+      when: ansible_os_family == "RedHat"
+
+    - name: git checkout the pyslurm repository
+      git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes
+
+    - name: build pyslurm
+      command: python setup.py build --slurm=/usr/local chdir=/tmp/pyslurm creates=/tmp/pyslurm/pyslurm/pyslurm.c
+
+    - name: install pyslurm
+      command: python setup.py install chdir=/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
+@end
+)
