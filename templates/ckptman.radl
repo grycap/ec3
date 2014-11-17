@@ -11,6 +11,9 @@ configure ckptman (
 
     # ckptman installation
     #- command: tar -xzf /tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
+    - file: path=/usr/local/ckptman/ckptman mode=0755
+    - file: path=/usr/local/ckptman/launcher mode=0755
+    - file: path=/usr/local/ckptman/ckptman_daemon.py mode=0755
     - file: src=/usr/local/ckptman/ckptman dest=/etc/init.d/ckptman state=link
 
     # ckptman config file
