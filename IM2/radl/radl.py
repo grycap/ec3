@@ -392,7 +392,7 @@ class Features(object):
 		if isinstance(f, Feature):
 			return f.getValue()
 		if isinstance(f, tuple):
-			if f[0].getValue() == f[1].getValue():
+			if f[0] and f[1] and f[0].getValue() == f[1].getValue():
 				return f[0].getValue()
 			if iftuple == "default":
 				return default
