@@ -42,21 +42,17 @@ TIMEOUT = 1200
 DELAY = 5
 
 def dump_radl(r, aspect=None):
-    # In IM.radl net_interface.%d.connection is a network not a string, after
-    # calling RADL.check. Then this function turns back the feature to a string.
-
     r = r.clone()
-    for s in r.gets(system):
-        i = 0
-        while True:
-            if not s.hasFeature("net_interface.%d.connection" % i):
-                break
-            elif isinstance(s.getValue("net_interface.%d.connection" % i), network):
-                s.setValue("net_interface.%d.connection" % i, s.getValue("net_interface.%d.connection" % i).getId())
-            i += 1
-    for n in r.gets(network):
-        if isinstance(n.getValue("outports", default=""), str): continue
-        n.setValue("outports", ",".join(n.getValue("outports")))
+    for a in r.aspects:
+        if not isinstance(a, FeaturedAspect): continue
+        for p in a.props:
+            v = a.getValue(p, iftuple="default")
+            # Replace references by their ids
+            if isinstance(v, FeaturedAspect):
+                a.setValue(p, v.getId())
+            # Replace list of strings and numbers by strings
+            elif isinstance(v, (list, set)) and v and isinstance(list(v)[0], (str, int, float)):
+                a.setValue(p, ",".join(map(str, v)))
     if aspect:
         r = RADL([r.get(aspect)], addaspects=False, check=False)
     return dump_radl_future(r)
@@ -90,7 +86,7 @@ def get_content_from_template_file(filename):
     f.close()
     return c
 
-def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl):
+def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl, join_sets=True):
     xpath0 = [ a.strip() for a in xpath.split("/") ]
     if len(xpath0) < 3: raise Exception("Invalid xpath: minimum xpath /<aspect>/<aspect_id>!")
     if len(xpath0.pop(0)) != 0: raise Exception("Invalid xpath: expected it stars with '/'")
@@ -102,7 +98,7 @@ def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl):
     aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
     if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
     if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
-    if isinstance(aspect, (list,set)): aspect = ",".join(map(str, aspect))
+    if isinstance(aspect, (list,set)) and join_sets: aspect = ",".join(map(str, aspect))
     if isinstance(aspect, Aspect):
         ast = len(xpath0) == 1 and xpath0[0] == "*"
         is_configure = isinstance(aspect, configure)
@@ -144,9 +140,9 @@ def apply_ec3_expressions(r):
                 elif v.get("ec3_xpath"):
                     conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
                 elif v.get("ec3_jpath"):
-                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], dump_radl_simple)
+                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], dump_radl_simple, False)
             except Exception, e:
-                raise Exception("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)))
+                CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
         conf_vars.update(conf_vars0)
 
 def apply_ec3_features(r):
@@ -404,8 +400,11 @@ class CmdLaunch:
             sys.exit(1)
          
         # Instantiate template
-        radl = RADL()
+        radl, templates = RADL(), set()
         def add_template(r):
+            # Process every template only once
+            if r in templates: return
+            templates.add(r)
             try:
                 file_content = get_content_from_template_file(r + ".radl")
                 radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
