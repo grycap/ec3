@@ -7,10 +7,13 @@ configure ckptman (
     # download ckptman
     - name: obtain the ckptman code
       #get_url: url=https://s3.amazonaws.com/amcaar/ckptman.tar.gz dest=/tmp/ckptman.tar.gz
-      git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local version=devel
+      git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local/ckptman version=master
 
     # ckptman installation
     #- command: tar -xzf /tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
+    - file: path=/usr/local/ckptman/ckptman mode=0755
+    - file: path=/usr/local/ckptman/launcher mode=0755
+    - file: path=/usr/local/ckptman/ckptman_daemon.py mode=0755
     - file: src=/usr/local/ckptman/ckptman dest=/etc/init.d/ckptman state=link
 
     # ckptman config file
