@@ -16,9 +16,8 @@ configure im_devel_git (
     - yum: name=git
       when: ansible_os_family == "RedHat"
     - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
-    - command: python setup.py install
-      args:
-         chdir: /tmp/im
+    # This fixes a really strange behabiour in Ubuntu 12.04
+    - shell: python setup.py install; rm -rf /tmp/im/build; python setup.py install chdir=/tmp/im
     - include: im_epilog.yml
 @end
 )
@@ -26,7 +25,7 @@ configure im_devel_git (
 configure im_devel_git_virtualenv (
 @begin
     - pip: name=virtualenv
-    - command: virtualenv /tmp/ec3env
+    - command: virtualenv /tmp/ec3env creates=/tmp/ec3env
     - apt: name=git update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
     - yum: name=git
