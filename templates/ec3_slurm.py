@@ -28,7 +28,11 @@ def parse_scontrol(out):
 
 def get_queued_jobs():
     root = parse_scontrol(run_command("scontrol -o show jobs".split(" ")))
-    return {"wn": len([ 0 for j in root if j.get("JobState", None) == "PENDING" ])}
+    r = {}
+    for j in root:
+        if j["JobState"] == "PENDING":
+            r[j["Partition"]] = r.get(j["Partition"], 0) + int(j["NumNodes"].split("-")[0])
+    return r
 
 def get_meta_state():
     root = parse_scontrol(run_command("scontrol -o show nodes".split(" ")))
