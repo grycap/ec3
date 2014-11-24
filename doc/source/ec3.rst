@@ -3,25 +3,32 @@ Elastic Cloud Computing Cluster (EC3)
 =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
-of Infrastructure as a Service (IaaS) providers. The cluster are self-managed with
-`CLUES`_.
+of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_)
+or on-premise (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
+(optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
+start with a single-node cluster and working nodes will be dynamically deployed and provisioned
+to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
+This introduces a cost-efficient approach for Cluster-based computing.
+
 
 Installation
 ------------
 
-The program :program:`ec3` requires Python 2.6+ and the python library `paramiko
-<http://www.lag.net/paramiko/>`_. The former library is available in Debian and Red Hat
-based distribution as ``python-paramiko``. Also can be installed from ``pip``::
+The program `ec3` requires Python 2.6+ and `IM`_ server, used to launch virtual machines.
+To install a local `IM`_ server execute the next commands::
 
-   pip install parmiko
+    git clone https://github.com/grycap/im.git -b devel
+    cd im
+    sudo python setup.py install
+    sudo service im start
 
-:program:`ec3` can be download from `this <https://github.com/gc3-uzh-ch/elasticluster>`_
+`ec3` can be download from `this <https://github.com/grycap/ec3>`_
 git repository::
 
    git clone https://github.com/grycap/ec3
 
-In the created directory there is the executable file ``ec3``, which is command-line
-interface described next.
+In the created directory there is the python executable file ``ec3``, which provides the
+command-line interface described next.
 
 Basic example with Amazon EC2
 -----------------------------
@@ -30,22 +37,34 @@ First create a file ``auth.txt`` with a single line like this::
 
    id = provider ; type = EC2 ; username = <<Access Key ID>> ; password = <<Secret Access Key>>
 
-Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` by the corresponding values
-for the EC2 account where the cluster will be deployed. This file is the :ref:`authorization
-file <auth-file>`, and can have more than one credentials.
+Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` with the corresponding values
+for the AWS account where the cluster will be deployed. It is safer to use the credentials
+of an IAM user created within your AWS account.
 
-The next command deploys a cluster based on `Ubuntu`_ images with `TORQUE`_::
+This file is the :ref:`authorization file <auth-file>`, and can have more than one set of
+credentials.
 
-   ec3 launch mycluster torque --add ubuntu-ec2 -a auth.txt 
+The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
-It can take several minutes...
+   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -u http://localhost:8899
+   Creating infrastructure
+   Infrastructure successfully created with ID: 60
+      ▄▟▙▄¨        Front-end state: running, IP: 132.43.105.28
 
-The next command shows basic information about the deployed clusters::
+This can take several minutes. After that, open a ssh session to the front-end::
+
+   $ ec3 ssh mycluster
+   Welcome to Ubuntu 14.04.1 LTS (GNU/Linux 3.13.0-24-generic x86_64)
+    * Documentation:  https://help.ubuntu.com/
+
+   ubuntu@torqueserver:~$
+
+Also you can show basic information about the deployed clusters by executing::
 
     $ ec3 list
-     name    state          IP        nodes 
-    ----------------------------------------
-      c0   configured  158.42.105.11    0   
+       name       state          IP        nodes
+    ---------------------------------------------
+     mycluster  configured  132.43.105.28    0
  
 EC3 Command-line Interface
 --------------------------
@@ -141,6 +160,19 @@ Command ``reconfigure``
 
 .. program:: ec3 reconfigure
 
+Command ``ssh``
+^^^^^^^^^^^^^^^
+
+   The command opens a SSH session into the infrastructure front-end::
+
+      ec3 ssh <clustername>
+
+.. program:: ec3 ssh
+
+.. option:: --show-only
+
+    Print the command line to invoke SSH and exit.
+
 Command ``destroy``
 ^^^^^^^^^^^^^^^^^^^
 
@@ -223,3 +255,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`SLURM`: http://slurm.schedmd.com/
 .. _`Scientific Linux`: https://www.scientificlinux.org/
 .. _`Ubuntu`: http://www.ubuntu.com/
+.. _`OpenNebula`: http://www.opennebula.org/
+.. _`OpenStack`: http://www.openstack.org/
+.. _`Amazon Web Services`: https://aws.amazon.com/
+.. _`IM`: https://github.com/grycap/im
