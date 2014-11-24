@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    ec3
+   templates
 
 Indices and tables
 ==================
