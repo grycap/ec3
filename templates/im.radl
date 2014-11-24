@@ -16,7 +16,7 @@ configure im_devel_git (
     - yum: name=git
       when: ansible_os_family == "RedHat"
     - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
-    # This fixes a really strange behabiour in Ubuntu 12.04
+    # This fixes a really strange behaviour in Ubuntu 12.04
     - shell: python setup.py install; rm -rf /tmp/im/build; python setup.py install chdir=/tmp/im
     - include: im_epilog.yml
 @end
