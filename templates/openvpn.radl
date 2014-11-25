@@ -118,11 +118,11 @@ configure openvpn_front (
     - name: activate group nogroup in server.conf
       lineinfile: dest=/etc/openvpn/server.conf regexp=';group nogroup' line='group nogroup' state=present
       when: ansible_os_family == "Debian"
-	  
+
     - name: activate group nobody in server.conf
       lineinfile: dest=/etc/openvpn/server.conf regexp=';group nobody' line='group nobody' state=present
       when: ansible_os_family == "RedHat"
-  
+
     - name: modify remote line of client.conf
       lineinfile: dest=/etc/openvpn/client.conf regexp='remote my-server-1 1194' line="remote {{IM_MASTER_FQDN}} 1194" state=present
 
