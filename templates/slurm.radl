@@ -141,7 +141,7 @@ configure front (
     - lineinfile: dest=/etc/hosts regexp='{{ hostvars[item]['IM_NODE_HOSTNAME'] }}' line='{{item}} {{ hostvars[item]['IM_NODE_FQDN'] }} {{ hostvars[item]['IM_NODE_HOSTNAME'] }}'
       with_items: groups.all
 
-    - include: im_devel_git.yml
+    - include: im_devel_pip.yml
 
     - include: blcr.yml
       when: "{{ CHECKPOINTING == 'yes' }}"
