@@ -4,7 +4,8 @@ network public (
 
 configure im_devel_pip (
 @begin
-    - pip: name=IM version=0.1.1
+    - pip: name=IM version=1.1.0
+    #- pip: name=IM version=0.1.1
     - include: im_epilog.yml
 @end
 )
