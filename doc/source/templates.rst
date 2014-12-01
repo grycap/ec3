@@ -150,6 +150,7 @@ machine.  The supported features are:
    can be installed during the contextualization of the virtual machine if it
    is not installed.
 
+
 System and network inheritance
 ------------------------------
 
@@ -180,6 +181,35 @@ The system ``wn_ec2`` that ec3 sends finally to IM is::
         disk.0.image.url = 'aws://us-east-1/ami-e50e888c' and
         spot = 'yes' and
         ec3_if_fail = ''
+    )
+
+In case of systems, if system *A* inherits features from system *B*, it is copied the
+content of the configure named after system *B* to a configure named after system *A*.
+Following the previous example, these are the configures named after the systems::
+
+    configure wn (
+    @begin
+    - tasks:
+      - user: name=user1   password=1234
+    @end
+    )
+
+    configure wn_ec2 (
+    @begin
+    - tasks:
+      - apt: name=caca
+    @end
+    )
+
+Then the configure ``wn_ec2`` that ec3 sends finally to IM is::
+
+    configure wn_ec2 (
+    @begin
+    - tasks:
+      - user: name=user1   password=1234
+    - tasks:
+      - apt: name=caca
+    @end
     )
 
 Configure Recipes

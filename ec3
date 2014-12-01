@@ -88,26 +88,28 @@ def get_content_from_template_file(filename):
 
 def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl, join_sets=True):
     xpath0 = [ a.strip() for a in xpath.split("/") ]
-    if len(xpath0) < 3: raise Exception("Invalid xpath: minimum xpath /<aspect>/<aspect_id>!")
-    if len(xpath0.pop(0)) != 0: raise Exception("Invalid xpath: expected it stars with '/'")
+    if len(xpath0) < 3: raise Exception("Invalid path: minimum path /<aspect>/<aspect_id>!")
+    if len(xpath0.pop(0)) != 0: raise Exception("Invalid path: expected it stars with '/'")
     class_name = xpath0.pop(0)
     if not hasattr(IM_RADL, class_name):
-        raise Exception("Invalid xpath: '%s' is not an aspect!" % class_name)
+        raise Exception("Invalid path: '%s' is not an aspect!" % class_name)
     if len(xpath0) == 1 and xpath0[0] == "*":
         return local_dump_radl(RADL(r.gets(getattr(IM_RADL, class_name))))
     aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
-    if not aspect: raise Exception("Invalid xpath: no aspect with that path.")
+    if not aspect: raise Exception("Invalid path: no aspect with that path.")
     if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
     if isinstance(aspect, (list,set)) and join_sets: aspect = ",".join(map(str, aspect))
     if isinstance(aspect, Aspect):
         ast = len(xpath0) == 1 and xpath0[0] == "*"
-        is_configure = isinstance(aspect, configure)
-        aspect = local_dump_radl(RADL([aspect]), aspect=aspect if ast else None)
+        aspect, aspect0 = local_dump_radl(RADL([aspect]), aspect=aspect if ast else None), aspect
         if ast:
-            s = slice(2, -2) if is_configure else slice(1, -1)
-            return "\n".join(aspect.split("\n")[s])
+            if isinstance(aspect, str):
+                s = slice(2, -2) if isinstance(aspect0, configure) else slice(1, -1)
+                return "\n".join(aspect.split("\n")[s])
+            elif isinstance(aspect, list):
+                return [ a for a in aspect if a["id"] == aspect0.getId() and a["class"] == aspect0.__class__.__name__ ][0]
     if not xpath0: return aspect
-    raise Exception("Invalid xpath: attributes can get from featured aspects only")
+    raise Exception("Invalid path: attributes can get from featured aspects only")
     
 def ec3_xpath_features(features, xpath):
     if len(xpath) == 0: return features
@@ -117,7 +119,7 @@ def ec3_xpath_features(features, xpath):
     elem = xpath.pop(0)
     if features.hasFeature(elem):
         return ec3_xpath_features(features.getValue(elem), xpath)
-    raise Exception("Invalid xpath: '%s' is not in '%s'" % (elem, str(features)))
+    raise Exception("Invalid path: '%s' is not in '%s'" % (elem, str(features)))
 
 def apply_ec3_expressions(r):
     recipes_prio = [ conf for conf in r.gets(configure) if isinstance(conf.recipe, list) and
@@ -140,7 +142,7 @@ def apply_ec3_expressions(r):
                 elif v.get("ec3_xpath"):
                     conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
                 elif v.get("ec3_jpath"):
-                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], dump_radl_simple, False)
+                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
             except Exception, e:
                 CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
         conf_vars.update(conf_vars0)
@@ -149,11 +151,16 @@ def apply_ec3_features(r):
     for a in list(r.aspects):
         if not isinstance(a, FeaturedAspect) or not a.getValue("ec3_inherit_from"): continue
         s = a.getValue("ec3_inherit_from").clone(); a.delValue("ec3_inherit_from")
+        c = r.get(configure(s.getId()))
         r.delete(a)
         s.merge(a, conflict="other", missing="other")
         s.setId(a.getId())
         r.add(s, ifpresent="merge")
- 
+        if c:
+            c = c.clone()
+            c.setId(a.getId())
+            r.add(c, ifpresent="merge", conflict="me")
+
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
         self.check_simple(dict(template=(str, lambda x,_: len(x.value.strip()))), r)

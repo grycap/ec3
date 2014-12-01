@@ -747,6 +747,9 @@ class configure(Aspect):
 	def getId(self):
 		return self.name
 
+	def setId(self, name):
+		self.name = name
+
 	def getKey(self):
 		return "configure", self.name
 
