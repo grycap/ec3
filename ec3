@@ -66,9 +66,20 @@ def dump_table(l, order):
     widths = dict([ (f, max([ len(str(d[f])) for d in l ] + [len(f)])+2) for f in order ])
     o = [ "".join([ "{0: ^{width}}".format(f, width=widths[f]) for f in order ]) ]
     o.append("-"*sum(widths.values()))
-    o.extend([ "".join([ "{0: ^{width}}".format(d[f], width=widths[f]) for f in order ])
-               for d in l ])
+    o.extend([ "".join([ "{0: ^{width}}".format(d[f], width=widths[f]) for f in order ]) for d in l ])
     return "\n".join(o)
+
+def dump_list(l, order, width=80, indent=4):
+    def break_line(line):
+        indented = False; width0 = width
+        for s in line.split("\n"):
+            while s:
+                b = len(s) if len(s) < width0 else s.rfind(" ", width0-15, width0)
+                yield " "*(indent if indented else 0) + (s[0:b] if b > 0 else s[0:width0-1] + "-")
+                s = s[(b+1 if b > 0 else width0):]
+                indented = True; width0 = width - indent
+    return "\n\n".join([ "\n".join([ s for k in order for s in break_line("%s: %s" % (k, d[k].expandtabs()
+                                     .decode("string_escape"))) ]) for d in l ])
 
 def getPublicIP(s):
     for i in range(4):
@@ -165,6 +176,11 @@ class include(IM_RADL.FeaturedAspect):
     def check(self, r):
         self.check_simple(dict(template=(str, lambda x,_: len(x.value.strip()))), r)
 IM_RADL.include = include
+
+class description(IM_RADL.FeaturedAspect):
+    def check(self, r):
+        self.check_simple(dict(short=(str, None), content=(str, None), kind=(str, ["MAIN", "AUX", "COMPLEMENT"])), r)
+IM_RADL.description = description
     
 class Display:
     # Private variables, just don't bother them!
@@ -424,6 +440,7 @@ class CmdLaunch:
                 for r in a.getValue("template").split(" "):
                     if r: add_template(r)
                 radl.delete(a)
+        for a in radl.gets(description): radl.delete(a)
 
         # Set auth in system "front"
         if radl.get(system("front")):
@@ -679,8 +696,39 @@ class CmdReconfigure:
                                      options.clustername, False, False)
         sys.exit(0)
 
+class CmdTemplates:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("templates", help="list available templates")
+        parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
+        parser.add_argument("-f", "--full-description", dest="full", action="store_true", default=False, help="show full description for every template")
+        parser.set_defaults(func=CmdTemplates.run)
+
+    @staticmethod
+    def run(options):
+        info = []
+        templates = set()
+        for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(p) for f in os.listdir(p) if os.path.isfile(os.path.join(p, f)) and f.endswith("radl") ]:
+            if t in templates: continue
+            templates.add(t)
+            try:
+                r = parse_radl(get_content_from_template_file(t + ".radl"))
+            except Exception, e:
+                CLI.display("Error processing '%s': %s" % (t, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
+            for d in r.gets(description):
+                info.append(dict(name=t, kind=d.getValue("kind", ""), summary=d.getValue("short", "")[0:80], description=d.getValue("content", "")))
+        if options.json:
+            output = dump_json(info)
+        elif options.full:
+            output = dump_list(info, ["name", "kind", "summary", "description"])
+        else:
+            output = dump_table(info, ["name", "kind", "summary"])
+        sys.stdout.write(output + "\n")
+
+
 if __name__ == "__main__":
-    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy]
     try:
         CLI.run(commands)
     except KeyboardInterrupt:
