@@ -153,19 +153,19 @@ The command to deploy a cluster is like this::
 Command ``reconfigure``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-   The command reconfigures an infrastructure launched previously. It can be called after a
-   failed launching::
+The command reconfigures an infrastructure launched previously. It can be called after a
+failed launching::
 
-      ec3 reconfigure <clustername>
+   ec3 reconfigure <clustername>
 
 .. program:: ec3 reconfigure
 
 Command ``ssh``
 ^^^^^^^^^^^^^^^
 
-   The command opens a SSH session into the infrastructure front-end::
+The command opens a SSH session into the infrastructure front-end::
 
-      ec3 ssh <clustername>
+   ec3 ssh <clustername>
 
 .. program:: ec3 ssh
 
@@ -176,9 +176,9 @@ Command ``ssh``
 Command ``destroy``
 ^^^^^^^^^^^^^^^^^^^
 
-   The command undeploys the cluster and removes the associated information in the local database.::
+The command undeploys the cluster and removes the associated information in the local database.::
 
-      ec3 destroy <clustername> [--force]
+   ec3 destroy <clustername> [--force]
 
 .. program:: ec3 destroy
 .. option:: --force
@@ -188,9 +188,9 @@ Command ``destroy``
 Command ``show``
 ^^^^^^^^^^^^^^^^
 
-   The command prints the RADL description of the cluster stored in the local database::
+The command prints the RADL description of the cluster stored in the local database::
 
-       ec3 show <clustername> [--refresh] [--json]
+   ec3 show <clustername> [--refresh] [--json]
 
 .. program:: ec3 show
 .. option:: --refresh
@@ -204,9 +204,9 @@ Command ``show``
 Command ``list``
 ^^^^^^^^^^^^^^^^
 
-   The command print a table with information about the clusters that have been launched::
+The command print a table with information about the clusters that have been launched::
 
-      ec3 list [--refresh] [--json]
+   ec3 list [--refresh] [--json]
 
 .. program:: ec3 list
 .. option:: --refresh
@@ -216,6 +216,29 @@ Command ``list``
 .. option:: --json
 
    Print the information in JSON format.
+
+Command ``templates``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The command displays basic information about the available templates like *name*,
+*kind* and a *summary* description::
+
+   ec3 templates [-s/--search <pattern>] [-f/--full-description] [--json]
+
+.. program:: ec3 templates
+
+.. option:: -s, --search
+
+   Show only templates in which the ``<pattern>`` appears in the description.
+
+.. option:: -f, --full-description
+
+   Instead of the table, it shows all the information about the templates.
+
+.. option:: --json
+
+   Print the information in JSON format.
+
 
 .. _auth-file:
 
