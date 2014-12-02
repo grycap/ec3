@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, time, logging, os, xmlrpclib, argparse, tempfile, random
+import sys, time, logging, os, xmlrpclib, argparse, tempfile, random, re
 try:
     import json
 except ImportError:
@@ -700,6 +700,7 @@ class CmdTemplates:
     @staticmethod
     def parse(subparsers):
         parser = subparsers.add_parser("templates", help="list available templates")
+        parser.add_argument("-s", "--search", dest="search", nargs=1, default=[None], help="show only templates in which the expression appears")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
         parser.add_argument("-f", "--full-description", dest="full", action="store_true", default=False, help="show full description for every template")
         parser.set_defaults(func=CmdTemplates.run)
@@ -708,6 +709,7 @@ class CmdTemplates:
     def run(options):
         info = []
         templates = set()
+        search = re.compile(options.search[0], re.IGNORECASE) if options.search[0] else None
         for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(p) for f in os.listdir(p) if os.path.isfile(os.path.join(p, f)) and f.endswith("radl") ]:
             if t in templates: continue
             templates.add(t)
@@ -717,7 +719,10 @@ class CmdTemplates:
                 CLI.display("Error processing '%s': %s" % (t, str(e)), level=logging.ERROR, exception=True)
                 sys.exit(1)
             for d in r.gets(description):
-                info.append(dict(name=t, kind=d.getValue("kind", ""), summary=d.getValue("short", "")[0:80], description=d.getValue("content", "")))
+                if (search and not re.search(search, " ".join([ t, d.getValue("kind", ""), d.getValue("short", ""),
+                                                                d.getValue("content", "") ]))): break
+                info.append(dict(name=t, kind=d.getValue("kind", ""), summary=d.getValue("short", "")[0:80],
+                                 description=d.getValue("content", "")))
         if options.json:
             output = dump_json(info)
         elif options.full:
