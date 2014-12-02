@@ -1,3 +1,11 @@
+description torque (
+    kind = 'main' and
+    short = 'Install and configure a cluster TORQUE from distribution repositories.' and
+    content = 'The template installs TORQUE from the package repositories. Also it creates an user "user1", which is common to all nodes and can be used to launch jobs. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
+
+Webpage: http://www.adaptivecomputing.com/products/open-source/torque'
+)
+
 network public (
       outbound = 'yes' and
       outports contains '15001/tcp' and

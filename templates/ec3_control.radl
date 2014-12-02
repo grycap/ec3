@@ -1,4 +1,21 @@
 
+description ec3_control (
+    kind = 'component' and
+    short = 'Tool for self-management of clusters TORQUE and SLURM.' and
+    content = 'This tool dynamically deploys new working nodes to fit increasing load and undeploys idle working nodes.
+
+The tool deploys a system named after the queue name of a job. If there is none, the default system "wn" is deployed instead.
+
+Especial features in system:
+- \'ec3_min_instances\': minimum number of nodes with this system configuration; default value is 0.
+- \'ec3_max_instances\': maximum number of nodes with this system configuration; a negative value is like no constrain; default value is -1.
+- \'ec3_destroy_interval\': some cloud providers pay a certain amount of time in advance, like AWS EC2. The node will be destroyed only when it is idle at the end of the interval expressed by this option in seconds. The default value is 0.
+- \'ec3_max_idle_time\': maximum time expressed in seconds a node will stay idle; the default value is 0.
+- \'ec3_destroy_safe\': seconds before the deadline set by \'ec3_destroy_interval\' or \'ec3_max_idle_time\' that the node can be destroyed; the default value is 0.
+- \'ec3_if_fail\': name of the next system configuration to try after this fails a launch or the number of instances saturates; the default value is \'\'.'
+)
+
+
 configure none (
 @begin
     caca: caca
