@@ -62,22 +62,23 @@ def dump_json(d):
         return json.dumps(d, indent=4, separators=(",", ": "))
     return str(d)
 
-def dump_table(l, order):
+def dump_table(l, order, align={}):
     widths = dict([ (f, max([ len(str(d[f])) for d in l ] + [len(f)])+2) for f in order ])
     o = [ "".join([ "{0: ^{width}}".format(f, width=widths[f]) for f in order ]) ]
     o.append("-"*sum(widths.values()))
-    o.extend([ "".join([ "{0: ^{width}}".format(d[f], width=widths[f]) for f in order ]) for d in l ])
+    o.extend([ "".join([ "{0: {a}{width}}".format(d[f], a=align.get(f, "^"), width=widths[f]) for f in order ])
+               for d in l ])
     return "\n".join(o)
 
 def dump_list(l, order, width=80, indent=4):
-    def break_line(line):
+    def break_line(s):
         indented = False; width0 = width
-        for s in line.split("\n"):
-            while s:
-                b = len(s) if len(s) < width0 else s.rfind(" ", width0-15, width0)
-                yield " "*(indent if indented else 0) + (s[0:b] if b > 0 else s[0:width0-1] + "-")
-                s = s[(b+1 if b > 0 else width0):]
-                indented = True; width0 = width - indent
+        while s:
+            b = s.find("\n", 0, width0)
+            if b < 0: b = len(s) if len(s) < width0 else s.rfind(" ", width0-15, width0)
+            yield (" "*indent if indented else "") + (s[0:b] if b >= 0 else s[0:width0-1] + "-")
+            s = s[(b+1 if b >= 0 else width0-1):]
+            indented = True; width0 = width - indent
     return "\n\n".join([ "\n".join([ s for k in order for s in break_line("%s: %s" % (k, d[k].expandtabs()
                                      .decode("string_escape"))) ]) for d in l ])
 
@@ -179,7 +180,7 @@ IM_RADL.include = include
 
 class description(IM_RADL.FeaturedAspect):
     def check(self, r):
-        self.check_simple(dict(short=(str, None), content=(str, None), kind=(str, ["MAIN", "AUX", "COMPLEMENT"])), r)
+        self.check_simple(dict(short=(str, None), content=(str, None), kind=(str, ["MAIN", "AUX", "COMPLEMENT", "TEST"])), r)
 IM_RADL.description = description
     
 class Display:
@@ -723,12 +724,13 @@ class CmdTemplates:
                                                                 d.getValue("content", "") ]))): break
                 info.append(dict(name=t, kind=d.getValue("kind", ""), summary=d.getValue("short", "")[0:80],
                                  description=d.getValue("content", "")))
+        info = sorted(info, key=lambda x: x["name"])
         if options.json:
             output = dump_json(info)
         elif options.full:
             output = dump_list(info, ["name", "kind", "summary", "description"])
         else:
-            output = dump_table(info, ["name", "kind", "summary"])
+            output = dump_table(info, ["name", "kind", "summary"], {"summary": "<"})
         sys.stdout.write(output + "\n")
 
 
