@@ -1,0 +1,61 @@
+
+description test_slurm (
+    kind = 'test' and
+    short = 'Test ec3_control with SLURM.' and
+    content = 'Test the next features of ec3_control with SLURM job manager:
+- \'ec3_if_fail\' when \'disk.0.image.url\' is not valid;
+- jobs requiring more than one node; and
+- \'ec3_min_instances\'.'
+)
+
+configure front (
+@begin
+  - tasks:
+    - copy:
+        dest: /tmp/slurm_test.sh
+        mode: 0755
+        content: |
+            #!/bin/bash
+            wait_finish_jobs() {
+                while sleep 30 ; do
+                    scontrol -o show jobs | grep -q "PENDING" && continue
+                    scontrol -o show jobs | grep -q "RUN" && continue
+                    break
+                done
+            }
+            wait_finish_nodes() {
+                while scontrol -o show nodes | grep -qv "DOWN\*" ; do
+                    sleep 30
+                done
+            }
+            echo $'#!/bin/bash\n srun /bin/date' > /tmp/qq0.sh
+            sbatch -t "1:00" /tmp/qq0.sh
+            wait_finish_jobs
+            echo $'#!/bin/bash\n srun /bin/date;sleep 300; srun /bin/date' > /tmp/qq1.sh
+            sbatch -t "10:00" /tmp/qq1.sh
+            sbatch -t "10:00" /tmp/qq1.sh
+            sleep 120
+            sbatch -t "10:00" -N 3 /tmp/qq1.sh
+            wait_finish_jobs
+            touch /tmp/.test_finished
+    - shell: |
+            touch /tmp/.launched
+            nohup sudo -u {{IM_NODE_USER}} /tmp/slurm_test.sh &
+      args:
+         chdir: /tmp
+         creates: /tmp/.launched
+@end
+)
+
+system wn (
+    ec3_if_fail = 'wn_nofail' and
+    disk.0.image.url = 'one://mycloud.upv.es/99999' # set an invalid address
+)
+
+system wn_nofail (
+    ec3_inherit_from = system wn and
+    disk.0.image.url = '' and # set a valid image
+    ec3_if_fail = '' and
+    ec3_max_instances = 10 and
+    ec3_min_instances = 1
+)
