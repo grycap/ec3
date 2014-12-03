@@ -55,13 +55,13 @@ configure RedHat (
 configure wn (
 @begin
 ---
-  - vars_files:
-    - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
-    vars:
+  - vars:
       USERS:
         - {name: user1, password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0}
 
     tasks:
+    - include_vars: "{{item}}"
+      with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
     # Create users
     - name: Create User {{item.name}}
       user: name={{item.name}} password={{item.password}} shell=/bin/bash
@@ -113,9 +113,7 @@ include torque_misc (
 configure front (
 @begin
 ---
-  - vars_files:
-    - [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
-    vars:
+  - vars:
       SYSTEMS:
         ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
@@ -143,6 +141,8 @@ configure front (
           password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
 
     tasks:
+    - include_vars: "{{item}}"
+      with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
     - command: hostname torqueserver
 
     - name: create epel.repo
