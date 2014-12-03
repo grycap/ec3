@@ -180,7 +180,7 @@ IM_RADL.include = include
 
 class description(IM_RADL.FeaturedAspect):
     def check(self, r):
-        self.check_simple(dict(short=(str, None), content=(str, None), kind=(str, ["MAIN", "AUX", "COMPLEMENT", "TEST"])), r)
+        self.check_simple(dict(short=(str, None), content=(str, None), kind=(str, None)), r)
 IM_RADL.description = description
     
 class Display:
