@@ -1,3 +1,11 @@
+description nfs (
+    kind = 'component' and
+    short = 'Tool to configure shared directories inside a network.' and
+    content = 'Network File System (NFS) client allows you to access shared directories from Linux client. This recipe installs nfs from the repository and shares the /home/ubuntu directory with all the nodes that compose the cluster.
+
+Webpage: http://www.grycap.upv.es/clues/'
+)
+
 network public (
    outports contains '111/tcp' and
    outports contains '111/udp' and

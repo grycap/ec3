@@ -1,3 +1,11 @@
+description openvpn (
+    kind = 'component' and
+    short = 'Tool to create a VPN network.' and
+    content = 'OpenVPN is a tool that creates a virtual private network to interconnect the nodes of the cluster. This is of special interest when you want to deploy an hybrid cluster. The recipe downloads the code from the offcial web page, and then compiles, installs and configures the tool.
+
+Webpage: http://openvpn.net/'
+)
+
 network public (
    outports contains '1194/udp'
 )

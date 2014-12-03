@@ -1,3 +1,11 @@
+description ckptman (
+    kind = 'component' and
+    short = 'Tool to automatically checkpoint applications running on Spot instances.' and
+    content = 'CKPTMAN is able to automatically checkpoint applications running on spot instances, by using SLURM and BLCR. The decision to perform a checkpoint is made by different algorithms that try to save the most of the job execution progress before an out-of-bid situation. This recipe installs and configures the tool and the pyslurm dependency.
+
+Webpage: https://github.com/amcaar/ckptman'
+)
+
 configure ckptman (
 @begin
 ---

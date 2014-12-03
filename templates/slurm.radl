@@ -1,3 +1,11 @@
+description slurm (
+    kind = 'main' and
+    short = 'Install and configure a cluster SLURM version 2.5.7 (compatible with the latest version of pyslurm) .' and
+    content = 'The template installs SLURM from the package 2.5.7 of the official webpage. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
+
+Webpage: http://slurm.schedmd.com/'
+)
+
 network public (
    outbound = 'yes' and 
    outports contains '6818/tcp' and
