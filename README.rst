@@ -65,6 +65,13 @@ Also you can show basic information about the deployed clusters by executing::
     ---------------------------------------------
      mycluster  configured  132.43.105.28    0
 
+Additional information
+----------------------
+
+* `Manual of ec3 <https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst>`_.
+* Documentation about `RADL and templates <https://github.com/grycap/ec3/blob/devel/doc/source/templates.rst>`_.
+* Information about available templates: ``ec3 templates [--search <topic>] [--full-description]``.
+
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
