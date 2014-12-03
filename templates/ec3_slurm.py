@@ -15,6 +15,7 @@ def run_command(command):
         raise Exception("Error executing '%s': %s" % (" ".join(command), str(e)))
 
 def parse_scontrol(out):
+    if out.find("=") < 0: return []
     r = []
     for line in out.split("\n"):
         line = line.strip()
@@ -54,7 +55,8 @@ def remove_node(hostname, alsodo=None):
     if alsodo: alsodo(hostname)
     subprocess.check_call("scontrol update NodeName=%s State=RESUME Reason=Ec3_control" % hostname, shell=True)
 
-def enable_node(hostname, _=None): pass
+def enable_node(hostname, _=None):
+    subprocess.check_call("scontrol update NodeName=%s State=RESUME Reason=Ec3_control" % hostname, shell=True)
 
 def ec3_init(Control):
     Control.get_meta_state = staticmethod(get_meta_state)
