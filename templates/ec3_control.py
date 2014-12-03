@@ -167,7 +167,8 @@ def launch_radl(wn, hostname, r, card, limits):
 def launch(r):
     if not str(r): return
     success, new_vmids = IM_SERVER.AddResource(0, str(r), AUTH)
-    if not success and new_vmids.find("Error allocating a new virtual machine") >= 0:
+    if not success and (new_vmids.find("Error allocating a new virtual machine") >= 0 or
+                        new_vmids.find("Some deploys did not proceed successfully") >= 0):
         for s in set([ s.getValue("ec3_class") for s in r.systems ]):
             penalty = min(FAILED.get(s, (None, DELAY))[1]*2, 1e7)
             FAILED[s] = (time.time()+penalty, penalty)
