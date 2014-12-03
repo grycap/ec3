@@ -1,0 +1,59 @@
+
+description test_torque (
+    kind = 'test' and
+    short = 'Test ec3_control with TORQUE.' and
+    content = 'Test the next features of ec3_control with TORQUE job manager:
+- \'ec3_if_fail\' when \'disk.0.image.url\' is not valid;
+- jobs requiring more than one node; and
+- \'ec3_min_instances\'.'
+)
+
+configure front (
+@begin
+  - tasks:
+    - copy:
+        dest: /tmp/torque_test.sh
+        mode: 0755
+        content: |
+            #!/bin/bash
+            wait_finish_jobs() {
+                while qstat -x | grep -q "<job_state>[QR]"; do
+                    sleep 30
+                done
+            }
+            wait_finish_nodes() {
+                while qnodes -x | grep -q "<state>\(offline\|free\|job-exclusive\|busy\|reserve\)" ; do
+                    sleep 30
+                done
+            }
+            echo $'#!/bin/bash\n /bin/date' > /tmp/qq0.sh
+            qsub -l walltime="1:00" /tmp/qq0.sh
+            wait_finish_jobs
+            echo $'#!/bin/bash\n /bin/date;sleep 300; /bin/date' > /tmp/qq1.sh
+            qsub -l walltime="10:00" /tmp/qq1.sh
+            sudo -u user1 qsub -l walltime="10:00" /tmp/qq1.sh
+            sleep 120
+            qsub -l "walltime=10:00,nodes=3" /tmp/qq1.sh
+            wait_finish_jobs
+            touch /tmp/.test_finished
+    - shell: |
+            touch /tmp/.launched
+            nohup sudo -u user1 /tmp/torque_test.sh &
+      args:
+         chdir: /tmp
+         creates: /tmp/.launched
+@end
+)
+
+system wn (
+    ec3_if_fail = 'wn_nofail' and
+    disk.0.image.url = 'one://mycloud.upv.es/99999' # set an invalid address
+)
+
+system wn_nofail (
+    ec3_inherit_from = system wn and
+    disk.0.image.url = '' and # set a valid address
+    ec3_if_fail = '' and
+    ec3_max_instances = 10 and
+    ec3_min_instances = 1
+)
