@@ -1,4 +1,9 @@
-## CentOS 6.5 64bits EC2
+
+description centos_ec2 (
+    kind = 'images' and
+    short = 'CentOS 6.5 amd64 on EC2.' and
+    content = 'CentOS 6.5 amd64 on EC2.'
+)
 
 system front (
     disk.0.os.name = 'linux' and

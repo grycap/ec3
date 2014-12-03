@@ -1,4 +1,9 @@
-## Ubuntu 14.04 EC2
+
+description ubuntu_ec2 (
+    kind = 'images' and
+    short = 'Ubuntu 14.04 amd64 on EC2.' and
+    content = 'Ubuntu 14.04 amd64 on EC2.'
+)
 
 system front (
     disk.0.os.name = 'linux' and
