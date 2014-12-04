@@ -128,10 +128,10 @@ Command ``show``
 
 The command prints the RADL description of the cluster stored in the local database::
 
-   ec3 show <clustername> [--refresh] [--json]
+   ec3 show <clustername> [-r] [--json]
 
 .. program:: ec3 show
-.. option:: --refresh
+.. option:: -r, --refresh
 
    Get the current state of the cluster before printing the information.
 
@@ -144,10 +144,10 @@ Command ``list``
 
 The command print a table with information about the clusters that have been launched::
 
-   ec3 list [--refresh] [--json]
+   ec3 list [-r] [--json]
 
 .. program:: ec3 list
-.. option:: --refresh
+.. option:: -r, --refresh
 
    Get the current state of the cluster before printing the information.
 

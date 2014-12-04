@@ -570,7 +570,7 @@ class CmdList:
     def parse(subparsers):
         parser = subparsers.add_parser("list", help="list launched clusters")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
-        parser.add_argument("--refresh", action="store_true", default=False, help="show current state of the clusters")
+        parser.add_argument("-r", "--refresh", action="store_true", default=False, help="show current state of the clusters")
         parser.set_defaults(func=CmdList.run)
 
     @staticmethod
@@ -589,7 +589,7 @@ class CmdShow:
         parser = subparsers.add_parser("show", help="print RADL ")
         parser.add_argument("clustername", help="name of the cluster to show")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
-        parser.add_argument("--refresh", action="store_true", default=False, help="show current state of the clusters")
+        parser.add_argument("-r", "--refresh", action="store_true", default=False, help="show current state of the clusters")
         parser.set_defaults(func=CmdShow.run)
 
     @staticmethod
