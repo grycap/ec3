@@ -1,77 +1,11 @@
 
-Elastic Cloud Computing Cluster (EC3)
-=====================================
 
-Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
-of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_)
-or on-premise (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
-(optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
-start with a single-node cluster and working nodes will be dynamically deployed and provisioned
-to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
-This introduces a cost-efficient approach for Cluster-based computing.
-
-
-Installation
-------------
-
-The program `ec3` requires Python 2.6+ and `IM`_ server, used to launch virtual machines.
-To install a local `IM`_ server execute the next commands::
-
-    git clone https://github.com/grycap/im.git -b devel
-    cd im
-    sudo python setup.py install
-    sudo service im start
-
-`ec3` can be download from `this <https://github.com/grycap/ec3>`_
-git repository::
-
-   git clone https://github.com/grycap/ec3
-
-In the created directory there is the python executable file ``ec3``, which provides the
-command-line interface described next.
-
-Basic example with Amazon EC2
------------------------------
-
-First create a file ``auth.txt`` with a single line like this::
-
-   id = provider ; type = EC2 ; username = <<Access Key ID>> ; password = <<Secret Access Key>>
-
-Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` with the corresponding values
-for the AWS account where the cluster will be deployed. It is safer to use the credentials
-of an IAM user created within your AWS account.
-
-This file is the :ref:`authorization file <auth-file>`, and can have more than one set of
-credentials.
-
-The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
-
-   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -u http://localhost:8899
-   Creating infrastructure
-   Infrastructure successfully created with ID: 60
-      ▄▟▙▄¨        Front-end state: running, IP: 132.43.105.28
-
-This can take several minutes. After that, open a ssh session to the front-end::
-
-   $ ec3 ssh mycluster
-   Welcome to Ubuntu 14.04.1 LTS (GNU/Linux 3.13.0-24-generic x86_64)
-    * Documentation:  https://help.ubuntu.com/
-
-   ubuntu@torqueserver:~$
-
-Also you can show basic information about the deployed clusters by executing::
-
-    $ ec3 list
-       name       state          IP        nodes
-    ---------------------------------------------
-     mycluster  configured  132.43.105.28    0
- 
 EC3 Command-line Interface
---------------------------
+==========================
 
 The program is called like this::
 
-   $ ec3 [-l <file>] [-ll <level>] [-q]  launch|list|show|destroy [args...]
+   $ ec3 [-l <file>] [-ll <level>] [-q] launch|list|show|templates|ssh|reconfigure|destroy [args...]
 
 .. program:: ec3
 .. option:: -l <file>, --log-file <file>
@@ -88,7 +22,7 @@ The program is called like this::
    Don't show any message in console except front-end IP messages.
 
 Command ``launch``
-^^^^^^^^^^^^^^^^^^
+------------------
 
 The command to deploy a cluster is like this::
 
@@ -155,7 +89,7 @@ The command to deploy a cluster is like this::
    Don't ask to continue when the connection to IM is not secure.
 
 Command ``reconfigure``
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 The command reconfigures an infrastructure launched previously. It can be called after a
 failed launching::
@@ -165,7 +99,7 @@ failed launching::
 .. program:: ec3 reconfigure
 
 Command ``ssh``
-^^^^^^^^^^^^^^^
+---------------
 
 The command opens a SSH session into the infrastructure front-end::
 
@@ -178,7 +112,7 @@ The command opens a SSH session into the infrastructure front-end::
     Print the command line to invoke SSH and exit.
 
 Command ``destroy``
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 The command undeploys the cluster and removes the associated information in the local database.::
 
@@ -190,7 +124,7 @@ The command undeploys the cluster and removes the associated information in the 
    Removes local information of the cluster even when the cluster could not be undeployed successfully.
 
 Command ``show``
-^^^^^^^^^^^^^^^^
+----------------
 
 The command prints the RADL description of the cluster stored in the local database::
 
@@ -206,7 +140,7 @@ The command prints the RADL description of the cluster stored in the local datab
    Print RADL description in JSON format.
 
 Command ``list``
-^^^^^^^^^^^^^^^^
+----------------
 
 The command print a table with information about the clusters that have been launched::
 
@@ -222,7 +156,7 @@ The command print a table with information about the clusters that have been lau
    Print the information in JSON format.
 
 Command ``templates``
-^^^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 The command displays basic information about the available templates like *name*,
 *kind* and a *summary* description::
@@ -247,7 +181,7 @@ The command displays basic information about the available templates like *name*
 .. _auth-file:
 
 Authorization File
-------------------
+==================
 
 The authorization file stores in plain text the credentials to access the cloud providers,
 the IM service and the VMRC service. Each line of the file is composed by pairs of key and
