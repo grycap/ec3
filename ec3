@@ -31,7 +31,7 @@ from IM2.radl.radl import RADL, system, network, configure, deploy, Features, As
 
 
 # Our public IM service
-IM_URL = 'http://servproject.i3m.upv.es:7899'
+IM_URL = 'http://servproject.i3m.upv.es:8899'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
@@ -389,13 +389,14 @@ class CmdLaunch:
         parser.add_argument("clustername", help="name of the new cluster")
         parser.add_argument("template", help="filename in `templates` without extension")
         parser.add_argument("--add", action="append", help="add another template")
-        parser.add_argument("-n", "--not-store", action="store_true", default=False, help="do not store the cluster nor check the cluster name")
-        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="do not store the cluster nor check the cluster name")
-        parser.add_argument("--json", action="store_true", default=False, help="do not store the cluster nor check the cluster name")
+        parser.add_argument("-n", "--not-store", action="store_true", default=False, help="don't store the cluster nor check the cluster name")
+        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="don't store the cluster nor check the cluster name")
+        parser.add_argument("--json", action="store_true", default=False, help="print cluster information in JSON format")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
         parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service")
-        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="do not launch any cluster")
+        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster")
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
+        parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
         parser.set_defaults(func=CmdLaunch.run)
 
     @staticmethod
@@ -418,6 +419,10 @@ class CmdLaunch:
             sys.exit(1)
         try:
             if not options.xmlrpc: raise Exception("option is not set")
+            if options.xmlrpc[0].startswith("http:") and not options.xmlrpc[0].startswith("http://localhost"):
+                CLI.display("WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.")
+            if not options.yes and raw_input("Continue [y/N]? ")[0:1] != "y":
+                sys.exit(1)
             im_server = xmlrpclib.ServerProxy(options.xmlrpc[0], allow_none=True)
         except Exception, e:
             CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)

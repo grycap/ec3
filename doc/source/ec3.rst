@@ -92,7 +92,7 @@ Command ``launch``
 
 The command to deploy a cluster is like this::
 
-   ec3 launch <clustername> <template> -a <file> -u <url>
+   ec3 launch <clustername> <template> -a <file> [-u <url>] [-y]
 
 .. program:: ec3 launch
 .. option:: clustername
@@ -149,6 +149,10 @@ The command to deploy a cluster is like this::
 .. option:: --on-error-destroy
 
    If the process fails, try to destroy the infrastructure.
+
+.. option:: -y, --yes
+
+   Don't ask to continue when the connection to IM is not secure.
 
 Command ``reconfigure``
 ^^^^^^^^^^^^^^^^^^^^^^^
