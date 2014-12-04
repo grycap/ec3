@@ -6,7 +6,7 @@ Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual cluste
 of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_)
 or on-premise (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
 (optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
-Start with a single-node cluster and working nodes will be dynamically deployed and provisioned
+it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
 to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
 This introduces a cost-efficient approach for Cluster-based computing.
 
@@ -14,12 +14,12 @@ This introduces a cost-efficient approach for Cluster-based computing.
 Installation
 ------------
 
-The program `ec3` requires Python 2.6+ and `IM`_ server, used to launch virtual machines.
-To install a local `IM`_ server execute the next commands::
+The program `ec3` requires Python 2.6+ and an `IM`_ server, which is used to launch
+virtual machines. By default `ec3` uses our public `IM`_ server in
+`servproject.i3m.upv.es`. However you can deploy a local `IM`_ server executing
+the next commands::
 
-    git clone https://github.com/grycap/im.git -b devel
-    cd im
-    sudo python setup.py install
+    sudo pip install im
     sudo service im start
 
 `ec3` can be download from `this <https://github.com/grycap/ec3>`_
@@ -45,10 +45,15 @@ This file is the `authorization file`, and can have more than one set of credent
 
 The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
-   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -u http://localhost:8899
+   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -y
+   WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
    Creating infrastructure
    Infrastructure successfully created with ID: 60
       ▄▟▙▄¨        Front-end state: running, IP: 132.43.105.28
+
+If you deployed a local `IM`_ server, use the next command instead::
+
+   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -u http://localhost:8899
 
 This can take several minutes. After that, open a ssh session to the front-end::
 
@@ -68,7 +73,7 @@ Also you can show basic information about the deployed clusters by executing::
 Additional information
 ----------------------
 
-* `Manual of ec3 <https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst>`_.
+* `ec3 manual <https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst>`_.
 * Documentation about `RADL and templates <https://github.com/grycap/ec3/blob/devel/doc/source/templates.rst>`_.
 * Information about available templates: ``ec3 templates [--search <topic>] [--full-description]``.
 
