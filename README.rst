@@ -16,7 +16,7 @@ Installation
 
 The program `ec3` requires Python 2.6+ and an `IM`_ server, which is used to launch
 virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. However you can deploy a local `IM`_ server executing
+`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing
 the next commands::
 
     sudo pip install im
