@@ -18,11 +18,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, time, logging, os, xmlrpclib, argparse, tempfile, random, re
+import sys, time, logging, os, xmlrpclib, argparse, tempfile, random, re, io
 try:
     import json
 except ImportError:
     import simplejson as json
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 
 from IM2.auth import Authentication
 from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
@@ -36,6 +41,8 @@ IM_URL = 'http://servproject.i3m.upv.es:8899'
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
 CLUSTER_STORE_PATH = "~/.ec3/clusters"
+# Config file path
+FILENAME_CONFIG = "~/.ec3/config.yml"
 # Max time in seconds needed to deploy the front-end node
 TIMEOUT = 1200
 # Time in seconds between two consecutive requests to IM service
@@ -341,6 +348,100 @@ class ClusterStore:
         infrId = s0.getValue("__infrastructure_id", default=0)
         auth = json.loads(s0.getValue("auth"))
         return im_server_name, infrId, auth
+
+class argparse_configyaml:
+    def __init__(self, *args, **kwargs):
+        if not yaml:
+            argparse.ArgumentParser.__init__(self, *args, **kwargs)
+            return
+
+        if "_self" in kwargs:
+            for k in ("_self", "_defaults", "_configfile", "_section"):
+                setattr(self, k, kwargs.get(k, None))
+            return
+
+        configfilename = os.path.expanduser(FILENAME_CONFIG)
+        if os.path.isfile(configfilename):
+            try:
+                self._defaults = yaml.load(open(configfilename, "r").read())
+            except Exception, e:
+                CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)),
+                            level=logging.ERROR, exception=True)
+            self._configfile = None
+        else:
+            self._defaults = None
+            if not os.path.exists(os.path.dirname(configfilename)):
+                os.makedirs(os.path.dirname(configfilename))
+            self._configfile = open(configfilename, "w")
+            self._configfile.write("""#
+# This file is read by ec3 to set default values to the command options. Options
+# are formated in YAML. Options related to files, e.g. 'auth_file' in section
+# 'launch', admit the next values:
+#
+# - an scalar: it will be treated as the content of the file, e.g.:
+#    auth_file: |
+#       type = OpenNebula; host = myone.com:9999; username = user; password = 1234
+#       type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+#         
+# - a mapping with the key 'filename': it will be treated as the file path, e.g.:
+#    auth_file:
+#       filename: /home/user/auth.txt
+#
+# - a mapping with the key 'stream': it will select either standard output ('stdout')
+#   or standard error ('stderr'), e.g.:
+#    log_file:
+#       stream: stdout
+
+default:
+""")
+
+        self._self = argparse.ArgumentParser(*args, **kwargs)
+
+    def add_subparsers(self, *args, **kw):
+        return argparse_configyaml(_self=self._self.add_subparsers(*args, **kw), _defaults=self._defaults,
+                                   _configfile=self._configfile)
+
+    def add_parser(self, section, help=None, config=True):
+        if not config:
+            return self._self.add_parser(section, help=help)
+        elif self._configfile:
+            self._configfile.write("# Default options for command '%s' (%s)\n%s:\n" % (section, help, section))
+            return argparse_configyaml(_self=self._self.add_parser(section, help=help), _configfile=self._configfile)
+        else:
+            return argparse_configyaml(_self=self._self.add_parser(section, help=help), _section=section,
+                                       _defaults=self._defaults.get(section, {}))
+ 
+    def add_argument(self, *args, **kw):
+        prop = sorted(map(lambda s: (-len(s), s), args))[0][1].strip("-").replace("-", "_")
+        if (self._configfile and kw.get("config", True) and args[0][0] == "-" and kw.get("action", None) != "append"):
+            self._configfile.write("    # %s\n" % kw["help"])
+            if "config_default" in kw:
+                self._configfile.write(kw["config_default"] + "\n\n")
+            elif "default" in kw:
+                default = kw["default"][0] if isinstance(kw["default"], list) else kw["default"]
+                if default == sys.stderr or default == sys.stdout:
+                    default = dict(stream="stderr" if default == sys.stderr else "stdout")
+                r = "\n".join(yaml.dump(dict(a={prop: default}), default_flow_style=False, indent=4).splitlines()[1:])
+                self._configfile.write(r + "\n\n")
+        elif (self._defaults and prop in self._defaults and kw.get("config", True) and args[0][0] == "-" and
+              kw.get("action", None) != "append"):
+            default = self._defaults[prop]
+            if isinstance(kw.get("type", None), argparse.FileType):
+                if isinstance(default, str): default = io.BytesIO(default)
+                elif "filename" in default: default = open(default["filename"], kw["type"]._mode)
+                elif "stream" in default: default = sys.stderr if default["stream"] == "stderr" else sys.stdout
+                else:
+                    CLI.display("Error in configure file: bad value for property %s in section %s" % (prop, self._section), level=logging.ERROR)
+            kw["default"] = [default] if kw.get("nargs", None) == 1 else default
+        for k in ("config_default", "config"): kw.pop(k, None)
+        return self._self.add_argument(*args, **kw)
+
+    def parse_args(self):
+        if self._configfile: self._configfile.close()
+        return self._self.parse_args()
+
+    def set_defaults(self, *args, **kw):
+        return self._self.set_defaults(*args, **kw)
  
 class CLI:
     # Private variables, just don't bother them!
@@ -351,10 +452,10 @@ class CLI:
 
     @staticmethod
     def run(commands):
-        parser = argparse.ArgumentParser(prog="ec3")
-        parser.add_argument("-l", "--log-file", dest="log_file", nargs=1, type=argparse.FileType('w'), default=[sys.stderr], help="Log output file")
-        parser.add_argument("-ll", "--log-level", dest="log_level", nargs=1, type=int, default=[5], help="1: debug; 2: info; 3: warning; 4: error")
-        parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False, help="Only print messages from front-end")
+        parser = argparse_configyaml(prog="ec3")
+        parser.add_argument("-l", "--log-file", dest="log_file", nargs=1, type=argparse.FileType('w'), default=[sys.stderr], help="log output file")
+        parser.add_argument("-ll", "--log-level", dest="log_level", nargs=1, type=int, default=[5], help="log level. 1: debug; 2: info; 3: warning; 4: error")
+        parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False, help="only print messages from front-end")
         subparsers = parser.add_subparsers(title="subcommands", description="valid subcommands", help="additional help")
         for cmd in commands:
             cmd.parse(subparsers)
@@ -390,11 +491,13 @@ class CmdLaunch:
         parser.add_argument("template", help="filename in `templates` without extension")
         parser.add_argument("--add", action="append", help="add another template")
         parser.add_argument("-n", "--not-store", action="store_true", default=False, help="don't store the cluster nor check the cluster name")
-        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="don't store the cluster nor check the cluster name")
+        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="print final RADL description of the cluster")
         parser.add_argument("--json", action="store_true", default=False, help="print cluster information in JSON format")
-        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
+    #   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
+    #   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
         parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service")
-        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster")
+        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster", config=False)
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
         parser.set_defaults(func=CmdLaunch.run)
@@ -419,10 +522,10 @@ class CmdLaunch:
             sys.exit(1)
         try:
             if not options.xmlrpc: raise Exception("option is not set")
-            if options.xmlrpc[0].startswith("http:") and not options.xmlrpc[0].startswith("http://localhost"):
+            if not options.dry_run and options.xmlrpc[0].startswith("http:") and not options.xmlrpc[0].startswith("http://localhost"):
                 CLI.display("WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.")
-            if not options.yes and raw_input("Continue [y/N]? ")[0:1] != "y":
-                sys.exit(1)
+                if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
+                    sys.exit(1)
             im_server = xmlrpclib.ServerProxy(options.xmlrpc[0], allow_none=True)
         except Exception, e:
             CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)
@@ -570,7 +673,7 @@ class CmdList:
     def parse(subparsers):
         parser = subparsers.add_parser("list", help="list launched clusters")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
-        parser.add_argument("-r", "--refresh", action="store_true", default=False, help="show current state of the clusters")
+        parser.add_argument("-r", "--refresh", action="store_true", default=False, help="update state of the clusters")
         parser.set_defaults(func=CmdList.run)
 
     @staticmethod
@@ -586,10 +689,10 @@ class CmdList:
 class CmdShow:
     @staticmethod
     def parse(subparsers):
-        parser = subparsers.add_parser("show", help="print RADL ")
+        parser = subparsers.add_parser("show", help="print RADL")
         parser.add_argument("clustername", help="name of the cluster to show")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
-        parser.add_argument("-r", "--refresh", action="store_true", default=False, help="show current state of the clusters")
+        parser.add_argument("-r", "--refresh", action="store_true", default=False, help="updated state of the clusters")
         parser.set_defaults(func=CmdShow.run)
 
     @staticmethod
@@ -605,9 +708,9 @@ class CmdShow:
 class CmdSsh:
     @staticmethod
     def parse(subparsers):
-        parser = subparsers.add_parser("ssh", help="connect to cluster via SSH")
+        parser = subparsers.add_parser("ssh", help="connect to cluster via SSH", config=False)
         parser.add_argument("clustername", help="name of the cluster to connect")
-        parser.add_argument("--show-only", action="store_true", dest="show_only", default=False, help="Show the command line invoking SSH, but do nothing")
+        parser.add_argument("--show-only", action="store_true", dest="show_only", default=False, help="show the command line invoking SSH, but do nothing")
         parser.set_defaults(func=CmdSsh.run)
 
     @staticmethod
@@ -652,7 +755,7 @@ class CmdDestroy:
     def parse(subparsers):
         parser = subparsers.add_parser("destroy", help="destroy a launched cluster")
         parser.add_argument("clustername", help="name of the cluster to destroy")
-        parser.add_argument("--force", action="store_true", default=False, help="Destroy the local information of the cluster anyway")
+        parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
         parser.set_defaults(func=CmdDestroy.run)
 
     @staticmethod
@@ -675,7 +778,7 @@ class CmdDestroy:
 class CmdReconfigure:
     @staticmethod
     def parse(subparsers):
-        parser = subparsers.add_parser("reconfigure", help="reconfigure the cluster")
+        parser = subparsers.add_parser("reconfigure", help="reconfigure the cluster", config=False)
         parser.add_argument("clustername", help="name of the cluster")
         parser.set_defaults(func=CmdReconfigure.run)
 
@@ -706,7 +809,7 @@ class CmdTemplates:
     @staticmethod
     def parse(subparsers):
         parser = subparsers.add_parser("templates", help="list available templates")
-        parser.add_argument("-s", "--search", dest="search", nargs=1, default=[None], help="show only templates in which the expression appears")
+        parser.add_argument("-s", "--search", dest="search", nargs=1, default=[None], help="show only templates in which the expression appears", config=False)
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
         parser.add_argument("-f", "--full-description", dest="full", action="store_true", default=False, help="show full description for every template")
         parser.set_defaults(func=CmdTemplates.run)
