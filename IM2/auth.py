@@ -122,7 +122,7 @@ class Authentication:
 
 		if isinstance(auth, Authentication):
 			auth = auth.auth_list
-		return [ " ; ".join([ "%s = %s" % (k, v.replace("\n", "\\n")) for k,v in a.items() ]) for a in auth ]
+		return [ " ; ".join([ "%s = %s" % (k, v.replace("\n", "\\n")) for k,v in a.items() ]) + "\n" for a in auth ]
 
 	@staticmethod
 	def normalize(auth0):
