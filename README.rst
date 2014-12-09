@@ -45,7 +45,7 @@ This file is the `authorization file`, and can have more than one set of credent
 
 The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
-   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -y
+   $ ec3 launch mycluster torque ec3_control ubuntu-ec2 -a auth.txt -y
    WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
    Creating infrastructure
    Infrastructure successfully created with ID: 60
@@ -53,7 +53,7 @@ The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
 If you deployed a local `IM`_ server, use the next command instead::
 
-   $ ec3 launch mycluster torque --add ec3_control --add ubuntu-ec2 -a auth.txt -u http://localhost:8899
+   $ ec3 launch mycluster torque ec3_control ubuntu-ec2 -a auth.txt -u http://localhost:8899
 
 This can take several minutes. After that, open a ssh session to the front-end::
 

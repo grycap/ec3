@@ -32,7 +32,7 @@ except ImportError:
 from IM2.auth import Authentication
 from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
 import IM2.radl.radl as IM_RADL
-from IM2.radl.radl import RADL, system, network, configure, deploy, Features, Aspect, FeaturedAspect
+from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Features, Aspect, FeaturedAspect
 
 
 # Our public IM service
@@ -164,6 +164,7 @@ def apply_ec3_expressions(r):
                     conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
             except Exception, e:
                 CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
         conf_vars.update(conf_vars0)
 
 def apply_ec3_features(r):
@@ -394,7 +395,7 @@ class argparse_configyaml:
 
 default:
 """)
-
+        self._section = "default"
         self._self = argparse.ArgumentParser(*args, **kwargs)
 
     def add_subparsers(self, *args, **kw):
@@ -488,8 +489,8 @@ class CmdLaunch:
     def parse(subparsers):
         parser = subparsers.add_parser("launch", help="launch a new cluster")
         parser.add_argument("clustername", help="name of the new cluster")
-        parser.add_argument("template", help="filename in `templates` without extension")
-        parser.add_argument("--add", action="append", help="add another template")
+        parser.add_argument("templates", nargs="+", help="filename in `templates` without extension")
+        parser.add_argument("--add", action="append", help="add a piece of RADL")
         parser.add_argument("-n", "--not-store", action="store_true", default=False, help="don't store the cluster nor check the cluster name")
         parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="print final RADL description of the cluster")
         parser.add_argument("--json", action="store_true", default=False, help="print cluster information in JSON format")
@@ -510,13 +511,12 @@ class CmdLaunch:
             sys.exit(1)
         try:
             if not options.auth_file: raise Exception("option is not set")
-            auth_content = options.auth_file[0].readlines()
+            auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
             auth_data = Authentication.read_auth_data(auth_content)
             if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                 auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
                                     (random.random()*1e15, random.random()*1e15))
                 auth_data = Authentication.read_auth_data(auth_content)
-                
         except Exception, e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -531,37 +531,8 @@ class CmdLaunch:
             CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
          
-        # Instantiate template
-        radl, templates = RADL(), set()
-        def add_template(r):
-            # Process every template only once
-            if r in templates: return
-            templates.add(r)
-            try:
-                file_content = get_content_from_template_file(r + ".radl")
-                radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
-            except Exception, e:
-                CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR, exception=True)
-                sys.exit(1)
-        for r in [options.template] + (options.add if options.add else []): add_template(r)
-        while radl.gets(include):
-            for a in radl.gets(include):
-                for r in a.getValue("template").split(" "):
-                    if r: add_template(r)
-                radl.delete(a)
-        for a in radl.gets(description): radl.delete(a)
-
-        # Set auth in system "front"
-        if radl.get(system("front")):
-            radl.get(system("front")).setValue("auth", "".join(auth_content))
-
-        # Replace "ec3_*" expression in YAML recipes and systems
-        try:
-            apply_ec3_features(radl)
-            apply_ec3_expressions(radl)
-        except Exception, e:
-            CLI.display(str(e), level=logging.ERROR, exception=True)
-            sys.exit(1)
+        # Instantiate templates
+        radl = CmdLaunch.generate_radl(options.templates, options.add if options.add else [], auth_content)
 
         # Finish if dry run
         if options.dry_run:
@@ -586,6 +557,48 @@ class CmdLaunch:
         CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
         sys.exit(0)
+
+    @staticmethod
+    def generate_radl(template_names, pieces_radl, auth_content):
+        radl = RADL([system("front", [Feature("ec3_templates", "=", " ".join(template_names))])])
+        templates = set()
+        def add_template(r):
+            # Process every template only once
+            if r in templates: return
+            templates.add(r)
+            try:
+                file_content = get_content_from_template_file(r + ".radl")
+                radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
+            except Exception, e:
+                CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
+        for r in template_names: add_template(r)
+        for r in pieces_radl:
+            try:
+                radl.merge(parse_radl(r), ifpresent="merge", missing="other", conflict="other")
+            except Exception, e:
+                CLI.display("Error processing '%s': %s" % (r, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
+        while radl.gets(include):
+            for a in radl.gets(include):
+                for r in a.getValue("template").split(" "):
+                    if r: add_template(r)
+                radl.delete(a)
+        for a in radl.gets(description): radl.delete(a)
+
+        # Set auth in system "front"
+        if radl.get(system("front")):
+            radl.get(system("front")).setValue("auth", "".join(auth_content))
+
+        # Replace "ec3_*" expression in YAML recipes and systems
+        try:
+            apply_ec3_features(radl)
+            apply_ec3_expressions(radl)
+        except Exception, e:
+            CLI.display(str(e), level=logging.ERROR, exception=True)
+            sys.exit(1)
+
+        return radl
 
     @staticmethod
     def wait_transfer_save(infrId, vmId, auth_data, im_server_url, options_destroy, options_not_store,
@@ -780,28 +793,49 @@ class CmdReconfigure:
     def parse(subparsers):
         parser = subparsers.add_parser("reconfigure", help="reconfigure the cluster", config=False)
         parser.add_argument("clustername", help="name of the cluster")
+        parser.add_argument("--add", action="append", help="add a piece of RADL")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.add_argument("-r", "--reload", action="store_true", dest="reload", default=False, help="reload templates used to launch the cluster and reconfigure the cluster with them (useful if templates changed)")
         parser.set_defaults(func=CmdReconfigure.run)
 
     @staticmethod
     def run(options):
         # Check cluster name, authentication and IM server
-        if options.clustername not in ClusterStore.list():
-            CLI.display("Cluster name does not exist!", level=logging.ERROR)
+        try:
+            r = ClusterStore.load(options.clustername)
+            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+        except Exception, e:
+            CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
+        try:
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() if l.find("InfrastructureManager") < 0 ]
+                auth_data = Authentication.normalize(Authentication.read_auth_data(auth_content) + auth_data)
+            auth_content = Authentication.dump(auth_data)
+        except Exception, e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Instantiate templates
+        if options.auth_file or options.reload or options.add:
+            templates = r.get(system("front")).getValue("ec3_templates", "").split(" ")
+            radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
+            for a in (radl.gets(deploy) + radl.gets(system)): radl.delete(a)
+            radl = dump_radl(radl)
+        else:
+            radl = ""
 
         # Reconfigure infrastructure
         CLI.display("Reconfiguring infrastructure")
         try:
-            r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            success, info = im_server.Reconfigure(infrId, "", auth)
+            success, info = im_server.Reconfigure(infrId, radl, auth_data)
             if not success: raise Exception(info)
         except Exception, e:
             CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
-        CmdLaunch.wait_transfer_save(infrId, "0", auth, im_server_url, False, False,
+        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False,
                                      options.clustername, False, False)
         sys.exit(0)
 

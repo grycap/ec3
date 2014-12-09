@@ -1,4 +1,5 @@
 
+.. _ec3-cli:
 
 EC3 Command-line Interface
 ==========================
@@ -26,35 +27,27 @@ Command ``launch``
 
 The command to deploy a cluster is like this::
 
-   ec3 launch <clustername> <template> -a <file> [-u <url>] [-y]
+   ec3 launch <clustername> <template_0> [<template_1> ...] [-a <file>] [-u <url>] [-y]
 
 .. program:: ec3 launch
 .. option:: clustername
 
    Name to refer the new cluster in other commands.
 
-.. option:: template
+.. option:: template_0 ...
 
-   `Recipe` name that will be used to deploy the cluster. The tool try to find a file
-   with the indicated name and extension ``.radl`` in ``~/.ec3/templates`` and
-   ``/etc/ec3/templates``. These recipes are `RADL`_ descriptions of the virtual machines
+   Template names that will be used to deploy the cluster. The tool try to find files
+   with these names and extension ``.radl`` in ``~/.ec3/templates`` and
+   ``/etc/ec3/templates``. Templates are `RADL`_ descriptions of the virtual machines
    (e.g., instance type, disk images, networks, etc.) and contextualization scripts.
+   See :ref:`cmd-templates` to list all available templates. 
+   
+.. option:: --add
 
-   The following recipes are provided:
+   Add a piece of RADL. This option is useful to set some features. Next example launches a
+   torque cluster with up to four working nodes::
 
-   * ``torque``: deploys `TORQUE`_ (from distribution repositories), `MAUI`_ and `CLUES`_.
-   * ``slurm``: deploys `SLURM`_ and `CLUES`_.
-   * ``sge``: deploys Sun Grid Engine and `CLUES`_.
-
-   They have to be combined with another recipe that set the OS disk image, see :option:`--add`.
-
-.. option:: --add <template>
-
-   Add the indicated recipe to the previously specified. Two recipes for Amazon EC2 provider
-   are provided:
-
-   * ``ubuntu-ec2``: `Ubuntu`_ 14.04 64 bits.
-   * ``sl6-ec2``: `Scientific Linux`_ SL6 64 bits.
+      ./ec3 launch mycluster torque ubuntu-ec2 --add "system wn ( ec3_max_instances = 4 )"
 
 .. option:: -u <url>, --xmlrpc-url <url>
 
@@ -97,6 +90,17 @@ failed launching::
    ec3 reconfigure <clustername>
 
 .. program:: ec3 reconfigure
+
+.. option:: -a <file>, --auth-file <file>
+
+   Append authorization entries in the provided file. See :ref:`auth-file`.
+
+.. option:: --add
+
+   Add a piece of RADL. This option is useful to set some features. Next example updates
+   the maximum number of working nodes to four::
+
+      ./ec3 reconfigure mycluster --add "system wn ( ec3_max_instances = 4 )"
 
 Command ``ssh``
 ---------------
@@ -155,6 +159,8 @@ The command print a table with information about the clusters that have been lau
 
    Print the information in JSON format.
 
+.. _cmd-templates:
+
 Command ``templates``
 ---------------------
 
@@ -177,11 +183,38 @@ The command displays basic information about the available templates like *name*
 
    Print the information in JSON format.
 
+Configuration file
+------------------
+
+Although it is easy to find and change the default values for the command-line options in
+the `ec3` python code, we consider an alternative. Default values are read from
+``~/.ec3/config.yml``. If this file doesn't exist, it is generated 
+with all the available options and their default values.
+
+The file is formated in `YAML`_. The options that are related to files admit the next
+values:
+
+* an scalar: it will be treated as the content of the file, e.g.::
+
+   auth_file: |
+      type = OpenNebula; host = myone.com:9999; username = user; password = 1234
+      type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        
+* a mapping with the key ``filename``: it will be treated as the file path, e.g.::
+
+   auth_file:
+      filename: /home/user/auth.txt
+
+* a mapping with the key ``stream``: it will select either standard output (``stdout``)
+  or standard error (``stderr``), e.g.::
+
+   log_file:
+      stream: stdout
 
 .. _auth-file:
 
-Authorization File
-==================
+Authorization file
+------------------
 
 The authorization file stores in plain text the credentials to access the cloud providers,
 the IM service and the VMRC service. Each line of the file is composed by pairs of key and
@@ -220,3 +253,4 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
+.. _`YAML`: http://yaml.org/
