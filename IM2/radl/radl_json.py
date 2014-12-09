@@ -207,6 +207,8 @@ def featuresToSimple(a):
 def featureToSimple(a):
 	if isinstance(a, (int, float, str)):
 		return a
+	elif isinstance(a, unicode):
+		return str(a)
 	elif isinstance(a, Aspect):
 		return referenceToSimple(a)
 	elif isinstance(a, Features):

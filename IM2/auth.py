@@ -113,3 +113,29 @@ class Authentication:
 				res.append(auth)
 		
 		return res
+
+	@staticmethod
+	def dump(auth):
+		"""
+		Serialize an Authentication so that it can be read by 'read_auth_data' later.
+		"""
+
+		if isinstance(auth, Authentication):
+			auth = auth.auth_list
+		return [ " ; ".join([ "%s = %s" % (k, v.replace("\n", "\\n")) for k,v in a.items() ]) for a in auth ]
+
+	@staticmethod
+	def normalize(auth0):
+		"""
+		Remove repeated entries.
+		"""
+
+		auth = auth0.auth_list if isinstance(auth0, Authentication) else auth0
+		s, l = set(), []
+		for i, a in enumerate(auth):
+			if a in s:
+				l.insert(0, i)
+			else:
+				s.add(a)
+		for i in l: del auth[i]
+		return auth0

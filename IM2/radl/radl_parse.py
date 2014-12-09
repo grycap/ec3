@@ -250,7 +250,7 @@ def d_configure_sentence(a, enter, margin, indent):
 	if a.reference or not a.recipe:
 		return "%sconfigure %s" % (margin, a.name)
 	def tostr(r):
-		return r if isinstance(r, str) else yaml.safe_dump(r, default_flow_style=False) if yaml else str(r)
+		return r if isinstance(r, (str, unicode)) else yaml.safe_dump(r, default_flow_style=False) if yaml else str(r)
 	return "{margin}configure {name} ({enter}@begin{enter}{recipe}{enter}@end{enter}{margin})".format(
 		name=a.name, recipe=tostr(a.recipe), enter=enter, margin=margin)
 
@@ -286,7 +286,7 @@ def d_feature(a, *args):
 	assert isinstance(a, Feature)
 	if isinstance(a, SoftFeatures):
 		return d_feature_soft(a, *args)
-	elif isinstance(a.value, (int, float, str)):
+	elif isinstance(a.value, (int, float, str, unicode)):
 		return d_feature_number_string(a, *args)
 	elif isinstance(a.value, Aspect):
 		return d_feature_reference(a, *args)
@@ -300,10 +300,10 @@ def d_feature_soft(a, enter, margin, indent):
 		fs=d_features(a, enter, margin+indent, indent))
 
 def d_feature_number_string(a, enter, margin, indent):
-	assert isinstance(a, Feature) and isinstance(a.value, (int, float, str))
+	assert isinstance(a, Feature) and isinstance(a.value, (int, float, str, unicode))
 	return "{margin}{prop} {op} {val}".format(
 		margin=margin, prop=a.prop, op=a.operator,
-		val="'%s'" % a.value.replace("'", "\\'") if isinstance(a.value, str)
+		val="'%s'" % a.value.replace("'", "\\'") if isinstance(a.value, (str, unicode))
 	            else "%s%s" % (a.value, a.unit if a.unit else ""))
 
 def d_feature_reference(a, enter, margin, indent):

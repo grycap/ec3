@@ -184,7 +184,7 @@ class Feature:
 				raise RADLParseException(
 					"Invalid operator; expected 'contains'", line=self.line)
 		# Check value
-		if isinstance(check[1], list):
+		if isinstance(check[1], (set, frozenset, tuple, list)):
 			if self.value.upper() not in check[1]:
 				raise RADLParseException("Invalid value; expected one of %s" % check[1],
 				                         line=self.line)
