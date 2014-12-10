@@ -25,13 +25,17 @@ class spy(object):
         try:
             r = f(*a, **kw)
         except exception_filter:
-            logger.exception("%s(%s)" % (name, ", ".join(map(san, a) + map(lambda a,b: "%s=%s"%(a, san(b)), kw.items()))))
+            logger.exception("%s(%s)" % (name, ", ".join(map(san, a) + map(lambda (a,b): "%s=%s"%(a, san(b)), kw.items()))))
             return None
-        logger.debug("%s(%s) = %s" % (name, ", ".join(map(san, a) + map(lambda a,b: "%s=%s"%(a, san(b)), kw.items())), san(r)))
+        logger.debug("%s(%s) = %s" % (name, ", ".join(map(san, a) + map(lambda (a,b): "%s=%s"%(a, san(b)), kw.items())), san(r)))
         return r
     def __getattr__(self, name):
         f = getattr(self.C, name)
         return (lambda *a,**kw: spy.log(f, name, self.exception_filter, *a, **kw)) if callable(f) else f
+    def __call__(self, *a, **kw):
+        assert callable(self.C)
+        return spy.log(self.C, self.C.__name__, self.exception_filter, *a, **kw)
+def spyd(x): return spy(x)
  
 IM_SERVER = spy(xmlrpclib.ServerProxy("http://localhost:8899", allow_none=True))
 
@@ -63,6 +67,7 @@ class Control:
         r = {}
         for v in Control.vmids.values():
             if v.getValue("ec3_meta_state") == "busy": r.setdefault(v.getValue("ec3_class", "wn"), [0])[0] += 1
+            elif v.getValue("ec3_class"): r.setdefault(v.getValue("ec3_class"), [0])
         for c, n in Control.get_queued_jobs().items():
             r.setdefault("wn" if LAUNCH_RADL.get(system(c)) is None else c, [0])[0] += n
         for s in LAUNCH_RADL.systems:
@@ -125,7 +130,7 @@ def timeline(v):
     MSTATE = dict([ (a,b) for b,a in enumerate(("busy", "idle", "busy-off", "idle-off", "off")) ])
     STATE = dict([ (a,b) for b,a in enumerate(("configured", "running", "pending", "failed", "off")) ])
     return MSTATE[v.getValue("ec3_meta_state")], STATE.get(v.getValue("state"), 9), time_up_to_deadline(v)
- 
+
 def make_decision(wn, n, r, limits, force=False, create=True, destroy=True):
     card = {}
     for c in [ v.getValue("ec3_class") for v in Control.vmids.values() if v.getValue("ec3_class") in frozenset(wn) ]:
@@ -230,18 +235,12 @@ def loop_cmd(seconds, cmd):
             logger.warning(str(e))
         time.sleep(max(seconds - (time.time() - time0), 0))
 
-if __name__ == "__main__":
-    def int_none(s):
-        return None if s is None or s.lower() == "none" else int(s)
-    def mins(s):
-        try:
-            g = [ g0.strip() for g0 in s.split(":") ]
-            if len(g) == 1: return int(g[0])
-            if len(g) == 2: return int(g[0])*60 + int(g[1])
-            raise Exception
-        except:
-            raise Exception("Invalid time value; it should be <mins> or <hours>:<mins>")
+def update_files(auth_file, radl_file):
+    AUTH = Authentication.read_auth_data(open(auth_file.name, "r").readlines())
+    LAUNCH_RADL = parse_radl(open(radl_file.name, "r").read())
+    return AUTH, LAUNCH_RADL
 
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--auth", dest="auth", nargs=1, type=argparse.FileType('r'), help="Authorization file")
     parser.add_argument("-r", "--radl", dest="radl", nargs=1, type=argparse.FileType('r'), help="RADL working nodes system content")
@@ -256,18 +255,11 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S',
                         stream=options.log_file[0], level=options.log_level[0]*10)
     logger = logging.getLogger('ec3-control')
-    try:
-        if not options.auth: raise Exception("option is not set")
-        auth_content = options.auth[0].readlines()
-        AUTH = Authentication.read_auth_data(auth_content)
-    except Exception, e:
-        logger.error("Error in -a/--auth: %s\n" % str(e))
+    if not options.auth:
+        logger.error("Error in -a/--auth: option is not set")
         sys.exit(1)
-    try:
-        if not options.radl: raise Exception("option is not set")
-        LAUNCH_RADL = parse_radl(options.radl[0].read())
-    except Exception, e:
-        logger.error("Error in -r/--radl: %s\n" % str(e))
+    if not options.radl:
+        logger.error("Error in -r/--radl: option is not set")
         sys.exit(1)
     description = [ d for d in imp.get_suffixes() if d[0] == ".py" ][0]
     for opt_wrapper in options.wrapper:
@@ -294,8 +286,11 @@ if __name__ == "__main__":
         while True:
             time0 = time.time()
             logger.info("New iteration")
-            try: loop_body()
-            except: logger.exception("Exception in loop:")
+            try:
+                AUTH, LAUNCH_RADL = update_files(options.auth[0], options.radl[0])
+                loop_body()
+            except:
+                logger.exception("Exception in loop:")
             time.sleep(max(DELAY - (time.time() - time0), 0))
     except KeyboardInterrupt:
         logger.info("Program interrupted by the user.")
