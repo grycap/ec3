@@ -354,8 +354,10 @@ class Features(object):
 					self.props[f.prop][f.value.getKey()].value.merge(f.value, conflict=conflict, missing=missing)
 				else:
 					self.props.setdefault(f.prop, {})[f.value.getKey()] = f
-			else:
+			elif isinstance(self.props.get(f.prop, set()), set):
 				self.props.setdefault(f.prop, set()).add(f)
+			else:
+				raise RADLConflict("Conflict adding `%s` because `%s` is not a set, it is '%s'." % (f, f.prop, self.props[f.prop]))
 		elif isinstance(f.value, Aspect):
 			value0 = self.props.get(f.prop, None)
 			if not value0 or not value0.value:
