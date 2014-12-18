@@ -44,7 +44,7 @@ configure front (
     - fail: msg="Sorry, Red Hat based distributions are not supported by this recipe, use 'slurm'."
       when: ansible_os_family == "RedHat"
 
-    - include: im_devel_git.yml
+    - include: im_devel_pip.yml
     - include: munge_repo_front.yml
 
     # Manage the /etc/hosts file
