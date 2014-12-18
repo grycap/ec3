@@ -102,6 +102,11 @@ failed launching::
 
       ./ec3 reconfigure mycluster --add "system wn ( ec3_max_instances = 4 )"
 
+.. option:: -r, --reload
+
+   Reload templates used to launch the cluster and reconfigure the cluster with them
+   (useful if some templates were modified).
+
 Command ``ssh``
 ---------------
 
@@ -174,6 +179,10 @@ The command displays basic information about the available templates like *name*
 .. option:: -s, --search
 
    Show only templates in which the ``<pattern>`` appears in the description.
+
+.. option:: -n, --name
+
+   Show only the template with that name.
 
 .. option:: -f, --full-description
 
