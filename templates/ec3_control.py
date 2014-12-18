@@ -147,13 +147,14 @@ def make_decision(wn, n, r, limits, force=False, create=True, destroy=True):
                 c = launch_radl(wn, h, r, card, limits)
                 if c: card[c] = card.get(c, 0) + 1; limits[c][0] -= 1
         elif n < 1 and destroy:
-            if (v.getValue("ec3_meta_state") in frozenset(["idle", "busy"]) and limits[v.getValue("ec3_class")][1] > 0
-                    and (force or t[2] >= v.getValue("ec3_destroy_safe", None))):
-                Control.disable_node(h); limits[v.getValue("ec3_class")][1] -= 1; change = True
+            c = v.getValue("ec3_class")
+            if (v.getValue("ec3_meta_state") in frozenset(["idle", "busy"]) and limits[c][1] > 0
+                    and (force or t[2] >= LAUNCH_RADL.get(system(c)).getValue("ec3_destroy_safe", None))):
+                Control.disable_node(h); limits[c][1] -= 1; change = True
             elif (v.getValue("ec3_meta_state") in frozenset(["idle-off", "off"]) and
                     v.getValue("state", "off") not in frozenset(["running", "off"]) and
-                    v.getValue("ec3_min_instances", 0) < card[v.getValue("ec3_class")]):
-                c = v.getValue("ec3_class"); Control.remove_node(h); card[c] -= 1
+                    int(LAUNCH_RADL.get(system(c)).getValue("ec3_min_instances", 0)) < card[c]):
+                Control.remove_node(h); card[c] -= 1
         n -= 1
     if change: update_meta_state()
 
