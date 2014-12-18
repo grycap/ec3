@@ -560,7 +560,7 @@ class CmdLaunch:
 
     @staticmethod
     def generate_radl(template_names, pieces_radl, auth_content):
-        radl = RADL([system("front", [Feature("ec3_templates", "=", " ".join(template_names))])])
+        radl = RADL([system("front", [Feature("ec3_templates_cmd", "=", " ".join(template_names))])])
         templates = set()
         def add_template(r):
             # Process every template only once
@@ -818,7 +818,7 @@ class CmdReconfigure:
 
         # Instantiate templates
         if options.auth_file or options.reload or options.add:
-            templates = r.get(system("front")).getValue("ec3_templates", "").split(" ")
+            templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
             radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
             for a in (radl.gets(deploy) + radl.gets(system)): radl.delete(a)
             radl = dump_radl(radl)
@@ -844,6 +844,7 @@ class CmdTemplates:
     def parse(subparsers):
         parser = subparsers.add_parser("templates", help="list available templates")
         parser.add_argument("-s", "--search", dest="search", nargs=1, default=[None], help="show only templates in which the expression appears", config=False)
+        parser.add_argument("-n", "--name", dest="name", nargs=1, default=[None], help="show only the template with this name", config=False)
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
         parser.add_argument("-f", "--full-description", dest="full", action="store_true", default=False, help="show full description for every template")
         parser.set_defaults(func=CmdTemplates.run)
@@ -855,6 +856,7 @@ class CmdTemplates:
         search = re.compile(options.search[0], re.IGNORECASE) if options.search[0] else None
         for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(p) for f in os.listdir(p) if os.path.isfile(os.path.join(p, f)) and f.endswith("radl") ]:
             if t in templates: continue
+            if options.name[0] and options.name[0] != t: continue
             templates.add(t)
             try:
                 r = parse_radl(get_content_from_template_file(t + ".radl"))
