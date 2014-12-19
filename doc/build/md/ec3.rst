@@ -9,16 +9,16 @@ The program is called like this::
    $ ec3 [-l <file>] [-ll <level>] [-q] launch|list|show|templates|ssh|reconfigure|destroy [args...]
 
 .. program:: ec3
-.. option:: -l <file>, --log-file <file>
+*  -l <file>, --log-file <file>
 
    Path to file where logs are written down. Default value is standard output error.
 
-.. option:: -ll <level>, --log-level <level>
+*  -ll <level>, --log-level <level>
 
    Only write down in the log file messages with level more severe than the indicated:
    ``1`` for `debug`, ``2`` for `info`, ``3`` for `warning` and ``4`` for `error`.
 
-.. option:: -q, --quiet
+*  -q, --quiet
 
    Don't show any message in console except front-end IP messages.
 
@@ -30,54 +30,54 @@ The command to deploy a cluster is like this::
    ec3 launch <clustername> <template_0> [<template_1> ...] [-a <file>] [-u <url>] [-y]
 
 .. program:: ec3 launch
-.. option:: clustername
+*  clustername
 
    Name to refer the new cluster in other commands.
 
-.. option:: template_0 ...
+*  template_0 ...
 
    Template names that will be used to deploy the cluster. The tool try to find files
    with these names and extension ``.radl`` in ``~/.ec3/templates`` and
    ``/etc/ec3/templates``. Templates are `RADL`_ descriptions of the virtual machines
    (e.g., instance type, disk images, networks, etc.) and contextualization scripts.
-   See :ref:`cmd-templates` to list all available templates. 
+   See `Command templates`_ to list all available templates. 
    
-.. option:: --add
+*  --add
 
    Add a piece of RADL. This option is useful to set some features. Next example launches a
    torque cluster with up to four working nodes::
 
       ./ec3 launch mycluster torque ubuntu-ec2 --add "system wn ( ec3_max_instances = 4 )"
 
-.. option:: -u <url>, --xmlrpc-url <url>
+*  -u <url>, --xmlrpc-url <url>
 
    URL to the IM XML-RPC service.
 
-.. option:: -a <file>, --auth-file <file>
+*  -a <file>, --auth-file <file>
 
-   Path to the authorization file, see :ref:`auth-file`. This option is compulsory.
+   Path to the authorization file, see `Authorization file`_. This option is compulsory.
 
-.. option:: --dry-run
+*  --dry-run
 
    Validate options but do not launch the cluster.
 
-.. option:: -n, --not-store
+*  -n, --not-store
 
    The new cluster will not be stored in the local database.
  
-.. option:: -p, --print
+*  -p, --print
 
    Print final RADL description if the cluster after cluster being successfully configured.
 
-.. option:: --json
+*  --json
 
    If :option:`-p` indicated, print RADL in JSON format instead.
 
-.. option:: --on-error-destroy
+*  --on-error-destroy
 
    If the process fails, try to destroy the infrastructure.
 
-.. option:: -y, --yes
+*  -y, --yes
 
    Don't ask to continue when the connection to IM is not secure.
 
@@ -91,18 +91,18 @@ failed launching::
 
 .. program:: ec3 reconfigure
 
-.. option:: -a <file>, --auth-file <file>
+*  -a <file>, --auth-file <file>
 
-   Append authorization entries in the provided file. See :ref:`auth-file`.
+   Append authorization entries in the provided file. See `Authorization file`_.
 
-.. option:: --add
+*  --add
 
    Add a piece of RADL. This option is useful to set some features. Next example updates
    the maximum number of working nodes to four::
 
       ./ec3 reconfigure mycluster --add "system wn ( ec3_max_instances = 4 )"
 
-.. option:: -r, --reload
+*  -r, --reload
 
    Reload templates used to launch the cluster and reconfigure the cluster with them
    (useful if some templates were modified).
@@ -116,7 +116,7 @@ The command opens a SSH session into the infrastructure front-end::
 
 .. program:: ec3 ssh
 
-.. option:: --show-only
+*  --show-only
 
    Print the command line to invoke SSH and exit.
 
@@ -128,7 +128,7 @@ The command undeploys the cluster and removes the associated information in the 
    ec3 destroy <clustername> [--force]
 
 .. program:: ec3 destroy
-.. option:: --force
+*  --force
 
    Removes local information of the cluster even when the cluster could not be undeployed successfully.
 
@@ -140,11 +140,11 @@ The command prints the RADL description of the cluster stored in the local datab
    ec3 show <clustername> [-r] [--json]
 
 .. program:: ec3 show
-.. option:: -r, --refresh
+*  -r, --refresh
 
    Get the current state of the cluster before printing the information.
 
-.. option:: --json
+*  --json
 
    Print RADL description in JSON format.
 
@@ -156,17 +156,17 @@ The command print a table with information about the clusters that have been lau
    ec3 list [-r] [--json]
 
 .. program:: ec3 list
-.. option:: -r, --refresh
+*  -r, --refresh
 
    Get the current state of the cluster before printing the information.
 
-.. option:: --json
+*  --json
 
    Print the information in JSON format.
 
 .. _cmd-templates:
 
-Command ``templates``
+Command ``Templates``
 ---------------------
 
 The command displays basic information about the available templates like *name*,
@@ -176,19 +176,19 @@ The command displays basic information about the available templates like *name*
 
 .. program:: ec3 templates
 
-.. option:: -s, --search
+*  -s, --search
 
    Show only templates in which the ``<pattern>`` appears in the description.
 
-.. option:: -n, --name
+*  -n, --name
 
    Show only the template with that name.
 
-.. option:: -f, --full-description
+*  -f, --full-description
 
    Instead of the table, it shows all the information about the templates.
 
-.. option:: --json
+*  --json
 
    Print the information in JSON format.
 
@@ -263,3 +263,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`YAML`: http://yaml.org/
+.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
+.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
+.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
+.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates

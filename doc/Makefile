@@ -175,3 +175,19 @@ pseudoxml:
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
+
+md:
+	mkdir -p $(BUILDDIR)/md
+	for i in source/*.rst; do \
+		f="`basename $$i`"; \
+		awk "	BEGIN {a=t=\"\";} \
+			/\.\. _[a-zA-Z0-9-]+:/ { a=gensub(/^\.\. _\`?([^\` ]+)\`?:.*$$/,\"\\\\1\",\"g\") } \
+			/^[=-]{3,}/ { if (a && t) {printf(\"s/\`%s\`/\`%s\`/g; s/<%s>/<%s>/g;\", a,t,a,t); printf(\".. _\`%s\`: https://github.com/grycap/ec3/blob/devel/doc/$(BUILDDIR)/md/$$f#%s\n\",a,tolower(tag)) > \"/dev/fd/3\" }; a=\"\" } \
+			{ t=gensub(/\`/, \"\", \"g\"); tag=gensub(/(^ +)|( +$$)|\`/,\"\",\"g\",t); gsub(/ +/,\"-\",tag) } \
+		" $$i; \
+	done 3> /tmp/index.tmp > /tmp/r.sed;
+	echo 's/:ref:(`[^`<>]+`)/\\1_/g; s/:ref:`([^`<]*)<([^`>]+)>`/\\1(see `\\2`_)/g; s/\.\. option::/* /;' >> /tmp/r.sed
+	for i in source/*.rst; do \
+		f="`basename $$i`"; \
+		sed -r -f /tmp/r.sed $$i /tmp/index.tmp > $(BUILDDIR)/md/$$f; \
+	done
