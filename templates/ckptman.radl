@@ -40,11 +40,11 @@ configure ckptman (
 configure pyslurm (
 @begin
 ---
-    - name: update repositories cache and apt install slurm dependences in Deb systems
+    - name: update repositories cache and apt install ckptman dependences in Deb systems
       action: apt pkg=python-dev,git,cython update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
 
-    - name: update repositories cache and yum install slurm dependences in REL systems
+    - name: update repositories cache and yum install ckptman dependences in REL systems
       action: yum pkg=python-devel,git,python-pip
       when: ansible_os_family == "RedHat"
 
