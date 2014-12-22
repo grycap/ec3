@@ -263,7 +263,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`YAML`: http://yaml.org/
-.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
-.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
-.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
-.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates
+.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/master/doc/build/md/ec3.rst#ec3-command-line-interface
+.. _`Command templates`: https://github.com/grycap/ec3/blob/master/doc/build/md/ec3.rst#command-templates
+.. _`Authorization file`: https://github.com/grycap/ec3/blob/master/doc/build/md/ec3.rst#authorization-file
+.. _`Templates`: https://github.com/grycap/ec3/blob/master/doc/build/md/templates.rst#templates
