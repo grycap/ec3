@@ -133,7 +133,9 @@ configure clues_slurm (
       when: ansible_os_family == "RedHat"
 
     - name: git checkout the pyslurm repository
-      git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes
+      #Now the last version of pyslurm works with slurm 14.11
+      #git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes
+      git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes version=slurm-2.5
 
     - name: build pyslurm
       command: python setup.py build --slurm=/usr/local chdir=/tmp/pyslurm creates=/tmp/pyslurm/pyslurm/pyslurm.c
