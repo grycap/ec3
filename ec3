@@ -175,7 +175,7 @@ def apply_ec3_features(r):
         r.delete(a)
         s.merge(a, conflict="other", missing="other")
         s.setId(a.getId())
-        r.add(s, ifpresent="merge")
+        r.add(s, ifpresent="merge", conflict="other", missing="other")
         if c:
             c = c.clone()
             c.setId(a.getId())
@@ -882,6 +882,8 @@ if __name__ == "__main__":
     commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy]
     try:
         CLI.run(commands)
+    except OSError, e:
+        if e.errno != 32: raise
     except KeyboardInterrupt:
         CLI.display("Execution interrupted! Operation may not have finished properly!")
         sys.exit(1)
