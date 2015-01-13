@@ -14,16 +14,17 @@ This introduces a cost-efficient approach for Cluster-based computing.
 Installation
 ------------
 
-The program `ec3` requires Python 2.6+ and an `IM`_ server, which is used to launch
-virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing
-the next commands::
+The program `ec3` requires Python 2.6+, `pyYAML`_ and an `IM`_ server, which is used to
+launch virtual machines. By default `ec3` uses our public `IM`_ server in
+`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
+next commands::
 
     sudo pip install im
     sudo service im start
 
-`ec3` can be download from `this <https://github.com/grycap/ec3>`_
-git repository::
+`PyYAML`_ is usually available in distribution repositories (`python-yaml` in Debian;
+`PyYAML` in Red Hat; and `PyYAML` in pip).
+`ec3` can be download from `this <https://github.com/grycap/ec3>`_ git repository::
 
    git clone https://github.com/grycap/ec3
 
@@ -88,3 +89,4 @@ Additional information
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
+.. _`PyYAML`: http://pyyaml.org/wiki/PyYAML

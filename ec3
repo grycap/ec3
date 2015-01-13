@@ -19,14 +19,11 @@
 #
 
 import sys, time, logging, os, xmlrpclib, argparse, tempfile, random, re, io
+import yaml
 try:
     import json
 except ImportError:
     import simplejson as json
-try:
-    import yaml
-except ImportError:
-    yaml = None
 
 
 from IM2.auth import Authentication
@@ -352,10 +349,6 @@ class ClusterStore:
 
 class argparse_configyaml:
     def __init__(self, *args, **kwargs):
-        if not yaml:
-            argparse.ArgumentParser.__init__(self, *args, **kwargs)
-            return
-
         if "_self" in kwargs:
             for k in ("_self", "_defaults", "_configfile", "_section"):
                 setattr(self, k, kwargs.get(k, None))
