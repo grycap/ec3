@@ -101,7 +101,7 @@ configure wn (
       when: "{{ CHECKPOINTING == 'yes' }}"
     - command: chown -R slurm:slurm /usr/local/slurm
       when: "{{ CHECKPOINTING == 'yes' }}"
-    - name: copy epilog_controller file from the frontend
+    # name: copy epilog_controller file from the frontend
     - copy:
         dest: /usr/local/slurm/epilog_controller
         content: "{{EPILOG_FILE}}"
