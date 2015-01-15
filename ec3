@@ -875,7 +875,7 @@ if __name__ == "__main__":
     commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy]
     try:
         CLI.run(commands)
-    except OSError, e:
+    except (OSError, IOError), e:
         if e.errno != 32: raise
     except KeyboardInterrupt:
         CLI.display("Execution interrupted! Operation may not have finished properly!")
