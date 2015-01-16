@@ -152,7 +152,7 @@ def make_decision(wn, n, r, limits, force=False, create=True, destroy=True):
                     and (force or t[2] >= LAUNCH_RADL.get(system(c)).getValue("ec3_destroy_safe", None))):
                 Control.disable_node(h); limits[c][1] -= 1; change = True
             elif (v.getValue("ec3_meta_state") in frozenset(["idle-off", "off"]) and
-                    v.getValue("state", "off") not in frozenset(["running", "off"]) and
+                    v.getValue("state", "off") not in frozenset(["running", "pending", "off"]) and
                     int(LAUNCH_RADL.get(system(c)).getValue("ec3_min_instances", 0)) < card[c]):
                 Control.remove_node(h); card[c] -= 1
         n -= 1
@@ -216,13 +216,13 @@ def loop_body():
         if v.getId() == "front": continue
         decision.setdefault(v.getId(), 0)
         make_decision([v.getId()], int(v.getValue("ec3_min_instances", 0)), r, limits, destroy=False)
-        if int(v.getValue("ec3_max_instances", -1)) > 0:
+        if int(v.getValue("ec3_max_instances", -1)) >= 0:
             make_decision([v.getId()], int(v.getValue("ec3_max_instances")), r, limits, force=True, create=False)
     for path in toposort(decision.keys()):
         decision_min = decision_max = 0
         for v in [ LAUNCH_RADL.get(system(c)) for c in path ]:
             decision_min += int(v.getValue("ec3_min_instances", 0))
-            decision_max += int(v.getValue("ec3_max_instances")) if int(v.getValue("ec3_max_instances", -1)) > 0 else 1e7
+            decision_max += int(v.getValue("ec3_max_instances")) if int(v.getValue("ec3_max_instances", -1)) >= 0 else 1e7
         make_decision(path, min(max(sum([ decision.get(c, 0) for c in path ]), decision_min), decision_max), r, limits)
     launch(r)
 
