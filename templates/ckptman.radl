@@ -11,6 +11,7 @@ configure ckptman (
 ---
     # install dependences
     - include: pyslurm.yml
+    - include: slurm_epilog.yml
 
     # download ckptman
     - name: obtain the ckptman code
@@ -62,5 +63,43 @@ configure pyslurm (
 
     - name: install pyslurm
       command: python setup.py install chdir=/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
+@end
+)
+
+configure slurm_epilog (
+@begin
+    - name: prepare epilog files
+      file: path=/usr/local/slurm state=directory owner=slurm group=slurm
+    - copy:
+        dest: /usr/local/slurm/epilog_controller
+        content: "{{EPILOG_FILE}}"
+        mode: 0755
+        owner: slurm
+        group: slurm
+
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#Epilog=' line='Epilog=/usr/local/slurm/epilog_controller' state=present
+    - shell: scontrol reconfig
+@end
+)
+
+configure wn (
+@begin
+---
+  - vars:
+      EPILOG_FILE: 
+        ec3_file: epilog_controller
+    tasks:
+    - include: ckptman.yml
+@end
+)
+
+configure front (
+@begin
+---
+  - vars:
+      EPILOG_FILE: 
+        ec3_file: epilog_controller
+    tasks:
+    - include: ckptman.yml
 @end
 )

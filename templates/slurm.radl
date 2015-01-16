@@ -1,7 +1,8 @@
+
 description slurm (
     kind = 'main' and
-    short = 'Install and configure a cluster SLURM version 2.5.7 (compatible with the latest version of pyslurm) .' and
-    content = 'The template installs SLURM from the package 2.5.7 of the official webpage. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
+    short = 'Install and configure a cluster SLURM 14.11 from source code.' and
+    content = 'The template installs SLURM 14.11 from source code. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
 
 Webpage: http://slurm.schedmd.com/'
 )
@@ -14,153 +15,25 @@ network public (
 network private ()
 
 system front (
-   cpu.arch='x86_64' and
    cpu.count>=1 and
    memory.size>=512m and
    net_interface.0.connection = 'public' and
-   net_interface.0.dns_name = 'slurmserver' and
+   net_interface.0.dns_name = 'slurmserverpublic' and
    net_interface.1.connection = 'private' and
+   net_interface.1.dns_name = 'slurmserver' and
    queue_system = 'slurm' and
-   checkpointing = 'no'
+   ec3_templates contains 'slurm' and
 )
 
 system wn (
   net_interface.0.connection='private'
 )
 
-configure wn (
+configure slurm_source (
 @begin
----
-  - vars:
-      SLURM_PATH: /tmp/slurm-2.5.7
-      EPILOG_FILE: 
-        ec3_file: epilog_controller
-      CHECKPOINTING:
-        ec3_xpath: /system/front/checkpointing
-    tasks:
-    - include: blcr.yml
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
-      action: apt pkg=libmunge2,libpq5,openssl-blacklist,munge,slurm-llnl-basic-plugins,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-
-    - name: update repositories cache and yum install slurm dependences in REL systems
-      action: yum pkg=readline-devel,openssl-devel,munge-devel pam-devel perl-ExtUtils-MakeMaker,gcc-c++,make
-      when: ansible_os_family == "RedHat"
-
-    - name: download SLURM package
-      get_url: url=http://www.schedmd.com/download/archive/slurm-2.5.7.tar.bz2 dest={{SLURM_PATH}}.tar.bz2
-
-    - name: decompress SLURM package
-      command: tar --bzip -x -f slurm-2.5.7.tar.bz2 chdir={{ SLURM_PATH | dirname }} creates={{SLURM_PATH}}
-
-    - name: configure SLURM
-      command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: "{{ CHECKPOINTING == 'no' }}"
-
-    - command: ./configure --with-blcr=/usr/local/bin/ chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-    - name: compile (make) SLURM
-      command: make chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/src/slurmctld
-
-    - name: install SLURM
-      command: make install chdir={{SLURM_PATH}} creates=/usr/local/bin/srun
-
-    - name: copy munge.key file from the frontend
-      copy: src=/tmp/munge.key dest=/etc/munge/munge.key
-
-    - name: change the owner of munge key
-      command: chown munge:munge munge.key chdir=/etc/munge/
-
-    - name: change the permissions of munge key
-      command: chmod 400 munge.key chdir=/etc/munge/
-
-    - name: start munge daemon
-      command: /etc/init.d/munge start
-      ignore_errors: yes
-
-    - name: copy slurm.conf file from the frontend
-      copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
-
-    - name: create slurm user
-      shell: echo "slurm:x:2000:2000:slurm admin:/home/slurm:/bin/bash" >> /etc/passwd
-    - shell: echo "slurm:x:2000:slurm" >> /etc/group
-    - command: pwconv
-
-    - name: create folders used by SLURM and set slurm owner
-      file: path=/var/spool/slurm state=directory
-    - command: chown -R slurm:slurm /var/spool/slurm
-    - file: path=/var/log/slurm state=directory
-    - command: chown -R slurm:slurm /var/log/slurm
-
-    - name: prepare epilog files
-      file: path=/usr/local/slurm state=directory
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    - command: chown -R slurm:slurm /usr/local/slurm
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    # name: copy epilog_controller file from the frontend
-    - copy:
-        dest: /usr/local/slurm/epilog_controller
-        content: "{{EPILOG_FILE}}"
-        mode: 0755
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    - command: chown slurm:slurm /usr/local/slurm/epilog_controller
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-    - include: nfs_wn.yml
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-    - name: start slurmd daemon
-      command: slurmd
-@end
-)
-
-include slurm_misc (
-  template = 'im'
-)
-
-configure front (
-@begin
----
-  - vars:
-      NNODES: 10
-      VNODES_PREFIX: wnode
-      VNODES_SUFFIX:  
-      EPILOG_FILE: 
-        ec3_file: epilog_controller
-      SLURM_PATH: /tmp/slurm-2.5.7
-      SLURM_CONF_FILE:
-        ec3_file: slurm.conf
-      CHECKPOINTING:
-        ec3_xpath: /system/front/checkpointing
-
-    tasks:
-    - name: create epel.repo
-      action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: ansible_os_family == "RedHat"
-
-    # General tasks
-    # Manage the /etc/hosts file
-    - lineinfile: dest=/etc/hosts regexp='{{VNODES_PREFIX}}{{item}}{{VNODES_SUFFIX}}' line="127.0.0.1 {{VNODES_PREFIX}}{{item}}{{VNODES_SUFFIX}}"
-      with_sequence: start=0 end={{NNODES-1}}
-    - lineinfile: dest=/etc/hosts regexp='{{ hostvars[item]['IM_NODE_HOSTNAME'] }}' line='{{item}} {{ hostvars[item]['IM_NODE_FQDN'] }} {{ hostvars[item]['IM_NODE_HOSTNAME'] }}'
-      with_items: groups.all
-
-    - include: im_devel_pip.yml
-
-    - include: blcr.yml
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-    ############################################################################
-    #              LRMS Specific Section
-    ############################################################################
-
-    #SLURM dependences 
-    - name: update repositories cache and apt install slurm dependences in Deb systems
-      action: apt pkg=libmunge2,libpq5,openssl-blacklist,munge,slurm-llnl-basic-plugins,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
+      apt: name=libmunge2,libpq5,openssl-blacklist,munge,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
@@ -168,131 +41,118 @@ configure front (
       when: ansible_os_family == "RedHat"
 
     - name: download SLURM package
-      get_url: url=http://www.schedmd.com/download/archive/slurm-2.5.7.tar.bz2 dest={{SLURM_PATH}}.tar.bz2
+      get_url: url=http://www.schedmd.com/download/latest/slurm-14.11.3.tar.bz2 dest=/tmp/slurm.tar.bz2
 
     - name: decompress SLURM package
-      command: tar --bzip -x -f slurm-2.5.7.tar.bz2 chdir={{ SLURM_PATH | dirname }} creates={{SLURM_PATH}}
+      command: tar xjf slurm.tar.bz2 chdir=/tmp creates=/tmp/slurm-14.11.3
 
     - name: configure SLURM
-      command: ./configure chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: "{{ CHECKPOINTING == 'no' }}"
-
-    - command: ./configure --with-blcr=/usr/local/bin/ chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/config.log
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-    - name: comment "Unsupported option" line in select_linear.c
-      lineinfile: dest={{SLURM_PATH}}/src/plugins/select/linear/select_linear.c regexp='Unsupported' line='//error("Unsupported option %d for get_nodeinfo.", dinfo);' state=present
+      command: ./configure {{ "--with-blcr=/usr/local/bin" if "blcr" in TEMPLATES else "" }} chdir=/tmp/slurm-14.11.3 creates=/tmp/slurm-14.11.3/config.log
 
     - name: compile (make) SLURM
-      command: make chdir={{SLURM_PATH}} creates={{SLURM_PATH}}/src/slurmctld
+      command: make chdir=/tmp/slurm-14.11.3 creates=/tmp/slurm-14.11.3/src/slurmctld
 
     - name: install SLURM
-      command: make install chdir={{SLURM_PATH}} creates=/usr/local/bin/srun
+      command: make install chdir=/tmp/slurm-14.11.3 creates=/usr/local/bin/srun
+@end
+)
 
-    #Generate munge key (si no va en redhat, poner lo de la receta de torque)
-    - name: generate munge key
-      shell: dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key creates=/etc/munge/munge.key
+configure slurm_source_wn (
+@begin
+    - file: path=/usr/local/{{item}} state=directory owner=root group=root
+      with_items: [ "bin", "sbin", "lib", "include", "libexec" ]
+    - name: install SLURM
+      copy: src=/usr/local/{{item}} dest=/usr/local/{{item}} mode=0755
+      with_items: [ "bin/srun", "sbin/slurmd", "sbin/slurmstepd" ]
+    - copy: src=/usr/local/bin/srun_cr dest=/usr/local/bin/srun_cr mode=0755
+      ignore_errors: true
+    - copy: src=/usr/local/{{item}} dest=/usr/local/{{item}}
+      with_items: [ "include/slurm/", "lib/libpmi.so", "lib/libslurm.so", "lib/slurm/", "libexec/slurm/" ]
+@end
+)
 
-    - name: copy the munge.key to a temp directory
-      command: cp /etc/munge/munge.key /tmp/ creates=/tmp/munge.key
+configure slurm_common (
+@begin
+    - name: create slurm user and group
+      user: name=slurm shell=/bin/bash system=yes
 
-    - name: change the owner of munge key
-      command: chown munge:munge munge.key chdir=/etc/munge/
+    - name: create folders used by SLURM and set slurm owner
+      file: path={{item}} state=directory owner=slurm group=slurm
+      with_items:
+         - /var/spool/slurm
+         - /var/log/slurm
+         - /var/slurm/checkpoint
+@end
+)
 
-    - name: change the permissions of munge key
-      command: chmod 400 munge.key chdir=/etc/munge/
+configure wn (
+@begin
+---
+  - vars:
+      TEMPLATES:
+        ec3_jpath: /system/front/ec3_templates
+    tasks:
+    - include: munge_repo_wn.yml
+    - include: slurm_source.yml
+    - include: slurm_common.yml
 
-    - name: start munge daemon
-      command: /etc/init.d/munge start
-      ignore_errors: yes
+    - name: copy slurm.conf file from the frontend
+      copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
 
-    #Configure SLURM
+    - name: start slurmd daemon
+      command: slurmd
+@end
+)
+
+include slurm_misc (
+  template = 'im munge'
+)
+
+configure front (
+@begin
+---
+  - vars:
+      SYSTEMS:
+        ec3_jpath: /system/*
+      SLURM_CONF_FILE:
+        ec3_file: slurm.conf
+      TEMPLATES:
+        ec3_jpath: /system/front/ec3_templates
+
+    tasks:
+    - name: create epel.repo
+      action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
+      when: ansible_os_family == "RedHat"
+
+    # Manage the /etc/hosts file
+    - shell: |
+        for i in `seq 0 {{item.ec3_max_instances_max|int - 1}}`; do
+          item="{{item.id}}${i}";
+          grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item} ${item}.localdomain" >> /etc/hosts;
+        done
+      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+
+    - include: im_devel_pip.yml
+    - include: munge_repo_front.yml
+    - include: slurm_source.yml
+    - include: slurm_common.yml
+
     - copy:
         dest: /usr/local/etc/slurm.conf
         content: "{{SLURM_CONF_FILE}}"
 
-    # Modify slurm.conf to enable checkpoint
-    - name: configure checkpointing in slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='#CheckpointType=' line='CheckpointType=checkpoint/blcr' state=present
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#Epilog=' line='Epilog=/usr/local/slurm/epilog_controller' state=present
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#CheckpointType=' line='CheckpointType=checkpoint/blcr' state=present
+      when: "'blcr' in TEMPLATES"
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='ControlMachine=' line='ControlMachine={{IM_NODE_HOSTNAME}}' state=present
     - name: configure compute nodes section of slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
-
-    - name: create slurm user
-      shell: echo "slurm:x:2000:2000:slurm admin:/home/slurm:/bin/bash" >> /etc/passwd
-    - shell: echo "slurm:x:2000:slurm" >> /etc/group
-    - command: pwconv
-
-    - name: create folders used by SLURM and set slurm owner
-      file: path=/var/spool/slurm state=directory
-    - command: chown -R slurm:slurm /var/spool/slurm
-    - file: path=/var/log/slurm state=directory
-    - command: chown -R slurm:slurm /var/log/slurm
-    - file: path=/var/slurm/checkpoint state=directory
-    - command: chown -R slurm:slurm /var/slurm/checkpoint
-
-    - name: prepare epilog files
-      file: path=/usr/local/slurm state=directory
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    - command: chown -R slurm:slurm /usr/local/slurm
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    - copy:
-        dest: /usr/local/slurm/epilog_controller
-        content: "{{EPILOG_FILE}}"
-        mode: 0755
-      when: "{{ CHECKPOINTING == 'yes' }}"
-    - command: chown slurm:slurm /usr/local/slurm/epilog_controller
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-    # Configure slurm.conf file
-    - name: configure compute nodes section of slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName=' line='NodeName=wnode[0-{{NNODES|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName=' line='PartitionName=debug Nodes=wnode[0-{{NNODES|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
-
-    - include: nfs_front.yml
-      when: "{{ CHECKPOINTING == 'yes' }}"
+      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName={{item.id}}\[' line='NodeName={{item.id}}[0-{{item.ec3_max_instances_max|int - 1}}] CPUs=1 State=UNKNOWN' state=present
+      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id}}[0-{{item.ec3_max_instances_max|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
+      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
 
     # start SLURM slurmctld daemon
     - shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
     - shell: scontrol reconfig
-
-    ############################################################################
-    #              END LRMS Specific Section
-    ############################################################################
-
-    - include: ckptman.yml
-      when: "{{ CHECKPOINTING == 'yes' }}"
-
-@end
-)
-
-# A trick to fix an Ansible problem that needs all the include files
-# even if this includes are conditional
-configure blcr(
-@begin
-    - debug: msg=""
-@end
-)
-
-configure nfs_front(
-@begin
-    - debug: msg=""  
-@end
-)
-
-configure nfs_wn(
-@begin
-    - debug: msg=""
-@end
-)
-
-configure ckptman(
-@begin
-    - debug: msg=""
 @end
 )
 
