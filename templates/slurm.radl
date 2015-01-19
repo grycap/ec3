@@ -12,6 +12,7 @@ network public (
    outports contains '6818/tcp' and
    outports contains '6817/tcp'
 )
+
 network private ()
 
 system front (
@@ -22,7 +23,7 @@ system front (
    net_interface.1.connection = 'private' and
    net_interface.1.dns_name = 'slurmserver' and
    queue_system = 'slurm' and
-   ec3_templates contains 'slurm' and
+   ec3_templates contains 'slurm'
 )
 
 system wn (
