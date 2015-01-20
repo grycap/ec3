@@ -164,8 +164,7 @@ def launch_radl(wn, hostname, r, card, limits):
         if c and (time.time() >= FAILED.get(c, (0,))[0]) and (m < 0 or card.get(c, 0) < m) and limits[c][0] > 0: break
     if not c: return None
     # Workaround IM bug: force to launch all systems of the same kind to identify clearly which class failed
-    if r.systems and r.systems[0].getValue("ec3_class") != c: return None
-    get_launch_radl(hostname, c, r)
+    if not r.systems or r.systems[0].getValue("ec3_class") == c: get_launch_radl(hostname, c, r)
     Control.vmids[hostname].setValue("state", "pending")
     Control.vmids[hostname].setValue("ec3_class", c)
     return c
