@@ -101,7 +101,8 @@ configure wn (
       copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
 
     - name: start slurmd daemon
-      command: slurmd
+      shell: pgrep slurmd || slurmd
+    - shell: scontrol reconfig
 @end
 )
 
@@ -128,7 +129,7 @@ configure front (
     # Manage the /etc/hosts file
     - shell: |
         for i in `seq 0 {{item.ec3_max_instances_max|int - 1}}`; do
-          item="{{item.id}}${i}";
+          item="{{item.id|replace('_','x')}}${i}";
           grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item} ${item}.localdomain" >> /etc/hosts;
         done
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
@@ -146,9 +147,9 @@ configure front (
       when: "'blcr' in TEMPLATES"
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='ControlMachine=' line='ControlMachine={{IM_NODE_HOSTNAME}}' state=present
     - name: configure compute nodes section of slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName={{item.id}}\[' line='NodeName={{item.id}}[0-{{item.ec3_max_instances_max|int - 1}}] CPUs=1 State=UNKNOWN' state=present
+      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName={{item.id|replace('_','x')}}\[' line='NodeName={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] CPUs=1 State=UNKNOWN' state=present
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id}}[0-{{item.ec3_max_instances_max|int - 1}}] Default=YES MaxTime=INFINITE State=UP' state=present
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] MaxTime=INFINITE State=UP' state=present
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
 
     # start SLURM slurmctld daemon

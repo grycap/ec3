@@ -44,11 +44,20 @@ class Control:
 
     vmids = {} 
     """dict[hostname]: system"""
+    AUTH = None
+    """Authentication"""
+
+    @staticmethod
+    def on_new_iteration():
+        """callback on new iteration."""
+        pass
 
     get_meta_state = None
     """function(): return dict[hostname]: one of 'off', 'idle', 'idle-off', 'busy'."""
     get_queued_jobs = None
     """function(): return dict[system ID]: number of systems to deploy."""
+    get_node_class = None
+    """function(): return dict[hostname]: node class."""
     enable_node = None
     """function(host, wn): enable host in some class."""
     disable_node = None
@@ -91,6 +100,7 @@ def get_vmid(vmid):
             hostname = min(map(lambda x: (len(x), x), [h]+hs))[1]
         s0.setValue("ec3_vmid", vmid)
     s0.setValue("ec3_meta_state", Control.vmids.get(hostname, system("dummy")).getValue("ec3_meta_state"))
+    s0.setValue("ec3_class", Control.vmids.get(hostname, system("dummy")).getValue("ec3_class"))
     Control.vmids[hostname] = s0
 
 def get_vmids():
@@ -102,6 +112,12 @@ def get_vmids():
 def update_meta_state():
     for hostname, state in Control.get_meta_state().items():
         Control.vmids.setdefault(hostname, system("dummy")).setValue("ec3_meta_state", state)
+    for hostname, c in (Control.get_node_class().items() if Control.get_node_class else {}):
+        if Control.vmids.get(hostname, system("dummy")).getValue("ec3_class", ""):
+            if Control.vmids[hostname].getValue("ec3_class") != c:
+                logger.error("Node class disagreement in %s: '%s' should be '%s'." % (hostname, Control.vmids[hostname].getValue("ec3_class"), c))
+        else:
+            Control.vmids.setdefault(hostname, system("dummy")).setValue("ec3_class", c)
 
 def get_launch_radl(hostname, wn, r):
     template = LAUNCH_RADL.clone()
@@ -116,7 +132,7 @@ def get_launch_radl(hostname, wn, r):
     r.add(s)
     r.add(deploy(hostname, 1))
 
-def timeline(v):
+def timeline(v, wn):
     """ Return a value so that the less the more change to survive. """
 
     def time_up_to_deadline(v):
@@ -129,27 +145,27 @@ def timeline(v):
         return int(v.getValue("ec3_max_idle_time", 0) - time.time() + v.getValue("idle_time", time.time()))
     MSTATE = dict([ (a,b) for b,a in enumerate(("busy", "idle", "busy-off", "idle-off", "off")) ])
     STATE = dict([ (a,b) for b,a in enumerate(("configured", "running", "pending", "failed", "off")) ])
-    return MSTATE[v.getValue("ec3_meta_state")], STATE.get(v.getValue("state"), 9), time_up_to_deadline(v)
+    WN = dict([ (a,b) for b,a in enumerate(wn) ])
+    return MSTATE[v.getValue("ec3_meta_state")], STATE.get(v.getValue("state"), 9), WN[v.getValue("ec3_class")], time_up_to_deadline(v)
 
 def make_decision(wn, n, r, limits, force=False, create=True, destroy=True):
     card = {}
     for c in [ v.getValue("ec3_class") for v in Control.vmids.values() if v.getValue("ec3_class") in frozenset(wn) ]:
         card[c] = card.get(c, 0) + 1
     change = False
-    nodes = [ (timeline(v), h, v) for h, v in Control.vmids.items() if v.getValue("ec3_class") in frozenset(wn) or
-              (v.getValue("ec3_meta_state", "off") == "off" and v.getValue("state", "off") == "off") ]
+    nodes = [ (timeline(v, wn), h, v) for h, v in Control.vmids.items() if v.getValue("ec3_class") in frozenset(wn) or
+              (v.getValue("ec3_meta_state", "off") == "off" and v.getValue("state", "off") == "off" and v.getValue("ec3_class", "") == "") ]
     for t, h, v in sorted(nodes):
+        c = v.getValue("ec3_class")
         if n > 0 and create:
             if (v.getValue("ec3_meta_state") in frozenset(["busy-off", "idle-off"]) or
                     (v.getValue("state") == "configured" and v.getValue("ec3_meta_state") == "off")):
                 Control.enable_node(h); change = True
             elif v.getValue("state", "off") == "off":
-                c = launch_radl(wn, h, r, card, limits)
-                if c: card[c] = card.get(c, 0) + 1; limits[c][0] -= 1
+                if launch_radl(h, r, card, limits): card[c] = card.get(c, 0) + 1; limits[c][0] -= 1
         elif n < 1 and destroy:
-            c = v.getValue("ec3_class")
             if (v.getValue("ec3_meta_state") in frozenset(["idle", "busy"]) and limits[c][1] > 0
-                    and (force or t[2] >= LAUNCH_RADL.get(system(c)).getValue("ec3_destroy_safe", None))):
+                    and (force or t[3] >= LAUNCH_RADL.get(system(c)).getValue("ec3_destroy_safe", None))):
                 Control.disable_node(h); limits[c][1] -= 1; change = True
             elif (v.getValue("ec3_meta_state") in frozenset(["idle-off", "off"]) and
                     v.getValue("state", "off") not in frozenset(["running", "pending", "off"]) and
@@ -158,16 +174,15 @@ def make_decision(wn, n, r, limits, force=False, create=True, destroy=True):
         n -= 1
     if change: update_meta_state()
 
-def launch_radl(wn, hostname, r, card, limits):
-    for c in wn + [None]:
-        if c: m = int(LAUNCH_RADL.get(system(c)).getValue("ec3_max_instances", -1))
-        if c and (time.time() >= FAILED.get(c, (0,))[0]) and (m < 0 or card.get(c, 0) < m) and limits[c][0] > 0: break
-    if not c: return None
+def launch_radl(hostname, r, card, limits):
+    c = Control.vmids[hostname].getValue("ec3_class")
+    m = int(LAUNCH_RADL.get(system(c)).getValue("ec3_max_instances", -1))
+    if (time.time() < FAILED.get(c, (0,))[0]) or (m >= 0 and card.get(c, 0) < m) or limits[c][0] <= 0:
+        return False
     # Workaround IM bug: force to launch all systems of the same kind to identify clearly which class failed
     if not r.systems or r.systems[0].getValue("ec3_class") == c: get_launch_radl(hostname, c, r)
     Control.vmids[hostname].setValue("state", "pending")
-    Control.vmids[hostname].setValue("ec3_class", c)
-    return c
+    return True
 
 def launch(r):
     if not str(r): return
@@ -197,6 +212,7 @@ def loop_body():
     get_vmids()
     update_meta_state()
     logger.debug("vmids = %s" % san(Control.vmids, 1000))
+    Control.on_new_iteration()
 
     # Failure control
     if any([ v.getId() == "front" and v.getValue("state") == "failed" for v in Control.vmids.values() ]):
@@ -217,7 +233,8 @@ def loop_body():
         make_decision([v.getId()], int(v.getValue("ec3_min_instances", 0)), r, limits, destroy=False)
         if int(v.getValue("ec3_max_instances", -1)) >= 0:
             make_decision([v.getId()], int(v.getValue("ec3_max_instances")), r, limits, force=True, create=False)
-    for path in toposort(decision.keys()):
+    #NOTE: temporally disable toposort: for path in toposort(decision.keys()):
+    for path in [ [k] for k in decision.keys() ]:
         decision_min = decision_max = 0
         for v in [ LAUNCH_RADL.get(system(c)) for c in path ]:
             decision_min += int(v.getValue("ec3_min_instances", 0))
@@ -231,7 +248,7 @@ def loop_cmd(seconds, cmd):
         time0 = time.time()
         try:
             subprocess.check_call(cmd, shell=True)
-        except Exception, e:
+        except Exception as e:
             logger.warning(str(e))
         time.sleep(max(seconds - (time.time() - time0), 0))
 
@@ -264,8 +281,8 @@ if __name__ == "__main__":
     description = [ d for d in imp.get_suffixes() if d[0] == ".py" ][0]
     for opt_wrapper in options.wrapper:
         try:
-            imp.load_module("wrapper", opt_wrapper, opt_wrapper.name, description).ec3_init(Control)
-        except Exception, e:
+            imp.load_module(opt_wrapper.name.partition(".")[0], opt_wrapper, opt_wrapper.name, description).ec3_init(Control)
+        except Exception as e:
             logger.error("Error in -w/--wrapper in '%s': %s\n" % (opt_wrapper.name, str(e)))
             sys.exit(1)
     Control = spy(Control, (subprocess.CalledProcessError,))
@@ -276,7 +293,7 @@ if __name__ == "__main__":
             if len(c) < 1: raise Exception("Please, two arguments at least")
             try: commands.append((int(c[0]), c[1:]))
             except: raise Exception("First argument should be a number!")
-    except Exception, e:
+    except Exception as e:
         logger.error("Error in -tc/--timed-command: %s")
     for tc in commands:
         t = threading.Thread(target=loop_cmd, args=tc)
@@ -285,9 +302,9 @@ if __name__ == "__main__":
     try:
         while True:
             time0 = time.time()
-            logger.info("New iteration")
             try:
                 AUTH, LAUNCH_RADL = update_files(options.auth[0], options.radl[0])
+                Control.AUTH = AUTH
                 loop_body()
             except:
                 logger.exception("Exception in loop:")

@@ -28,6 +28,8 @@ configure front (
         ec3_xpath: /system/front/auth
       EC3_CONTROL_CONTENT:
         ec3_file: ec3_control.py
+      EC3_CONTROL_MON:
+        ec3_file: ec3_mon.py
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
       EC3_CONTROL_TORQUE_WRAPPER_CONTENT:
@@ -84,12 +86,16 @@ configure ec3_control_slurm (
          content: "{{EC3_CONTROL_SLURM_WRAPPER_CONTENT}}"
          mode: 0755
     - copy:
+         dest: /usr/local/ec3/ec3_mon.py
+         content: "{{EC3_CONTROL_MON}}"
+         mode: 0755
+    - copy:
          dest: /usr/local/ec3/ec3_control
          content: |
             #!/bin/bash
             
             cd /usr/local/ec3
-            pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py -l err -ll 0 >& out &
+            pgrep -f '^python ./ec3_control' || nohup ./ec3_control.py -a auth.dat -r wn.radl -w wrapper.py ec3_mon.py -l err -ll 0 >& out &
          mode: 0755
 @end
 )
