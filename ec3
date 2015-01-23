@@ -158,6 +158,9 @@ def apply_ec3_expressions(r):
         return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
     recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
                      for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
+    def isrecursive(p):
+        p = p.split("/")
+        return len(p) < 3 or p[1] == "configure"
     for conf, conf_vars in recipes_vars:
         conf_vars0 = {}
         for k, v in conf_vars.items():
@@ -165,7 +168,22 @@ def apply_ec3_expressions(r):
             try:
                 if v.get("ec3_file"):
                     conf_vars0[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
-                elif v.get("ec3_xpath"):
+                elif v.get("ec3_xpath") and not isrecursive(v.get("ec3_xpath")):
+                    conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
+                elif v.get("ec3_jpath") and not isrecursive(v.get("ec3_jpath")):
+                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
+            except Exception, e:
+                CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
+        conf_vars.update(conf_vars0)
+    recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
+                     for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
+    for conf, conf_vars in recipes_vars:
+        conf_vars0 = {}
+        for k, v in conf_vars.items():
+            if not isinstance(v, dict): continue
+            try:
+                if v.get("ec3_xpath"):
                     conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
                 elif v.get("ec3_jpath"):
                     conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
@@ -178,15 +196,12 @@ def apply_ec3_features(r):
     for a in list(r.aspects):
         if not isinstance(a, FeaturedAspect) or not a.getValue("ec3_inherit_from"): continue
         s = a.getValue("ec3_inherit_from").clone(); a.delValue("ec3_inherit_from")
-        c = r.get(configure(s.getId()))
+        if r.get(configure(s.getId())):
+            r.add(configure(a.getId(), [{"ec3_append": s.getId()}]), ifpresent="merge", conflict="me")
         r.delete(a)
         s.merge(a, conflict="other", missing="other")
         s.setId(a.getId())
         r.add(s, ifpresent="merge", conflict="other", missing="other")
-        if c:
-            c = c.clone()
-            c.setId(a.getId())
-            r.add(c, ifpresent="merge", conflict="me")
 
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
