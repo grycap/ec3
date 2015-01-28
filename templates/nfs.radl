@@ -31,7 +31,7 @@ configure front (
       lineinfile: dest=/etc/default/nfs-kernel-server regexp=^RPCMOUNTDOPTS line='RPCMOUNTDOPTS="--manage-gids --port 2048"'
 
     - name: export the directories editing the file /etc/exports
-      lineinfile: dest=/etc/exports line="/home *(rw,sync,no_root_squash,no_subtree_check)"
+      lineinfile: dest=/etc/exports line="/home *(rw,async,no_root_squash,no_subtree_check,insecure)"
 
     - service: name=nfs-kernel-server state=started
     - name: export exports file
