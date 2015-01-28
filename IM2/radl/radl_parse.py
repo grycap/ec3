@@ -15,15 +15,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import ply.yacc as yacc
-from radl_lex import *
-import radl
-from radl import Feature, RADL, configure, contextualize, contextualize_item, \
-                 deploy, SoftFeatures, Features, Aspect, RADLParseException
+from .ply import yacc
+from .radl_lex import *
+from . import radl
+from .radl import Feature, RADL, configure, contextualize, contextualize_item, \
+                  deploy, SoftFeatures, Features, Aspect, RADLParseException
 try:
 	import yaml
 except ImportError:
 	yaml = None
+try:
+	unicode("hola")
+except NameError:
+	class unicode: pass
 
 def p_radl(t):
 	"""radl : radl radl_sentence_end
@@ -60,7 +64,7 @@ def p_configure_sentence(t):
 		if yaml:
 			try:
 				recipe = yaml.safe_load(recipe)
-			except Exception, e:
+			except Exception as e:
 				raise RADLParseException("Error parsing YAML: %s" % str(e), line=t.lineno(5))
 		t[0] = configure(t[2], recipe, line=t.lineno(1))
 

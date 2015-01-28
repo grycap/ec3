@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import ply.lex as lex
+from .ply import lex
 
 # Ponemos los estados para gestionan el tema de las recetas
 states = (
@@ -144,7 +144,7 @@ def t_recipe_RECIPE_LINE(t):
 
 # Error handling rule
 def t_ANY_error(t):
-	print "Illegal character '%s'" % t.value[0]
+	#print "Illegal character '%s'" % t.value[0]
 	t.lexer.skip(1)
 
 lexer = lex.lex(optimize=1)
