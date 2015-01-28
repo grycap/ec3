@@ -294,24 +294,28 @@ net_interface.0.connection = 'public1'
 		s0.merge(s1, missing="other")
 		pub0 = s0.getValue("net_interface.0.connection")
 		self.assertIsInstance(pub0, network)
-		self.assertEqual(pub0.getValue("attr0"), "val0")
+		self.assertEqual(pub0.getValue("attr0", None), None)
 		self.assertEqual(pub0.getValue("attr1"), "val1")
 
 	def test_system_merge1(self):
 
-		radl = """
+		radl0 = """
 network public0 (outbound = 'yes' and attr0 = 'val0')
-network public1 (outbound = 'yes' and attr0 = 'val1')
 system s0 (
 net_interface.0.connection = 'public0'
-)
+)		"""
+		radl1 = """
+network public0 (outbound = 'yes' and attr0 = 'val1')
 system s1 (
-net_interface.0.connection = 'public1'
+net_interface.0.connection = 'public0'
 )		"""
 
-		r = parse_radl_text(radl)
-		self.radl_check(r)
-		s0, s1 = r.get(system("s0")), r.get(system("s1"))
+
+		r0 = parse_radl_text(radl0)
+		self.radl_check(r0)
+		r1 = parse_radl_text(radl1)
+		self.radl_check(r1)
+		s0, s1 = r0.get(system("s0")), r1.get(system("s1"))
 		with self.assertRaises(RADLConflict) as ex:
 			s0.merge(s1, missing="other")
 		self.assertEqual(ex.exception.f0.prop, "attr0")
@@ -333,177 +337,6 @@ net_interface.0.connection = 'public0'
 			s = s.clone()
 			s.setId(i)
 		self.assertEqual(len(set([ f(r.get(system("s0")), i) for i in range(4) ])), 1)
-
-	def test_radl_concrete(self):
-
-		radl = """
-network public0 (outbound = 'yes' and attr0 = 'val0')
-system s0 (
-net_interface.0.connection = 'public0'
-)		"""
-
-		r = parse_radl_text(radl)
-		self.radl_check(r)
-		def f(p, v):
-			def f0(r, t):
-				self.assertIsNotNone(r.get(t))
-				t = t.clone()
-				t.setValue(p, v)
-				return [RADL([t])]
-			return f0
-		def concrete(plan, **kwargs):
-			c0 = r.concrete(plan, r.get(system("s0")), **kwargs)
-			for r0 in c0:
-				self.assertIsInstance(r0, RADL)
-			return c0
-		plan = ("or", f("p", 0), f("p", 1))
-		c = concrete(plan)
-		self.assertEqual(len(c), 2)
-		self.assertItemsEqual(map(lambda x: x.get(system("s0")).getValue("p"), c), (0, 1))
-		plan = ("and", f("p", 0), f("q", 1))
-		c = concrete(plan)
-		self.assertEqual(len(c), 1)
-		c = c.pop()
-		self.assertItemsEqual((c.get(system("s0")).getValue("p"), c.get(system("s0")).getValue("q")), (0, 1))
-		fNone = lambda *_: []
-		plan = ("xor", fNone, f("p", 0), f("p", 1))
-		c = concrete(plan)
-		self.assertEqual(len(c), 1)
-		self.assertEqual(c.pop().get(system("s0")).getValue("p"), 0)
-		plan = ("and", ("xor", fNone, ("or", f("p", 0), f("p", 1))), ("or", f("p", 0), f("p", 1)))
-		c = concrete(plan)
-		self.assertEqual(len(c), 2)
-		plan = ("and", ("or", f("p", 0), f("p", 1)), ("or", f("q", 0), f("q", 1)))
-		c = concrete(plan)
-		self.assertEqual(len(c), 4)
-
-	def test_radl_do(self):
-
-		radl = """
-network public0 (outbound = 'yes' and attr0 = 'val0')
-system s0 (
-net_interface.0.connection = 'public0'
-)		"""
-
-		r = parse_radl_text(radl)
-		self.radl_check(r)
-		def f(p, v):
-			def f0(r, t):
-				self.assertIsNotNone(r.get(t))
-				self.assertIsNotNone(r.get(system("s0")).getValue("net_interface.0.connection"))
-				return RADL([ system(t.getId(), [ Feature(p, "=", v) ]) ])
-			return f0
-		fNone = lambda *_: None
-		def do(plan, **kwargs):
-			r0 = r.do(plan, r.get(system("s0")), **kwargs)
-			if r0 is not None: self.assertIsInstance(r0, RADL)
-			return r0
-		def undo(r0, plan, **kwargs):
-			r0 = r0.do(plan, r0.get(system("s0")), reverse=True, **kwargs)
-			self.assertIsInstance(r0, RADL)
-			self.assertEqual(r.get(system("s0")), r0.get(system("s0")))
-		plan = ("or", f("p", 0), f("p", 1))
-		r0 = do(plan)
-		self.assertEqual(r0.get(system("s0")).getValue("p"), 0)
-		undo(r0, plan)
-		plan = ("or", fNone, f("p", 1), f("p", 0))
-		r0 = do(plan)
-		self.assertEqual(r0.get(system("s0")).getValue("p"), 1)
-		undo(r0, plan)
-		plan = ("and", f("p", 0), f("q", 1))
-		r0 = do(plan)
-		self.assertEqual([r0.get(system("s0")).getValue(v) for v in ("p","q")], [0, 1])
-		plan = ("and", f("p", 0), fNone, f("q", 1))
-		self.assertIsNone(do(plan))
-		plan = ("and", ("xor", fNone, ("or", f("p", 0), f("p", 1))), ("or", f("q", 0), f("q", 1)))
-		r0 = do(plan)
-		self.assertEqual([r0.get(system("s0")).getValue(v) for v in ("p","q")], [0, 0])
-		undo(r0, plan)
-
-	def test_radl_alternative(self):
-
-		def do(i, t):
-			"""
-			If t is a system, return::
-			  system( net = netork(netmock i, _mock0 = i), _mock0 = i )
-			If t is a network, return::
-			  network(netmock i, _mock0 = i)
-			"""
-
-			self.assertTrue(i is not None)
-			self.assertIsInstance(t, (system, network))
-			if t.getValue("_mock0", i) != i: return None
-			netid = (t.getId() if isinstance(t, network) else 
-			         t.getValue("net", network("netmock%d" % i)).getId())
-			r0 = RADL([ network(netid, [ Feature("_mock0", "=", i),
-			                             Feature("public", "=", ("no","yes")[i]) ]) ])
-			if isinstance(t, network): return r0
-			r0.add(system(t.getId(), [ Feature("_mock0", "=", i),
-			                           Feature("net", "=", r0.get(network(netid))) ]))
-			return r0
-		def concrete(i):
-			def concretef(_, t):
-				r = do(i, t[1])
-				return [] if r is None else [r]
-			return concretef
-		def alt(radl):
-			"""
-			Copy of RADLRequest.do, but failing in launching the
-			second system with ``_mock0 = 0``. Systems and networks
-			from _mock0 = 0 are better than _mock0 = 1.
-			"""
-
-			concretep = ("or", concrete(0), concrete(1))
-			scoref = lambda r, a: (r.get(a).getValue("_mock0", 1e9), r)
-			dos = {}
-			bannings = []
-			fail, ok, test0, first = False, False, False, True
-			while True:
-				r, aspects = radl.alternative(None, concretep, scoref, dos, bannings)
-				if r is None: break
-				if first:
-					self.assertEqual(set([s.getValue("_mock0") for s in r.gets(system)]), set([0]))
-					first = False
-				self.assertTrue(len(set(radl.props.keys()) - (aspects | set(dos.keys()))) == 0)
-				class MyExc(Exception): pass
-				try:
-					for a in aspects:
-						if dos.get(a, RADL()).get(a) and dos[a].get(a).isMoreConcreteThan(r.get(a)):
-							continue
-						a = r.get(a)
-						if isinstance(a, system) and a.getValue("_mock0") == 0:
-							if fail:
-								bannings.append((None,a))
-								raise MyExc
-							else: fail = True
-						r0 = do(a.getValue("_mock0"), a)
-						if not r0: raise Exception("Unexpected!")
-						dos[a.getKey()] = r0
-					ok = True
-					break
-				except MyExc:
-					test0 = True
-					pass
-			self.assertTrue(ok)
-			self.assertTrue(test0)
-			radl0 = RADL()
-			[ radl0.merge(r, missing="other", ifpresent="merge") for r in dos.values() ]
-			return radl0
-
-		# Test a fail in provider _mock0 = 0, resulting 1 system _mock0 = 0 and
-		# 2 systems _mock0 = 1, because the three systems don't have to have a
-		# network in common.
-		radl = RADL([ system("s%d" % i) for i in range(3) ])
-		radl0 = alt(radl)
-		self.assertItemsEqual([s.getValue("_mock0") for s in radl0.gets(system)], [0,1,1])
-
-		# Same test but three systems share a network, resulting all systems and the
-		# network with _mock0 = 1
-		net = network("net")
-		radl = RADL([ system("s%d" % i, [ Feature("net", "=", net) ]) for i in range(3) ])
-		radl0 = alt(radl)
-		self.assertItemsEqual([s.getValue("_mock0") for s in radl0.gets(system)], [1]*3)
-		self.assertItemsEqual([s.getValue("net").getValue("_mock0") for s in radl0.gets(system)], [1]*3)
 
 if __name__ == "__main__":
 	unittest.main()
