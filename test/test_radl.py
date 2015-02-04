@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from radl_parse import parse_radl as parse_radl_text, dump_radl as dump_radl_text
-from radl_json import parse_radl as parse_radl_json, dump_radl as dump_radl_json
-from radl import (RADL, Features, Feature, RADLParseException, system, network,
-                  RADLConflict, deploy, configure, contextualize)
+from IM2.radl import parse_radl as parse_radl_text, dump_radl as dump_radl_text
+from IM2.radl import parse_radl_json, dump_radl_json
+from IM2.radl.radl import (RADL, Features, Feature, RADLParseException, system, network,
+                           RADLConflict, deploy, configure, contextualize)
 import unittest
 from mock import Mock
 
