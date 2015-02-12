@@ -16,12 +16,7 @@
 
 import copy
 import itertools
-try:
-	from urlparse import urlparse
-	le2 = lambda a,b: a <= b
-except ImportError:
-	from urllib.parse import urlparse
-	le2 = lambda a,b: True if a is None else False if b is None else a <= b
+from urlparse import urlparse
 import heapq as heap
 
 def UnitToValue(unit):
@@ -102,7 +97,7 @@ def _combinations(c):
 			heap.heappush(combs, (ci1[0]-c[i][0][0]+score0, c1))
 
 
-class Feature(object):
+class Feature:
 	"""
 	Every property that can appear in the definitions of a ``network`` and ``system``.
 
@@ -154,7 +149,7 @@ class Feature(object):
 		if unit or self.unit:
 			try:
 				r = float(self.value * UnitToValue(self.unit)) / UnitToValue(unit)
-			except Exception as e:
+			except Exception, e:
 				raise RADLParseException(str(e), line=self.line)
 			return int(round(r)) if isinstance(self.value, int) else r
 		return self.value
@@ -349,7 +344,7 @@ class Features(object):
 			inter0 = self.props.get(f.prop, (None, None))
 			try:
 				self.props[f.prop] = Features._applyInter(inter0, inter1, conflict)
-			except Exception as e:
+			except Exception, e:
 				raise RADLConflict(str(e), f0=inter0, f1=f)
 		elif isinstance(f, SoftFeatures):
 			self.props.setdefault(f.prop, set()).add(f)
@@ -365,7 +360,7 @@ class Features(object):
 				raise RADLConflict("Conflict adding `%s` because `%s` is not a set, it is '%s'." % (f, f.prop, self.props[f.prop]))
 		elif isinstance(f.value, Aspect):
 			value0 = self.props.get(f.prop, None)
-			if not value0 or not value0.value or value0.value.getId() != f.value.getId():
+			if not value0 or not value0.value:
 				self.props[f.prop] = f
 			else:
 				self.props[f.prop].value.merge(f.value, conflict=conflict, missing=missing)
@@ -466,12 +461,12 @@ class Features(object):
 		# Remember, None <= number and None <= None are True, but number <= None is False.
 		inter0 = tuple([f.getValue() if f else None for f in finter0])
 		inter1 = tuple([f.getValue() if f else None for f in finter1])
-		le00 = le2(inter0[0], inter1[0])                      # finter0[0] <= finter1[0]
-		le01 = inter1[1] == None or le2(inter0[0], inter1[1]) # finter0[0] <= finter1[1]
-		le11 = inter1[1] == None or (inter0[1] != None and le2(inter0[1], inter1[1]))
+		le00 = inter0[0] <= inter1[0]                         # finter0[0] <= finter1[0]
+		le01 = inter1[1] == None or inter0[0] <= inter1[1]    # finter0[0] <= finter1[1]
+		le11 = inter1[1] == None or (inter0[1] != None and inter0[1] <= inter1[1])
 		                                                      # finter0[1] <= finter1[1]
 		ge00 = not le00 or inter0[0] == inter1[0]             # finter0[0] >= finter1[0]
-		ge10 = inter0[1] == None or le2(inter1[0], inter0[1]) # finter0[1] >= finter1[0]
+		ge10 = inter0[1] == None or inter0[1] >= inter1[0]    # finter0[1] >= finter1[0]
 
 		# First interval is (  ), second interval is [  ]
 		if le00 and ge10 and le11:                       # ( [ ) ] chain first-second
@@ -616,7 +611,7 @@ class Aspect:
 		aspect0 = aspect0.clone()
 		try:
 			aspect0.merge(aspect1, **kargs)
-		except RADLConflict as e:
+		except RADLConflict, e:
 			if iferror == "error":
 				raise e
 			else:
@@ -926,6 +921,7 @@ class _system(Features):
 	OFF = "off"
 	FAILED = "failed"
 	CONFIGURED = "configured"
+	UNCONFIGURED = "unconfigured"
 	UNKNOWN = "unknown"
 	IS_ACCESSIBLE = frozenset(("pending", "running", "stopped", "configured", "failed"))
 
@@ -1092,9 +1088,6 @@ class SoftFeatures(_system, Feature):
 		self.line = line
 		_system.__init__(self, features)
 		Feature.__init__(self, SoftFeatures.SOFT, "contains", self)
-
-	def __hash__(self):
-		return _system.__hash__(self)
 
 	def __eq__(self, other):
 		return isinstance(other, SoftFeatures) and Features.__eq__(self, other)

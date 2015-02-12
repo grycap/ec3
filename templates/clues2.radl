@@ -1,0 +1,110 @@
+description clues2 (
+    kind = 'component' and
+    short = 'Tool for self-management of clusters TORQUE, SGE and SLURM.' and
+    content = 'CLUES is an energy management system for High Performance Computing (HPC) Clusters and Cloud infrastructures. The tool deploys new working nodes using the system "wn" to fit increasing load. The recipe installs the corresponding plugin for TORQUE, SGE and SLURM.
+
+Webpage: http://www.grycap.upv.es/clues/'
+)
+
+configure front (
+@begin
+---
+  - vars:
+      REPOSITORY: http://www.grycap.upv.es/clues/download
+      CLUES_FILE: CLUES-2.0.2b
+      CLUESONE_FILE: cluesonebindings-0.35
+      AUTH:
+        ec3_xpath: /system/front/auth
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
+
+    tasks:
+    - get_url: url={{REPOSITORY}}/{{item}} dest=/tmp/{{item}}
+      register: result
+      until: result|success
+      retries: 5
+      delay: 1
+      with_items:
+      - "{{CLUES_FILE}}.tar.gz"
+      - "{{CLUESONE_FILE}}.tar.gz"
+
+    # CLUES2 requirements
+    - name: Apt install CLUES2 requirements in Deb system
+      apt: pkg=python-sqlite
+      when: ansible_os_family == "Debian"
+
+    - name: Yum install CLUES2 requirements in REL system
+      yum: pkg=python-sqlite2
+      when: ansible_os_family == "RedHat"
+
+    - name: Install CLUES pip requirements
+      pip: name={{item}}
+      with_items:
+      - web.py
+      - ply
+
+    # CLUES2 installation
+    - unarchive: src=/tmp/{{item}}.tar.gz dest=/tmp copy=no
+      with_items:
+      - "{{CLUES_FILE}}"
+      - "{{CLUESONE_FILE}}"
+
+    - command: python setup.py install chdir=/tmp/{{CLUES_FILE}}
+    - command: python setup.py install chdir=/tmp/{{CLUESONE_FILE}}
+
+    - file: path=/etc/clues2 state=directory mode=755
+
+    # CLUES2 Config file
+    - copy: src=/etc/clues2/clues2.cfg-example dest=/etc/clues2/clues2.cfg force=no
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=POWERMANAGER_CLASS line="POWERMANAGER_CLASS=cluesplugins.im"
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.pbs"
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=SCHEDULER_CLASSES line="SCHEDULER_CLASSES=clueslib.schedulers.CLUES_Scheduler_PowOn_Requests, clueslib.schedulers.CLUES_Scheduler_PowOff_IDLE"
+      notify: restart cluesd
+
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=MAX_WAIT_POWERON line="MAX_WAIT_POWERON=600"
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=MAX_WAIT_POWEROFF line="MAX_WAIT_POWEROFF=600"
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=PERIOD_LIFECYCLE line="PERIOD_LIFECYCLE=10"
+      notify: restart cluesd
+
+    # CLUES2 IM plugin Config file
+    - file: path=/usr/local/ec3 state=directory
+    - copy:
+        dest: /usr/local/ec3/auth.dat
+        content: "{{AUTH}}"
+      notify: restart cluesd
+    - copy: src=/etc/clues2/plugins.d/plugin-im.cfg-example dest=/etc/clues2/plugins.d/plugin-im.cfg force=no
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/plugins.d/plugin-im.cfg regexp=IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE line="IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE=/usr/local/ec3/auth.dat"
+      notify: restart cluesd
+
+    - include: clues_pbs.yml
+      when: "{{ QUEUE_SYSTEM == 'torque' }}"
+
+    - service: name=cluesd state=started
+    
+    handlers:
+    - name: restart cluesd
+      service: name=cluesd state=restarted
+@end
+)
+
+# PBS plugin installation
+configure clues_pbs (
+@begin
+
+    - copy: src=/etc/clues2/plugins.d/plugin-pbs.cfg-example dest=/etc/clues2/plugins.d/plugin-pbs.cfg force=no
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/plugins.d/plugin-pbs.cfg regexp=PBS_SERVER line="PBS_SERVER=torqueserver"
+      notify: restart cluesd
+    - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/bin/clues-pbs-wrapper' create=yes mode=644
+      notify: restart cluesd
+
+@end
+)
+
+
