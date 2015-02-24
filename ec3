@@ -36,7 +36,7 @@ from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Fea
 
 
 # Our public IM service
-IM_URL = 'http://servproject.i3m.upv.es:8899'
+IM_URL = 'http://servproject.i3m.upv.es:7899'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
