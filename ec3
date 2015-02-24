@@ -18,16 +18,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, time, logging, os, xmlrpclib, argparse, tempfile, random, re, io
+import sys, time, logging, os, argparse, tempfile, random, re, io
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
+
+import yaml
 try:
     import json
 except ImportError:
     import simplejson as json
 try:
-    import yaml
-except ImportError:
-    yaml = None
-
+	unicode("hola")
+except NameError:
+	unicode = str
 
 from IM2.auth import Authentication
 from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
@@ -141,6 +146,16 @@ def ec3_xpath_features(features, xpath):
     raise Exception("Invalid path: '%s' is not in '%s'" % (elem, str(features)))
 
 def apply_ec3_expressions(r):
+    def apply_ec3_append(i):
+        if not isinstance(i, dict) or "ec3_append" not in i: return [i]
+        try:
+            if not isinstance(r.get(configure(i["ec3_append"])).recipe, list): raise Exception
+            return r.get(configure(i["ec3_append"])).clone().recipe
+        except:
+            raise Exception("Configure '%s' does't exist or the recipe is not a list." % i["ec3_append"])
+    for conf in r.gets(configure):
+        if not isinstance(conf.recipe, list): continue
+        conf.recipe = [ l1 for l0 in map(apply_ec3_append, conf.recipe) for l1 in l0 ]
     recipes_prio = [ conf for conf in r.gets(configure) if isinstance(conf.recipe, list) and
                      any([ "ec3_prio" in d for d in conf.recipe if isinstance(d, dict) ]) ]
     def rm_ec3_prio(t):
@@ -151,6 +166,9 @@ def apply_ec3_expressions(r):
         return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
     recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
                      for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
+    def isrecursive(p):
+        p = p.split("/")
+        return len(p) < 3 or p[1] == "configure"
     for conf, conf_vars in recipes_vars:
         conf_vars0 = {}
         for k, v in conf_vars.items():
@@ -158,11 +176,26 @@ def apply_ec3_expressions(r):
             try:
                 if v.get("ec3_file"):
                     conf_vars0[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
-                elif v.get("ec3_xpath"):
+                elif v.get("ec3_xpath") and not isrecursive(v.get("ec3_xpath")):
+                    conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
+                elif v.get("ec3_jpath") and not isrecursive(v.get("ec3_jpath")):
+                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
+            except Exception as e:
+                CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
+        conf_vars.update(conf_vars0)
+    recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
+                     for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
+    for conf, conf_vars in recipes_vars:
+        conf_vars0 = {}
+        for k, v in conf_vars.items():
+            if not isinstance(v, dict): continue
+            try:
+                if v.get("ec3_xpath"):
                     conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
                 elif v.get("ec3_jpath"):
                     conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
-            except Exception, e:
+            except Exception as e:
                 CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
                 sys.exit(1)
         conf_vars.update(conf_vars0)
@@ -171,15 +204,12 @@ def apply_ec3_features(r):
     for a in list(r.aspects):
         if not isinstance(a, FeaturedAspect) or not a.getValue("ec3_inherit_from"): continue
         s = a.getValue("ec3_inherit_from").clone(); a.delValue("ec3_inherit_from")
-        c = r.get(configure(s.getId()))
+        if r.get(configure(s.getId())):
+            r.add(configure(a.getId(), [{"ec3_append": s.getId()}]), ifpresent="merge", conflict="me")
         r.delete(a)
         s.merge(a, conflict="other", missing="other")
         s.setId(a.getId())
-        r.add(s, ifpresent="merge")
-        if c:
-            c = c.clone()
-            c.setId(a.getId())
-            r.add(c, ifpresent="merge", conflict="me")
+        r.add(s, ifpresent="merge", conflict="other", missing="other")
 
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
@@ -331,7 +361,7 @@ class ClusterStore:
             if not success: raise Exception(cont_out)
             r.get(system("front")).setValue("contextualization_output", cont_out)
             ClusterStore.save(clustername, r)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error getting information from cluster '%s': %s" % (clustername, str(e)),
                         level=logging.ERROR)
             s0.setValue("state", system.UNKNOWN)
@@ -354,10 +384,6 @@ class ClusterStore:
 
 class argparse_configyaml:
     def __init__(self, *args, **kwargs):
-        if not yaml:
-            argparse.ArgumentParser.__init__(self, *args, **kwargs)
-            return
-
         if "_self" in kwargs:
             for k in ("_self", "_defaults", "_configfile", "_section"):
                 setattr(self, k, kwargs.get(k, None))
@@ -367,7 +393,7 @@ class argparse_configyaml:
         if os.path.isfile(configfilename):
             try:
                 self._defaults = yaml.load(open(configfilename, "r").read())
-            except Exception, e:
+            except Exception as e:
                 CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)),
                             level=logging.ERROR, exception=True)
             self._configfile = None
@@ -430,7 +456,7 @@ default:
               kw.get("action", None) != "append"):
             default = self._defaults[prop]
             if isinstance(kw.get("type", None), argparse.FileType):
-                if isinstance(default, str): default = io.BytesIO(default)
+                if isinstance(default, str): default = io.StringIO(unicode(default))
                 elif "filename" in default: default = open(default["filename"], kw["type"]._mode)
                 elif "stream" in default: default = sys.stderr if default["stream"] == "stderr" else sys.stdout
                 else:
@@ -519,7 +545,7 @@ class CmdLaunch:
                 auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
                                     (random.random()*1e15, random.random()*1e15))
                 auth_data = Authentication.read_auth_data(auth_content)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
         try:
@@ -529,7 +555,7 @@ class CmdLaunch:
                 if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                     sys.exit(1)
             im_server = xmlrpclib.ServerProxy(options.xmlrpc[0], allow_none=True)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
          
@@ -548,12 +574,13 @@ class CmdLaunch:
         try:
             success, infrId = im_server.CreateInfrastructure(dump_radl(radl), auth_data)
             if not success: raise Exception(infrId)
-            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
+            success, res = im_server.GetInfrastructureInfo(infrId, auth_data)
             if not success: raise Exception(res)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
+        vm_ids = res['vm_list']
 
         CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
@@ -570,14 +597,14 @@ class CmdLaunch:
             try:
                 file_content = get_content_from_template_file(r + ".radl")
                 radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
-            except Exception, e:
+            except Exception as e:
                 CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR, exception=True)
                 sys.exit(1)
         for r in template_names: add_template(r)
         for r in pieces_radl:
             try:
                 radl.merge(parse_radl(r), ifpresent="merge", missing="other", conflict="other")
-            except Exception, e:
+            except Exception as e:
                 CLI.display("Error processing '%s': %s" % (r, str(e)), level=logging.ERROR, exception=True)
                 sys.exit(1)
         while radl.gets(include):
@@ -595,7 +622,7 @@ class CmdLaunch:
         try:
             apply_ec3_features(radl)
             apply_ec3_expressions(radl)
-        except Exception, e:
+        except Exception as e:
             CLI.display(str(e), level=logging.ERROR, exception=True)
             sys.exit(1)
 
@@ -630,21 +657,20 @@ class CmdLaunch:
                 if state == system.CONFIGURED: break
                 if state in [system.FAILED, system.UNCONFIGURED]:
                     success, info = im_server.GetInfrastructureContMsg(infrId, auth_data)
-                    raise Exception(info if success else "unexpected failure: " + info)
+                    raise Exception(info if success else "unexpected failure")
                 if state not in system.IS_ACCESSIBLE: raise Exception("unexpected failure")
                 if time.time() - time0 > TIMEOUT:
                     raise Exception("Time out! Infrastructure is not still configured!")
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
                                         DELAY)
-        except Exception, e:
-            CLI.logger.exception("Error while configuring the infrastructure")
+        except Exception as e:
             CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
                     success, info = im_server.DestroyInfrastructure(infrId, auth_data)
                     if not success: raise Exception(info)
                     CLI.display("Infrastructure successfully destroyed")
-                except Exception, e:
+                except Exception as e:
                     CLI.display("Error while destroying the infrastructure: %s" % str(e), level=logging.ERROR)
                 sys.exit(1)
         else:
@@ -669,7 +695,7 @@ class CmdLaunch:
                     if not success: raise Exception(res)
                 success, res = new_im_server.GetInfrastructureInfo(newInfrId, auth_data)
                 if not success: raise Exception(res)
-            except Exception, e:
+            except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
             CLI.display("Front-end ready!")
         finally:
@@ -716,7 +742,7 @@ class CmdShow:
             r = ClusterStore.load(options.clustername, options.refresh)
             output = dump_radl_json(r) if options.json else dump_radl(r)
             CLI.display(output + "\n")
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error showing cluster '%s': %s" % (options.clustername, str(e)),
                         level=logging.ERROR, exception=True)
 
@@ -740,12 +766,12 @@ class CmdSsh:
                 CLI.display(" ".join(ops))
                 sys.exit(0)
             os.execlp(ops[0], *ops)
-        except OSError, e:
+        except OSError as e:
             CLI.display("Error connecting to cluster '%s': %s\n"
                         "Probably 'sshpass' or 'ssh' program is not installed!" % (options.clustername, str(e)),
                         level=logging.ERROR)
             sys.exit(1)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error connecting to cluster '%s': %s" % (options.clustername, str(e)),
                         level=logging.ERROR)
             sys.exit(1)
@@ -782,7 +808,7 @@ class CmdDestroy:
             success, info = new_im_server.DestroyInfrastructure(infrId, auth)
             if not success:
                 raise Exception(info)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
                         level=logging.ERROR)
             if options.force:
@@ -806,7 +832,7 @@ class CmdReconfigure:
         try:
             r = ClusterStore.load(options.clustername)
             im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
-        except Exception, e:
+        except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
         try:
@@ -814,7 +840,7 @@ class CmdReconfigure:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() if l.find("InfrastructureManager") < 0 ]
                 auth_data = Authentication.normalize(Authentication.read_auth_data(auth_content) + auth_data)
             auth_content = Authentication.dump(auth_data)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
@@ -833,7 +859,7 @@ class CmdReconfigure:
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             success, info = im_server.Reconfigure(infrId, radl, auth_data)
             if not success: raise Exception(info)
-        except Exception, e:
+        except Exception as e:
             CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
@@ -862,7 +888,7 @@ class CmdTemplates:
             templates.add(t)
             try:
                 r = parse_radl(get_content_from_template_file(t + ".radl"))
-            except Exception, e:
+            except Exception as e:
                 CLI.display("Error processing '%s': %s" % (t, str(e)), level=logging.ERROR, exception=True)
                 sys.exit(1)
             for d in r.gets(description):
@@ -884,6 +910,8 @@ if __name__ == "__main__":
     commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy]
     try:
         CLI.run(commands)
+    except (OSError, IOError) as e:
+        if e.errno != 32: raise
     except KeyboardInterrupt:
         CLI.display("Execution interrupted! Operation may not have finished properly!")
         sys.exit(1)
