@@ -574,13 +574,12 @@ class CmdLaunch:
         try:
             success, infrId = im_server.CreateInfrastructure(dump_radl(radl), auth_data)
             if not success: raise Exception(infrId)
-            success, res = im_server.GetInfrastructureInfo(infrId, auth_data)
-            if not success: raise Exception(res)
+            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
+            if not success: raise Exception(vm_ids)
         except Exception as e:
             CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
-        vm_ids = res['vm_list']
 
         CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
