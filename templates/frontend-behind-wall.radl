@@ -26,7 +26,7 @@ configure fbw_wn (
     - copy:
         content: |
             #! /bin/bash
-            test -f /tmp/.iptables && exit
+            test -f /tmp/.redsocksetup0 && exit
             service redsocks stop || true
             echo 'base { 
                 log_debug = off;
@@ -61,8 +61,16 @@ configure fbw_wn (
             done >> /etc/redsocks.conf
             chgrp ssh /usr/sbin/sshd
             chmod g+s /usr/sbin/sshd
-            service ssh stop
+            touch /tmp/.redsocksetup0
             killall -9 sshd
+            service ssh start
+        dest: /tmp/redsocksetup0.sh
+        mode: 0755
+
+    - copy:
+        content: |
+            #! /bin/bash
+            test -f /tmp/.redsocksetup1 && exit
             /sbin/iptables -t nat -A OUTPUT -p tcp -d {{FRONTEND}} -m owner ! --gid-owner ssh -j REDIRECT --to-ports 12345;
             port="12346";
             for p in $UDPPORTS; do
@@ -70,11 +78,12 @@ configure fbw_wn (
                 port="$(( port+1 ))";
             done
             /usr/sbin/redsocks -c /etc/redsocks.conf
-            service ssh start
-            touch /tmp/.iptables
-        dest: /tmp/redsocksetup.sh
+            touch /tmp/.redsocksetup1
+        dest: /tmp/redsocksetup1.sh
         mode: 0755
-    - command: /tmp/redsocksetup.sh
+
+    - command: /tmp/redsocksetup0.sh
+    - command: /tmp/redsocksetup1.sh
 @end
 ) 
 

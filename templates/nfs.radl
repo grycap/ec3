@@ -27,6 +27,19 @@ configure front (
     - name: update repositories cache and install NFS
       apt: name=nfs-kernel-server update_cache=yes cache_valid_time=3600
 
+    - name: set the domain in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain=localdomain" state=present
+
+    - name: set translation in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"
+    - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+
+    - name: specify the use of idmapd.conf
+      lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+
+    - name: restart idmapd service
+      service: name=idmapd state=restarted
+
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-kernel-server regexp=^RPCMOUNTDOPTS line='RPCMOUNTDOPTS="--manage-gids --port 2048"'
 
@@ -44,10 +57,24 @@ configure wn (
 @begin
   - vars:
       FRONTEND:
-        ec3_xpath: /system/front/net_interface.1.dns_name
+        # ec3_xpath: /system/front/net_interface.1.dns_name
+        ec3_xpath: /system/front/net_interface.0.dns_name
     tasks:
     - name: update repositories cache and install NFS
       apt: name=nfs-common update_cache=yes cache_valid_time=3600
+
+    - name: set the domain in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain = localdomain" state=present
+
+    - name: set translation in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"                                    
+    - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+
+    - name: specify the use of idmapd.conf
+      lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+
+    - name: restart idmapd service
+      service: name=idmapd state=restarted
 
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='STATDOPTS="--port 2046 --outgoing-port 2047"'
