@@ -928,7 +928,7 @@ class _system(Features):
 	CONFIGURED = "configured"
 	UNCONFIGURED = "unconfigured"
 	UNKNOWN = "unknown"
-	IS_ACCESSIBLE = frozenset(("pending", "running", "stopped", "configured", "failed"))
+	IS_ACCESSIBLE = frozenset(("pending", "running", "stopped", "configured", "failed", "unconfigured"))
 
 	def check(self, radl):
 		"""Check the features in this system."""
