@@ -4,6 +4,7 @@
 
 import time
 import boto.ec2
+from IM.auth import Authentication
 
 try:
     import json
