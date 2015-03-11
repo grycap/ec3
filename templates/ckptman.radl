@@ -9,8 +9,8 @@ Webpage: https://github.com/amcaar/ckptman'
 configure ckptman (
 @begin
 ---
-    # install dependences
-    - include: pyslurm.yml
+    # install dependences (pyslurm dependency eliminated)
+    #- include: pyslurm.yml
     - include: slurm_epilog.yml
 
     # download ckptman
@@ -82,6 +82,7 @@ configure slurm_epilog (
 @end
 )
 
+#ckptman is not needed in the working nodes
 configure wn (
 @begin
 ---
@@ -89,7 +90,7 @@ configure wn (
       EPILOG_FILE: 
         ec3_file: epilog_controller
     tasks:
-    - include: ckptman.yml
+    #- include: ckptman.yml
 @end
 )
 
