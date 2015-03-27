@@ -12,7 +12,8 @@ configure front (
   - vars:
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-2.0.2b
-      CLUESONE_FILE: cluesonebindings-0.35
+      CLUESONE_FILE: cluesonebindings-0.36
+      CPYUTILS_FILE: cpyutils-0.02
       AUTH:
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
@@ -27,10 +28,11 @@ configure front (
       with_items:
       - "{{CLUES_FILE}}.tar.gz"
       - "{{CLUESONE_FILE}}.tar.gz"
+      - "{{CPYUTILS_FILE}}.tar.gz"
 
     # CLUES2 requirements
     - name: Apt install CLUES2 requirements in Deb system
-      apt: pkg=python-sqlite
+      apt: pkg=python-sqlite,git
       when: ansible_os_family == "Debian"
 
     - name: Yum install CLUES2 requirements in REL system
@@ -48,9 +50,11 @@ configure front (
       with_items:
       - "{{CLUES_FILE}}"
       - "{{CLUESONE_FILE}}"
+      - "{{CPYUTILS_FILE}}"
 
     - command: python setup.py install chdir=/tmp/{{CLUES_FILE}}
     - command: python setup.py install chdir=/tmp/{{CLUESONE_FILE}}
+    - command: python setup.py install chdir=/tmp/{{CPYUTILS_FILE}}
 
     - file: path=/etc/clues2 state=directory mode=755
 
