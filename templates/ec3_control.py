@@ -233,6 +233,7 @@ def loop_body():
         make_decision([v.getId()], int(v.getValue("ec3_min_instances", 0)), r, limits, destroy=False)
         if int(v.getValue("ec3_max_instances", -1)) >= 0:
             make_decision([v.getId()], int(v.getValue("ec3_max_instances")), r, limits, force=True, create=False)
+    #NOTE: temporally disable toposort: for path in toposort(decision.keys()):
     #for path in [ [k] for k in decision.keys() ]:
     for path in toposort(decision.keys()):
         decision_min = decision_max = 0

@@ -30,6 +30,15 @@ configure front (
     - name: set the domain in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain=localdomain" state=present
 
+    #- name: set nobody in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
+
+    #- name: set the nogroup in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-Group = nogroup' line="Nobody-Group = ubuntu" state=present
+
+    #- name: set verbosity in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
+
     - name: set translation in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf line="[Translation]"
     - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
@@ -66,12 +75,24 @@ configure wn (
     - name: set the domain in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain = localdomain" state=present
 
+    #- name: set nobody in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
+
+    #- name: set nogroup in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-Group = nogroup' line="Nobody-Group = ubuntu" state=present
+
+    #- name: set verbosity in idmapd.conf      
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
+
     - name: set translation in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf line="[Translation]"                                    
     - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
 
     - name: specify the use of idmapd.conf
       lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+
+    #- name: modify nsswitch
+    #  lineinfile: "dest=/etc/nsswitch.conf regexp='hosts' line='hosts:          files dns' state=present"
 
     - name: restart idmapd service
       service: name=idmapd state=restarted

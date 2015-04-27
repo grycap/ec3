@@ -12,32 +12,32 @@ configure blcr (
       register: KERNEL_RELEASE
 
     - name: obtain the BLCR code
-      get_url: url=http://crd.lbl.gov/assets/Uploads/FTG/Projects/CheckpointRestart/downloads/blcr-0.8.5.tar.gz dest=/tmp/blcr-0.8.5.tar.gz
+      get_url: url=http://crd.lbl.gov/assets/Uploads/FTG/Projects/CheckpointRestart/downloads/blcr-0.8.5.tar.gz dest=/opt/tmp/blcr-0.8.5.tar.gz
       when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '<=')
-    - shell: tar zxf blcr-0.8.5.tar.gz; mv /tmp/blcr-0.8.5 /tmp/blcr chdir=/tmp creates=/tmp/blcr
+    - shell: tar zxf blcr-0.8.5.tar.gz; mv /opt/tmp/blcr-0.8.5 /opt/tmp/blcr chdir=/opt/tmp creates=/opt/tmp/blcr
       when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '<=')
-    - get_url: url=https://upc-bugs.lbl.gov/blcr-dist/blcr-0.8.6_b4.tar.gz dest=/tmp/blcr-0.8.6_b4.tar.gz
+    - get_url: url=https://upc-bugs.lbl.gov/blcr-dist/blcr-0.8.6_b4.tar.gz dest=/opt/tmp/blcr-0.8.6_b4.tar.gz
       when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '>')
-    - shell: tar zxf blcr-0.8.6_b4.tar.gz; mv /tmp/blcr-0.8.6_b4 /tmp/blcr chdir=/tmp creates=/tmp/blcr
+    - shell: tar zxf blcr-0.8.6_b4.tar.gz; mv /opt/tmp/blcr-0.8.6_b4 /opt/tmp/blcr chdir=/opt/tmp creates=/opt/tmp/blcr
       when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '>')
 
     - name: create a folder where compile the code of BLCR
-      file: path=/tmp/blcr/builddir state=directory
+      file: path=/opt/tmp/blcr/builddir state=directory
 
     - name: install all dependences of BLCR
       apt: name=make,gcc,linux-headers-{{KERNEL_RELEASE.stdout}} update_cache=yes cache_valid_time=3600
 
     - name: configure blcr
-      shell: ../configure chdir=/tmp/blcr/builddir creates=/tmp/blcr/builddir/config.log
+      shell: ../configure chdir=/opt/tmp/blcr/builddir creates=/opt/tmp/blcr/builddir/config.log
 
     - name: compile (make) BLCR
-      command: make chdir=/tmp/blcr/builddir creates=/tmp/blcr/builddir/bin
+      command: make chdir=/opt/tmp/blcr/builddir creates=/opt/tmp/blcr/builddir/bin
 
     - name: install BLCR
-      command: make install chdir=/tmp/blcr/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
+      command: make install chdir=/opt/tmp/blcr/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
 
     - name: load kernel modules
-      shell: grep -q "\<blcr\>" /proc/modules || make insmod chdir=/tmp/blcr/builddir
+      shell: grep -q "\<blcr\>" /proc/modules || make insmod chdir=/opt/tmp/blcr/builddir
 
     - name: updating ld.so.cache
       command: ldconfig
@@ -58,6 +58,7 @@ system front ( ec3_templates contains 'blcr' )
 configure front (
 @begin
   - tasks:
+    - file: path=/opt/tmp state=directory
     - include: blcr.yml
 @end
 )
@@ -67,6 +68,7 @@ system wn ( ec3_templates contains 'blcr' )
 configure wn (
 @begin
   - tasks:
+    - file: path=/opt/tmp state=directory
     - include: blcr.yml
 @end
 )

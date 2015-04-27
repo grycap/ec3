@@ -66,7 +66,7 @@ configure slurm_source_wn (
       copy: src=/usr/local/{{item}} dest=/usr/local/{{item}} mode=0755
       with_items: [ "bin/srun", "sbin/slurmd", "sbin/slurmstepd" ]
     - copy: src=/usr/local/bin/srun_cr dest=/usr/local/bin/srun_cr mode=0755
-      ignore_errors: true
+      ignore_errors: yes
     - copy: src=/usr/local/{{item}} dest=/usr/local/{{item}}
       with_items: [ "include/slurm/", "lib/libpmi.so", "lib/libslurm.so", "lib/slurm/", "libexec/slurm/" ]
 @end
@@ -102,6 +102,7 @@ configure wn (
 
     - name: start slurmd daemon
       shell: pgrep slurmd || slurmd
+      #command: slurmd
     - shell: scontrol reconfig
 @end
 )
@@ -134,7 +135,8 @@ configure front (
         done
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
 
-    - include: im_devel_pip.yml
+    - include: im_devel_git.yml
+    #- include: im_devel_pip.yml
     - include: munge_repo_front.yml
     - include: slurm_source.yml
     - include: slurm_common.yml
@@ -153,6 +155,7 @@ configure front (
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
 
     # start SLURM slurmctld daemon
+    #- command: slurmctld
     - shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
     - shell: scontrol reconfig
 @end

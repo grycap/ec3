@@ -38,10 +38,10 @@ def get_price(s, auth):
     return None
 
 def on_new_iteration(old_func):
-    # Temporally disable spot price information
+    # Temporally disable price information in spot instances
     #for v in Control_ref[0].vmids.values():
-        #if v.getValue("spot", "no") != "yes": continue
-        #v.setValue("price", get_price(v, Control_ref[0].AUTH))
+    #    if v.getValue("spot", "no") != "yes": continue
+    #    v.setValue("price", get_price(v, Control_ref[0].AUTH))
     f = open('mon.txt', 'a')
     d = dict([ (a,str(b)) for a,b in Control_ref[0].vmids.items() ])
     d["time"] = time.time()

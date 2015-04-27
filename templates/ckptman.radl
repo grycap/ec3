@@ -9,17 +9,17 @@ Webpage: https://github.com/amcaar/ckptman'
 configure ckptman (
 @begin
 ---
-    # install dependences (pyslurm dependency eliminated)
+    # install dependences
     #- include: pyslurm.yml
-    - include: slurm_epilog.yml
+    #- include: slurm_epilog.yml
 
     # download ckptman
     - name: obtain the ckptman code
-      #get_url: url=https://s3.amazonaws.com/amcaar/ckptman.tar.gz dest=/tmp/ckptman.tar.gz
       git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local/ckptman version=master
+    # git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local/ckptman version=casestudy
 
     # ckptman installation
-    #- command: tar -xzf /tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
+    #- command: tar -xzf /opt/tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
     - file: path=/usr/local/ckptman/ckptman mode=0755
     - file: path=/usr/local/ckptman/launcher mode=0755
     - file: path=/usr/local/ckptman/ckptman_daemon.py mode=0755
@@ -55,14 +55,14 @@ configure pyslurm (
 
     - name: git checkout the pyslurm repository
       #Now the last version of pyslurm works with slurm 14.11
-      #git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes
-      git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes version=slurm-2.5
+      #git: repo=git://github.com/gingergeeks/pyslurm dest=/opt/tmp/pyslurm accept_hostkey=yes
+      git: repo=git://github.com/gingergeeks/pyslurm dest=/opt/tmp/pyslurm accept_hostkey=yes version=slurm-2.5
 
     - name: build pyslurm
-      command: python setup.py build --slurm=/usr/local chdir=/tmp/pyslurm creates=/tmp/pyslurm/pyslurm/pyslurm.c
+      command: python setup.py build --slurm=/usr/local chdir=/opt/tmp/pyslurm creates=/opt/tmp/pyslurm/pyslurm/pyslurm.c
 
     - name: install pyslurm
-      command: python setup.py install chdir=/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
+      command: python setup.py install chdir=/opt/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
 @end
 )
 
@@ -82,7 +82,6 @@ configure slurm_epilog (
 @end
 )
 
-#ckptman is not needed in the working nodes
 configure wn (
 @begin
 ---
@@ -90,7 +89,8 @@ configure wn (
       EPILOG_FILE: 
         ec3_file: epilog_controller
     tasks:
-    #- include: ckptman.yml
+    - file: path=/opt/tmp state=directory
+    #- include: slurm_epilog.yml
 @end
 )
 
@@ -101,6 +101,7 @@ configure front (
       EPILOG_FILE: 
         ec3_file: epilog_controller
     tasks:
+    - file: path=/opt/tmp state=directory
     - include: ckptman.yml
 @end
 )
