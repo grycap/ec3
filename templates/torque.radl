@@ -103,6 +103,9 @@ configure wn (
         owner: root
         group: root
     - service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
+    # Many times MOM_SERVICE does not start properly. Wait and test it again
+    - command: sleep 5
+    - service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
 @end
 )
 
@@ -149,7 +152,8 @@ configure front (
       template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
       when: ansible_os_family == "RedHat"
 
-    - include: im_devel_pip.yml
+#    - include: im_devel_pip.yml
+    - include: im_devel_git.yml
 
     # Users creation
     - user: name={{item.name}} password={{item.password}} generate_ssh_key=yes shell=/bin/bash
@@ -193,6 +197,11 @@ configure front (
     - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
 
     - service: name={{SCHED_SERVICE}} state=started pattern=/usr/sbin/pbs_sched
+
+    # Many times TORQUE_SERVICE and SCHED_SERVICE do not start properly. Wait and test them again
+    - command: sleep 5
+    - service: name={{SCHED_SERVICE}} state=started pattern=/usr/sbin/pbs_sched
+    - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
 @end
 )
 

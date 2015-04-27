@@ -356,8 +356,10 @@ class ClusterStore:
             for prop in ("auth", "__im_server", "__infrastructure_id"):
                 if s0.hasFeature(prop):
                     r.get(system("front")).setValue(prop, s0.getValue(prop))
-            r.get(system("front")).setValue("nodes", len(res["vm_list"])-1)
-            r.get(system("front")).setValue("contextualization_output", res["cont_out"])
+            r.get(system("front")).setValue("nodes", len(res)-1)
+            success, cont_out = new_im_server.GetInfrastructureContMsg(infrId, auth)
+            if not success: raise Exception(cont_out)
+            r.get(system("front")).setValue("contextualization_output", cont_out)
             ClusterStore.save(clustername, r)
         except Exception as e:
             CLI.display("Error getting information from cluster '%s': %s" % (clustername, str(e)),
@@ -572,13 +574,12 @@ class CmdLaunch:
         try:
             success, infrId = im_server.CreateInfrastructure(dump_radl(radl), auth_data)
             if not success: raise Exception(infrId)
-            success, res = im_server.GetInfrastructureInfo(infrId, auth_data)
-            if not success: raise Exception(res)
+            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
+            if not success: raise Exception(vm_ids)
         except Exception as e:
             CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
-        vm_ids = res['vm_list']
 
         CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
@@ -653,9 +654,9 @@ class CmdLaunch:
                 system_front.setValue("nodes", 0)
                 if not options_not_store: ClusterStore.save(options_clustername, radl)
                 if state == system.CONFIGURED: break
-                if state == system.FAILED:
-                    success, info = im_server.GetInfrastructureInfo(infrId, auth_data)
-                    raise Exception(info["cont_out"] if success else "unexpected failure")
+                if state in [system.FAILED, system.UNCONFIGURED]:
+                    success, info = im_server.GetInfrastructureContMsg(infrId, auth_data)
+                    raise Exception(info if success else "unexpected failure")
                 if state not in system.IS_ACCESSIBLE: raise Exception("unexpected failure")
                 if time.time() - time0 > TIMEOUT:
                     raise Exception("Time out! Infrastructure is not still configured!")
@@ -699,7 +700,7 @@ class CmdLaunch:
         finally:
             # Save cluster
             if system_front and not options_not_store:
-                system_front.setValue("nodes", len(res["vm_list"] if res else [0])-1)
+                system_front.setValue("nodes", len(res if res else [0])-1)
                 ClusterStore.save(options_clustername, radl)
 
             # Print cluster
