@@ -63,8 +63,6 @@ configure front (
       notify: restart cluesd
     - lineinfile: dest=/etc/clues2/clues2.cfg regexp=POWERMANAGER_CLASS line="POWERMANAGER_CLASS=cluesplugins.im"
       notify: restart cluesd
-    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.pbs"
-      notify: restart cluesd
     - lineinfile: dest=/etc/clues2/clues2.cfg regexp=SCHEDULER_CLASSES line="SCHEDULER_CLASSES=clueslib.schedulers.CLUES_Scheduler_PowOn_Requests, clueslib.schedulers.CLUES_Scheduler_PowOff_IDLE"
       notify: restart cluesd
 
@@ -89,6 +87,9 @@ configure front (
     - include: clues_pbs.yml
       when: "{{ QUEUE_SYSTEM == 'torque' }}"
 
+    - include: clues_sge.yml
+      when: "{{ QUEUE_SYSTEM == 'sge' }}"
+
     - service: name=cluesd state=started
     
     handlers:
@@ -101,14 +102,30 @@ configure front (
 configure clues_pbs (
 @begin
 
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.pbs"
+      notify: restart cluesd
+
     - copy: src=/etc/clues2/plugins.d/plugin-pbs.cfg-example dest=/etc/clues2/plugins.d/plugin-pbs.cfg force=no
       notify: restart cluesd
     - lineinfile: dest=/etc/clues2/plugins.d/plugin-pbs.cfg regexp=PBS_SERVER line="PBS_SERVER=torqueserver"
       notify: restart cluesd
-    - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/bin/clues-pbs-wrapper' create=yes mode=644
-      notify: restart cluesd
 
+    - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/local/bin/clues-pbs-wrapper' create=yes mode=644
 @end
 )
 
 
+# SGE plugin installation
+configure clues_sge (
+@begin
+
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.sge"
+      notify: restart cluesd
+    - copy: src=/etc/clues2/plugins.d/plugin-sge.cfg-example dest=/etc/clues2/plugins.d/plugin-sge.cfg force=no
+      notify: restart cluesd
+
+    - lineinfile: dest={{SGE_ROOT}}/default/common/sge_request regexp='^-jsv' line="-jsv /usr/local/bin/clues-sge-wrapper" create=yes mode=644
+    - lineinfile: dest=/etc/profile.d/sge_vars.sh regexp='SGE_JSV_TIMEOUT' line="export SGE_JSV_TIMEOUT=600" create=yes mode=755
+
+@end
+)

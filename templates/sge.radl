@@ -1,0 +1,248 @@
+description sge (
+    kind = 'main' and
+    short = 'Install and configure a cluster SGE from distribution repositories.' and
+    content = 'The template installs SGE from the package repositories. Also it creates an user "user1", which is common to all nodes and can be used to launch jobs. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.'
+)
+
+network public (
+      outbound = 'yes' and
+      outports contains '6444/tcp' and
+      outports contains '6444/udp' and
+      outports contains '6445/tcp' and
+      outports contains '6445/udp'
+)
+network private ()
+
+system front (
+      cpu.count>=1 and
+      memory.size>=512m and
+      net_interface.0.connection='public' and
+      net_interface.1.connection='private' and
+      net_interface.1.dns_name = 'sgemaster' and
+      queue_system = 'sge'
+)
+
+system wn (
+      net_interface.0.connection='private'
+)
+
+configure Debian (
+@begin
+      SGE_ROOT: /var/lib/gridengine
+      EXEC_SERVICE: gridengine-exec
+@end
+)
+
+configure RedHat (
+@begin
+      SGE_ROOT: /usr/lib/gridengine
+      EXEC_SERVICE: sge_execd
+@end
+)
+
+configure wn (
+@begin
+---
+  - vars:
+      USERS:
+        - {name: user1, password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0}
+
+    tasks:
+    - include_vars: "{{item}}"
+      with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
+    # Create users
+    - name: Create User {{item.name}}
+      user: name={{item.name}} password={{item.password}} shell=/bin/bash
+      with_items: USERS
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: USERS
+    - name: Copy the id_rsa.pub file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
+    - name: Copy the id_rsa file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
+
+    # Installation of sge
+    - name: prevent the sge install dialogs
+      shell: echo {{ item }} | debconf-set-selections
+      with_items:
+      - "* shared/gridenginemaster select sgemaster"
+      - "* shared/gridenginecell select default"
+      - "* shared/gridengineconfig select true"
+      - "* postfix/main_mailer_type select No configuration"
+      when: ansible_os_family == "Debian"
+
+    - name: Apt install SGE
+      action: apt pkg=gridengine-common,gridengine-client,gridengine-exec
+      when: ansible_os_family == "Debian"
+      
+    - name: create epel.repo
+      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
+      when: ansible_os_family == "RedHat"
+    - name: Yum install SGE in REL system
+      yum: name=gridengine,gridengine-execd,openssh-clients
+      when: ansible_os_family == "RedHat"
+
+    - name: Set the SGE qmaster node
+      action: copy dest={{SGE_ROOT}}/default/common/act_qmaster content="sgemaster"
+      notify:
+      - restart {{EXEC_SERVICE}}
+
+    handlers:
+    - name: restart gridengine-exec
+      service: name=gridengine-exec state=restarted pattern=/usr/lib/gridengine/sge_execd
+
+    - name: restart sge_execd
+      service: name=sge_execd state=restarted pattern=/usr/bin/sge_execd
+@end
+)
+
+configure front (
+@begin
+---
+  - vars:
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      NODE_DEF: |
+        load_scaling          NONE
+        complex_values        NONE
+        user_lists            NONE
+        xuser_lists           NONE
+        projects              NONE
+        xprojects             NONE
+        usage_scaling         NONE
+        report_variables      NONE
+      ALL_Q_CONF: |
+        qname                 all.q
+        hostlist              @allhosts
+        seq_no                0
+        load_thresholds       np_load_avg=1.75
+        suspend_thresholds    NONE
+        nsuspend              1
+        suspend_interval      00:05:00
+        priority              0
+        min_cpu_interval      00:05:00
+        processors            UNDEFINED
+        qtype                 BATCH INTERACTIVE
+        ckpt_list             NONE
+        pe_list               NONE
+        rerun                 FALSE
+        slots                 1
+        tmpdir                /tmp
+        shell                 /bin/bash
+        prolog                NONE
+        epilog                NONE
+        shell_start_mode      unix_behavior
+        starter_method        NONE
+        suspend_method        NONE
+        resume_method         NONE
+        terminate_method      NONE
+        notify                00:00:60
+        owner_list            NONE
+        user_lists            NONE
+        xuser_lists           NONE
+        subordinate_list      NONE
+        complex_values        NONE
+        projects              NONE
+        xprojects             NONE
+        calendar              NONE
+        initial_state         default
+        s_rt                  INFINITY
+        h_rt                  INFINITY
+        s_cpu                 INFINITY
+        h_cpu                 INFINITY
+        s_fsize               INFINITY
+        h_fsize               INFINITY
+        s_data                INFINITY
+        h_data                INFINITY
+        s_stack               INFINITY
+        h_stack               INFINITY
+        s_core                INFINITY
+        h_core                INFINITY
+        s_rss                 INFINITY
+        h_rss                 INFINITY
+        s_vmem                INFINITY
+        h_vmem                INFINITY
+
+      USERS:
+        - name: user1
+          password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
+
+    tasks:
+    - include_vars: "{{item}}"
+      with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
+    - command: hostname sgemaster
+
+    - name: create epel.repo
+      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
+      when: ansible_os_family == "RedHat"
+
+    - include: im_devel_pip.yml
+#    - include: im_devel_git.yml
+
+    # Users creation
+    - user: name={{item.name}} password={{item.password}} generate_ssh_key=yes shell=/bin/bash
+      with_items: USERS
+    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
+      with_items: USERS
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: USERS
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
+
+    # Manage the /etc/hosts file
+    - shell: |
+        for i in `seq 1 {{NNODES}}`; do
+          item="vnode${i}";
+          grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
+        done
+
+    # SGE configuration Specific tasks
+    - name: prevent the sge install dialogs
+      shell: echo {{ item }} | debconf-set-selections
+      with_items:
+      - "* shared/gridenginemaster select sgemaster"
+      - "* shared/gridenginecell select default"
+      - "* shared/gridengineconfig select true"
+      - "* postfix/main_mailer_type select No configuration"
+      when: ansible_os_family == "Debian"
+  
+    - name: Apt install SGE in Deb system
+      action: apt pkg=gridengine-common,gridengine-client,gridengine-master
+      when: ansible_os_family == "Debian"
+      
+    - name: Yum install SGE in REL system
+      action: yum pkg=gridengine,gridengine-execd,openssh-clients
+      when: ansible_os_family == "RedHat"
+
+    - command: qconf -as {{IM_NODE_FQDN}}
+
+    - copy:
+        content: |
+           hostname vnode{{item}}.localdomain
+           {{NODE_DEF}}
+        dest: /tmp/vnode{{item}}.def
+      with_sequence: start=1 end={{NNODES}}
+
+    - shell: qconf -se vnode{{item}} || qconf -Ae /tmp/vnode{{item}}.def
+      with_sequence: start=1 end={{NNODES}}
+      
+    - shell: qconf -ah vnode{{item}}
+      with_sequence: start=1 end={{NNODES}}
+
+    - copy: content="{{ALL_Q_CONF}}" dest=/tmp/all.q
+    - copy:
+        content: |
+           group_name @allhosts
+           hostlist {% for number in range(1, NNODES|int + 1) %} vnode{{number}} {% endfor %}
+        dest: /tmp/allhosts.hgrp
+
+    - shell: qconf -shgrp @allhosts || qconf -Ahgrp /tmp/allhosts.hgrp
+    - shell: qconf -sq all.q || qconf -Aq /tmp/all.q
+
+@end
+)
+
+deploy front 1
