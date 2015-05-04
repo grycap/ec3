@@ -135,8 +135,8 @@ configure front (
         done
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
 
-    - include: im_devel_git.yml
-    #- include: im_devel_pip.yml
+    #- include: im_devel_git.yml
+    - include: im_devel_pip.yml
     - include: munge_repo_front.yml
     - include: slurm_source.yml
     - include: slurm_common.yml
