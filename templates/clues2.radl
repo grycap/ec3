@@ -13,7 +13,7 @@ configure front (
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-2.0.2b
       CLUESONE_FILE: cluesonebindings-0.36
-      CPYUTILS_FILE: cpyutils-0.02
+      CLUES_SECRET_TOKEN: not_very_secret_token
       AUTH:
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
@@ -28,7 +28,6 @@ configure front (
       with_items:
       - "{{CLUES_FILE}}.tar.gz"
       - "{{CLUESONE_FILE}}.tar.gz"
-      - "{{CPYUTILS_FILE}}.tar.gz"
 
     # CLUES2 requirements
     - name: Apt install CLUES2 requirements in Deb system
@@ -36,8 +35,10 @@ configure front (
       when: ansible_os_family == "Debian"
 
     - name: Yum install CLUES2 requirements in REL system
-      yum: pkg=python-sqlite2
+      yum: pkg=python-sqlite2,git
       when: ansible_os_family == "RedHat"
+
+    - git: repo=https://github.com/grycap/cpyutils.git dest=/tmp/cpyutils version=master
 
     - name: Install CLUES pip requirements
       pip: name={{item}}
@@ -50,11 +51,10 @@ configure front (
       with_items:
       - "{{CLUES_FILE}}"
       - "{{CLUESONE_FILE}}"
-      - "{{CPYUTILS_FILE}}"
 
     - command: python setup.py install chdir=/tmp/{{CLUES_FILE}}
     - command: python setup.py install chdir=/tmp/{{CLUESONE_FILE}}
-    - command: python setup.py install chdir=/tmp/{{CPYUTILS_FILE}}
+    - command: python setup.py install chdir=/tmp/cpyutils
 
     - file: path=/etc/clues2 state=directory mode=755
 
@@ -71,6 +71,10 @@ configure front (
     - lineinfile: dest=/etc/clues2/clues2.cfg regexp=MAX_WAIT_POWEROFF line="MAX_WAIT_POWEROFF=600"
       notify: restart cluesd
     - lineinfile: dest=/etc/clues2/clues2.cfg regexp=PERIOD_LIFECYCLE line="PERIOD_LIFECYCLE=10"
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=CLUES_SECRET_TOKEN line="CLUES_SECRET_TOKEN={{CLUES_SECRET_TOKEN}}"
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=CLUES_REMOTE_SERVER_SECRET_TOKEN line="CLUES_REMOTE_SERVER_SECRET_TOKEN={{CLUES_SECRET_TOKEN}}"
       notify: restart cluesd
 
     # CLUES2 IM plugin Config file
@@ -123,6 +127,8 @@ configure clues_sge (
       notify: restart cluesd
     - copy: src=/etc/clues2/plugins.d/plugin-sge.cfg-example dest=/etc/clues2/plugins.d/plugin-sge.cfg force=no
       notify: restart cluesd
+
+    - lineinfile: dest=/etc/clues2/plugins.d/plugin-sge.cfg regexp=CLUES_SECRET_TOKEN line="CLUES_SECRET_TOKEN={{CLUES_SECRET_TOKEN}}"
 
     - lineinfile: dest={{SGE_ROOT}}/default/common/sge_request regexp='^-jsv' line="-jsv /usr/local/bin/clues-sge-wrapper" create=yes mode=644
     - lineinfile: dest=/etc/profile.d/sge_vars.sh regexp='SGE_JSV_TIMEOUT' line="export SGE_JSV_TIMEOUT=600" create=yes mode=755

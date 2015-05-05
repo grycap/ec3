@@ -13,6 +13,10 @@ network public (
 )
 network private ()
 
+include sge_misc (
+  template = 'im sudo-copy'
+)
+
 system front (
       cpu.count>=1 and
       memory.size>=512m and
@@ -217,7 +221,7 @@ configure front (
       action: yum pkg=gridengine,gridengine-execd,openssh-clients
       when: ansible_os_family == "RedHat"
 
-    - command: qconf -as {{IM_NODE_FQDN}}
+    - command: qconf -as sgemaster
 
     - copy:
         content: |
