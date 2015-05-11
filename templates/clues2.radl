@@ -94,6 +94,9 @@ configure front (
     - include: clues_sge.yml
       when: "{{ QUEUE_SYSTEM == 'sge' }}"
 
+    - include: clues_slurm.yml
+      when: "{{ QUEUE_SYSTEM == 'slurm' }}"
+
     - service: name=cluesd state=started
     
     handlers:
@@ -135,3 +138,19 @@ configure clues_sge (
 
 @end
 )
+
+
+# SLURM plugin installation
+configure clues_slurm (
+@begin
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.slurm"
+      notify: restart cluesd
+    - copy: src=/etc/clues2/plugins.d/plugin-slurm.cfg-example dest=/etc/clues2/plugins.d/plugin-slurm.cfg force=no
+      notify: restart cluesd
+    - lineinfile: dest=/etc/clues2/plugins.d/plugin-slurm.cfg regexp=SLURM_SERVER line="SLURM_SERVER=slurmserver"
+      notify: restart cluesd
+
+    - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o                                                                              
+    - copy: src=/etc/clues2/plugins.d/sbatch-slurm-wrapper dest=/usr/local/bin/sbatch force=no
+@end
+)  
