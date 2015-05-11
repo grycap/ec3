@@ -152,6 +152,6 @@ configure clues_slurm (
     - lineinfile: dest=/etc/clues2/plugins.d/plugin-slurm.cfg regexp=^CLUES_SECRET_TOKEN line="CLUES_SECRET_TOKEN={{CLUES_SECRET_TOKEN}}"
 
     - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o                                                                         
-    - copy: src=/etc/clues2/plugins.d/clues-slurm-wrapper dest=/usr/local/bin/sbatch force=no
+    - command: mv /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
 @end
 )  
