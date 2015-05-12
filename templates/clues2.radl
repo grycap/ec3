@@ -147,7 +147,7 @@ configure clues_slurm (
       notify: restart cluesd
     - copy: src=/etc/clues2/plugins.d/plugin-slurm.cfg-example dest=/etc/clues2/plugins.d/plugin-slurm.cfg force=no
       notify: restart cluesd
-    - lineinfile: dest=/etc/clues2/plugins.d/plugin-slurm.cfg regexp=SLURM_SERVER line="SLURM_SERVER=slurmserver"
+    - lineinfile: dest=/etc/clues2/plugins.d/plugin-slurm.cfg regexp=SLURM_SERVER line="SLURM_SERVER=slurmserverpublic"
       notify: restart cluesd
     - lineinfile: dest=/etc/clues2/plugins.d/plugin-slurm.cfg regexp=^CLUES_SECRET_TOKEN line="CLUES_SECRET_TOKEN={{CLUES_SECRET_TOKEN}}"
 
