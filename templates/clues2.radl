@@ -52,7 +52,7 @@ configure front (
       - "{{CLUES_FILE}}"
       - "{{CLUESONE_FILE}}"
 
-    - command: python setup.py install chdir=/tmp/{{CLUES_FILE}}
+    - command: python setup.py install chdir=/tmp/{{CLUES_FILE}} creates=/usr/local/bin/cluesserver
     - command: python setup.py install chdir=/tmp/{{CLUESONE_FILE}}
     - command: python setup.py install chdir=/tmp/cpyutils
 
