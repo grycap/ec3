@@ -48,6 +48,7 @@ configure im_devel_git_virtualenv (
 
 configure im_epilog (
 @begin
+    - file: path=/etc/init.d/im mode=0755
     - service: name=im state=started
 @end
 )
