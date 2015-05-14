@@ -144,6 +144,7 @@ configure clues_sge (
 configure clues_slurm (
 @begin
     - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.slurm"
+    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=PERIOD_MONITORING_JOBS line="PERIOD_MONITORING_JOBS=5"
       notify: restart cluesd
     - copy: src=/etc/clues2/plugins.d/plugin-slurm.cfg-example dest=/etc/clues2/plugins.d/plugin-slurm.cfg force=no
       notify: restart cluesd
