@@ -4,7 +4,7 @@ network public (
 
 configure im_devel_pip (
 @begin
-    - pip: name=IM version=1.2.0
+    - pip: name=IM
     - include: im_epilog.yml
 @end
 )
@@ -48,6 +48,7 @@ configure im_devel_git_virtualenv (
 
 configure im_epilog (
 @begin
+    - file: path=/etc/init.d/im mode=0755
     - service: name=im state=started
 @end
 )
