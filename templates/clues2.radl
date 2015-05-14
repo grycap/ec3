@@ -139,12 +139,10 @@ configure clues_sge (
 # SLURM plugin installation
 configure clues_slurm (
 @begin
-<<<<<<< HEAD
+
     - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.slurm
-=======
-    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=LRMS_CLASS line="LRMS_CLASS=cluesplugins.slurm"
-    - lineinfile: dest=/etc/clues2/clues2.cfg regexp=PERIOD_MONITORING_JOBS line="PERIOD_MONITORING_JOBS=5"
->>>>>>> 3a630c1f0f6081e6c605b9182076a6bb14181364
+    - ini_file: dest=/etc/clues2/clues2.cfg section=monitoring option=PERIOD_MONITORING_JOBS value=5
+    - ini_file: dest=/etc/clues2/clues2.cfg section=monitoring option=MAX_WAIT_POWERON value=1000
       notify: restart cluesd
     - copy: src=/etc/clues2/conf.d/plugin-slurm.cfg-example dest=/etc/clues2/conf.d/plugin-slurm.cfg force=no
       notify: restart cluesd
