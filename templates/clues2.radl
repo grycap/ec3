@@ -10,9 +10,7 @@ configure front (
 @begin
 ---
   - vars:
-      REPOSITORY: http://www.grycap.upv.es/clues/download
-      CLUES_FILE: CLUES-2.0.2b
-      CLUESONE_FILE: cluesonebindings-0.36
+      REPOSITORY: https://github.com/grycap
       CLUES_SECRET_TOKEN: not_very_secret_token
       AUTH:
         ec3_xpath: /system/front/auth
@@ -20,25 +18,23 @@ configure front (
         ec3_xpath: /system/front/queue_system
 
     tasks:
-    - get_url: url={{REPOSITORY}}/{{item}} dest=/tmp/{{item}}
+    - get_url: url={{REPOSITORY}}/{{item}}/archive/master.zip dest=/tmp/{{item}}.zip
       register: result
       until: result|success
       retries: 5
       delay: 1
       with_items:
-      - "{{CLUES_FILE}}.tar.gz"
-      - "{{CLUESONE_FILE}}.tar.gz"
+      - clues
+      - cpyutils
 
     # CLUES2 requirements
     - name: Apt install CLUES2 requirements in Deb system
-      apt: pkg=python-sqlite,git
+      apt: pkg=python-sqlite,unzip
       when: ansible_os_family == "Debian"
 
     - name: Yum install CLUES2 requirements in REL system
-      yum: pkg=python-sqlite2,git
+      yum: pkg=python-sqlite2,unzip
       when: ansible_os_family == "RedHat"
-
-    - git: repo=https://github.com/grycap/cpyutils.git dest=/tmp/cpyutils version=master
 
     - name: Install CLUES pip requirements
       pip: name={{item}}
@@ -47,14 +43,13 @@ configure front (
       - ply
 
     # CLUES2 installation
-    - unarchive: src=/tmp/{{item}}.tar.gz dest=/tmp copy=no
+    - unarchive: src=/tmp/{{item}}.zip dest=/tmp copy=no
       with_items:
-      - "{{CLUES_FILE}}"
-      - "{{CLUESONE_FILE}}"
+      - clues
+      - cpyutils
 
-    - command: python setup.py install chdir=/tmp/{{CLUES_FILE}} creates=/usr/local/bin/cluesserver
-    - command: python setup.py install chdir=/tmp/{{CLUESONE_FILE}}
-    - command: python setup.py install chdir=/tmp/cpyutils
+    - command: python setup.py install chdir=/tmp/clues-master creates=/usr/local/bin/cluesserver
+    - command: python setup.py install chdir=/tmp/cpyutils-master
 
     - file: path=/etc/clues2 state=directory mode=755
 
@@ -83,7 +78,9 @@ configure front (
       notify: restart cluesd
     - copy: src=/etc/clues2/conf.d/plugin-im.cfg-example dest=/etc/clues2/conf.d/plugin-im.cfg force=no
       notify: restart cluesd
-    - lineinfile: dest=/etc/clues2/conf.d/plugin-im.cfg regexp=IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE line="IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE=/usr/local/ec3/auth.dat"
+    - ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE value=/usr/local/ec3/auth.dat
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_DROP_FAILING_VMS value=300
       notify: restart cluesd
 
     - include: clues_pbs.yml
