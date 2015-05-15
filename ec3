@@ -796,12 +796,16 @@ class CmdDestroy:
         parser = subparsers.add_parser("destroy", help="destroy a launched cluster")
         parser.add_argument("clustername", help="name of the cluster to destroy")
         parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
+        parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about deleting the cluster")
         parser.set_defaults(func=CmdDestroy.run)
 
     @staticmethod
     def run(options):
         try:
             r = ClusterStore.load(options.clustername)
+            CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
+            if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
+                sys.exit(1)
             new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
             success, info = new_im_server.DestroyInfrastructure(infrId, auth)
