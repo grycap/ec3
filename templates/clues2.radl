@@ -67,9 +67,10 @@ configure front (
         - { section: 'general', option: 'POWERMANAGER_CLASS', value: 'cluesplugins.im' }
         - { section: 'scheduling', option: 'SCHEDULER_CLASSES', value: 'clueslib.schedulers.CLUES_Scheduler_PowOn_Requests,clueslib.schedulers.CLUES_Scheduler_PowOff_IDLE' }
         - { section: 'scheduler_power_off_idle', option: 'IDLE_TIME', value: '300' }
-        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '600' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '1000' }
         - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
         - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
+#        - { section: 'monitoring', option: 'PERIOD_MONITORING_JOBS', value: '5' }
         - { section: 'general', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
         - { section: 'client', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
       notify: restart cluesd
@@ -142,8 +143,6 @@ configure clues_slurm (
 @begin
 
     - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.slurm
-    - ini_file: dest=/etc/clues2/clues2.cfg section=monitoring option=PERIOD_MONITORING_JOBS value=5
-    - ini_file: dest=/etc/clues2/clues2.cfg section=monitoring option=MAX_WAIT_POWERON value=1000
       notify: restart cluesd
     - copy: src=/etc/clues2/conf.d/plugin-slurm.cfg-example dest=/etc/clues2/conf.d/plugin-slurm.cfg force=no
       notify: restart cluesd
