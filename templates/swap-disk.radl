@@ -1,4 +1,4 @@
-description swap-disk (
+description swap_disk (
     kind = 'component' and
     short = 'Recipe to add and configure a swap disk to the front-end' and
     content = ''
