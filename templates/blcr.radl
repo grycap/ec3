@@ -1,6 +1,6 @@
 description blcr (
     kind = 'component' and
-    short = 'Tool for checkpoint the applications.' and
+    short = 'Tool for checkpointing applications.' and
     content = 'BLCR is a hybrid kernel/user implementation of checkpoint/restart. This tool is able to checkpoint a wide range of applications, including MPI applications, without requiring changes to be made to application code. The use of this component is of special interest for spot instances. In the recipe, the BLCR tool is downloaded from the official web page, compiled, installed and configured.
 
 Webpage: http://crd.lbl.gov/departments/computer-science/CLaSS/research/BLCR/'

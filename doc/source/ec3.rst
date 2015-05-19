@@ -11,41 +11,41 @@ The program is called like this::
 .. program:: ec3
 .. option:: -l <file>, --log-file <file>
 
-   Path to file where logs are written down. Default value is standard output error.
+   Path to file where logs are written. Default value is standard output error.
 
 .. option:: -ll <level>, --log-level <level>
 
-   Only write down in the log file messages with level more severe than the indicated:
+   Only write in the log file messages with level more severe than the indicated:
    ``1`` for `debug`, ``2`` for `info`, ``3`` for `warning` and ``4`` for `error`.
 
 .. option:: -q, --quiet
 
-   Don't show any message in console except front-end IP messages.
+   Don't show any message in console except the front-end IP.
 
 Command ``launch``
 ------------------
 
-The command to deploy a cluster is like this::
+To deploy a cluster issue this command::
 
    ec3 launch <clustername> <template_0> [<template_1> ...] [-a <file>] [-u <url>] [-y]
 
 .. program:: ec3 launch
 .. option:: clustername
 
-   Name to refer the new cluster in other commands.
+   Name of the new cluster.
 
 .. option:: template_0 ...
 
-   Template names that will be used to deploy the cluster. The tool try to find files
+   Template names that will be used to deploy the cluster. ec3 tries to find files
    with these names and extension ``.radl`` in ``~/.ec3/templates`` and
    ``/etc/ec3/templates``. Templates are `RADL`_ descriptions of the virtual machines
    (e.g., instance type, disk images, networks, etc.) and contextualization scripts.
-   See :ref:`cmd-templates` to list all available templates. 
-   
+   See :ref:`cmd-templates` to list all available templates.
+
 .. option:: --add
 
-   Add a piece of RADL. This option is useful to set some features. Next example launches a
-   torque cluster with up to four working nodes::
+   Add a piece of RADL. This option is useful to set some features. The following example deploys a
+  cluster with the Torque LRMS with up to four working nodes::
 
       ./ec3 launch mycluster torque ubuntu-ec2 --add "system wn ( ec3_max_instances = 4 )"
 
@@ -64,28 +64,29 @@ The command to deploy a cluster is like this::
 .. option:: -n, --not-store
 
    The new cluster will not be stored in the local database.
- 
+
 .. option:: -p, --print
 
    Print final RADL description if the cluster after cluster being successfully configured.
 
 .. option:: --json
 
-   If :option:`-p` indicated, print RADL in JSON format instead.
+   If option -p indicated, print RADL in JSON format instead.
 
 .. option:: --on-error-destroy
 
-   If the process fails, try to destroy the infrastructure.
+   If the cluster deployment fails, try to destroy the infrastructure (and relinquish the resources).
 
 .. option:: -y, --yes
 
-   Don't ask to continue when the connection to IM is not secure.
+   Do not ask for confirmation when the connection to IM is not secure. Proceed anyway.
 
 Command ``reconfigure``
 -----------------------
 
-The command reconfigures an infrastructure launched previously. It can be called after a
-failed launching::
+The command reconfigures a previously deployed clusters. It can be called after a
+failed deployment (resources provisioned will be maintained and a new attempt to configure them will take place).
+It can also be used to apply a new configuration to a running cluster::
 
    ec3 reconfigure <clustername>
 
@@ -97,20 +98,20 @@ failed launching::
 
 .. option:: --add
 
-   Add a piece of RADL. This option is useful to set some features. Next example updates
-   the maximum number of working nodes to four::
+   Add a piece of RADL. This option is useful to include additional features to a running cluster.
+   The following example updates the maximum number of working nodes to four::
 
       ./ec3 reconfigure mycluster --add "system wn ( ec3_max_instances = 4 )"
 
 .. option:: -r, --reload
 
-   Reload templates used to launch the cluster and reconfigure the cluster with them
+   Reload templates used to launch the cluster and reconfigure it with them
    (useful if some templates were modified).
 
 Command ``ssh``
 ---------------
 
-The command opens a SSH session into the infrastructure front-end::
+The command opens a SSH session to the infrastructure front-end::
 
    ec3 ssh <clustername>
 
@@ -195,10 +196,8 @@ The command displays basic information about the available templates like *name*
 Configuration file
 ------------------
 
-Although it is easy to find and change the default values for the command-line options in
-the `ec3` python code, we consider an alternative. Default values are read from
-``~/.ec3/config.yml``. If this file doesn't exist, it is generated 
-with all the available options and their default values.
+Default configuration values are read from ``~/.ec3/config.yml``.
+If this file doesn't exist, it is generated with all the available options and their default values.
 
 The file is formated in `YAML`_. The options that are related to files admit the next
 values:
@@ -208,7 +207,7 @@ values:
    auth_file: |
       type = OpenNebula; host = myone.com:9999; username = user; password = 1234
       type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-        
+
 * a mapping with the key ``filename``: it will be treated as the file path, e.g.::
 
    auth_file:
@@ -226,12 +225,12 @@ Authorization file
 ------------------
 
 The authorization file stores in plain text the credentials to access the cloud providers,
-the IM service and the VMRC service. Each line of the file is composed by pairs of key and
+the `IM`_ service and the `VMRC`_ service. Each line of the file is composed by pairs of key and
 value separated by semicolon, and refers to a single credential. The key and value should
 be separated by " = ", that is **an equals sign preceded and followed by one white space
 at least**, like this::
 
-   id = id_value ; type = value_of_type ; username = value_of_username ; password = value_of_password 
+   id = id_value ; type = value_of_type ; username = value_of_username ; password = value_of_password
 
 Values can contain "=", and "\\n" is replaced by carriage return. The available keys are:
 
@@ -263,3 +262,4 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`YAML`: http://yaml.org/
+.. _ `VMRC`: https://github.com/grycap/vmrc
