@@ -204,11 +204,12 @@ class Feature(object):
 			if self.unit:
 				raise RADLParseException("Invalid unit; expected none", line=self.line)
 		elif len(check) > 2 and check[2]:
-			if self.unit is None and self.unit not in check[2]:
-				raise RADLParseException("Empty unit; expected some value", line=self.line)
-			if self.unit.upper() not in check[2]:
-				raise RADLParseException(
-					"Invalid unit; expected one of %s" % check[2], line=self.line)
+			if self.unit is None:
+				if self.unit not in check[2]:
+					raise RADLParseException("Empty unit; expected some value", line=self.line)
+			else:
+				if self.unit.upper() not in check[2]:
+					raise RADLParseException("Invalid unit; expected one of %s" % check[2], line=self.line)
 		return True
 
 class Features(object):
