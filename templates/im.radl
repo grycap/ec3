@@ -2,8 +2,19 @@ network public (
     outports contains '8899/tcp'
 )
 
+configure im_prolog (
+@begin
+    - apt: name=python-soappy update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+    - yum: name=SOAPpy
+      when: ansible_os_family == "RedHat"
+@end
+)
+
+
 configure im_devel_pip (
 @begin
+    - include: im_prolog.yml
     - pip: name=IM
     - include: im_epilog.yml
 @end
@@ -11,6 +22,7 @@ configure im_devel_pip (
 
 configure im_devel_git (
 @begin
+    - include: im_prolog.yml
     - file: path=/opt/tmp state=directory
     - apt: name=git update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
