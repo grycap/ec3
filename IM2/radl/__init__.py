@@ -17,6 +17,6 @@
 
 __all__ = ["radl", "parse_radl", "parse_radl_json", "dump_radl", "dump_radl_json", "dump_radl_simple"]
 
-import radl
-from radl_parse import parse_radl, dump_radl
-from radl_json import parse_radl as parse_radl_json, dump_radl as dump_radl_json, radlToSimple as dump_radl_simple
+from . import radl
+from .radl_parse import parse_radl, dump_radl
+from .radl_json import parse_radl as parse_radl_json, dump_radl as dump_radl_json, radlToSimple as dump_radl_simple

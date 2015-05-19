@@ -1,0 +1,29 @@
+description swap_disk (
+    kind = 'component' and
+    short = 'Recipe to add and configure a swap disk to the front-end' and
+    content = ''
+)
+
+system front ( 
+    disk.1.size=20GB and
+    disk.1.device='hdb'
+)
+
+configure front (
+@begin
+  - tasks:
+    - name: update repositories cache and install NFS
+      apt: name=nfs-kernel-server update_cache=yes cache_valid_time=3600
+    # crear una particion swap
+    - shell: (echo n; echo p; echo 1; echo ; echo ; echo t; echo 82; echo w) | fdisk /dev/sdb creates=/dev/sdb1
+    - filesystem: fstype=ext3 dev=/dev/sdb1 force=no
+      ignore_errors: yes
+    #- mount: name=/mnt/disk src=/dev/sdb1 state=mounted fstype=ext3
+    - command: mkswap /dev/sdb1
+      ignore_errors: yes
+    - lineinfile: dest=/etc/fstab regexp="/dev/sdb1" line="/dev/sdb1     none    swap     sw     0     0" state=present
+    - command: swapon /dev/sdb1
+      ignore_errors: yes
+    #- command: swapon -a
+@end
+)

@@ -4,21 +4,23 @@ network public (
 
 configure im_devel_pip (
 @begin
-    - pip: name=IM version=1.1.0
-    #- pip: name=IM version=0.1.1
+    - pip: name=IM
     - include: im_epilog.yml
 @end
 )
 
 configure im_devel_git (
 @begin
+    - file: path=/opt/tmp state=directory
     - apt: name=git update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
     - yum: name=git
       when: ansible_os_family == "RedHat"
-    - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
+    #- git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=ec3-devel
+    - git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=devel
     # This fixes a really strange behaviour in Ubuntu 12.04
-    - shell: python setup.py install; rm -rf /tmp/im/build; python setup.py install chdir=/tmp/im
+    #- shell: python setup.py install; rm -rf /opt/tmp/im/build; python setup.py install chdir=/opt/tmp/im
+    - shell: python setup.py install chdir=/opt/tmp/im
     - include: im_epilog.yml
 @end
 )
@@ -26,19 +28,19 @@ configure im_devel_git (
 configure im_devel_git_virtualenv (
 @begin
     - pip: name=virtualenv
-    - command: virtualenv /tmp/ec3env creates=/tmp/ec3env
+    - command: virtualenv /opt/tmp/ec3env creates=/tmp/ec3env
     - apt: name=git update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
     - yum: name=git
       when: ansible_os_family == "RedHat"
     - git: repo=https://github.com/ansible/ansible.git dest=/tmp/ansible version=release1.7.2
     - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
-    - shell: source /tmp/ec3env/bin/activate; python setup.py install
+    - shell: source /opt/tmp/ec3env/bin/activate; python setup.py install
       args:
-         chdir: /tmp/ansible
-    - shell: source /tmp/ec3env/bin/activate; python setup.py install
+         chdir: /opt/tmp/ansible
+    - shell: source /opt/tmp/ec3env/bin/activate; python setup.py install
       args:
-         chdir: /tmp/im
+         chdir: /opt/tmp/im
     - file: src=/tmp/ec3env/bin/im_service.py dest=/usr/local/bin/im_service.py
     - include: im_epilog.yml
 @end
@@ -46,6 +48,7 @@ configure im_devel_git_virtualenv (
 
 configure im_epilog (
 @begin
+    - file: path=/etc/init.d/im mode=0755
     - service: name=im state=started
 @end
 )

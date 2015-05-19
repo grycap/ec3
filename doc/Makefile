@@ -180,7 +180,7 @@ md:
 	mkdir -p $(BUILDDIR)/md
 	for i in source/*.rst; do \
 		f="`basename $$i`"; \
-		awk "	BEGIN {a=t=\"\";} \
+		gawk "	BEGIN {a=t=\"\";} \
 			/\.\. _[a-zA-Z0-9-]+:/ { a=gensub(/^\.\. _\`?([^\` ]+)\`?:.*$$/,\"\\\\1\",\"g\") } \
 			/^[=-]{3,}/ { if (a && t) {printf(\"s/\`%s\`/\`%s\`/g; s/<%s>/<%s>/g;\", a,t,a,t); printf(\".. _\`%s\`: https://github.com/grycap/ec3/blob/master/doc/$(BUILDDIR)/md/$$f#%s\n\",a,tolower(tag)) > \"/dev/fd/3\" }; a=\"\" } \
 			{ t=gensub(/\`/, \"\", \"g\"); tag=gensub(/(^ +)|( +$$)|\`/,\"\",\"g\",t); gsub(/ +/,\"-\",tag) } \
@@ -191,3 +191,4 @@ md:
 		f="`basename $$i`"; \
 		sed -r -f /tmp/r.sed $$i /tmp/index.tmp > $(BUILDDIR)/md/$$f; \
 	done
+	cp $(BUILDDIR)/md/intro.rst ../README.rst

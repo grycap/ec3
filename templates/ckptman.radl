@@ -10,15 +10,16 @@ configure ckptman (
 @begin
 ---
     # install dependences
-    - include: pyslurm.yml
+    #- include: pyslurm.yml
+    #- include: slurm_epilog.yml
 
     # download ckptman
     - name: obtain the ckptman code
-      #get_url: url=https://s3.amazonaws.com/amcaar/ckptman.tar.gz dest=/tmp/ckptman.tar.gz
       git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local/ckptman version=master
+    # git: repo=https://github.com/amcaar/ckptman.git dest=/usr/local/ckptman version=casestudy
 
     # ckptman installation
-    #- command: tar -xzf /tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
+    #- command: tar -xzf /opt/tmp/ckptman.tar.gz -C /usr/local creates=/usr/local/ckptman
     - file: path=/usr/local/ckptman/ckptman mode=0755
     - file: path=/usr/local/ckptman/launcher mode=0755
     - file: path=/usr/local/ckptman/ckptman_daemon.py mode=0755
@@ -40,11 +41,11 @@ configure ckptman (
 configure pyslurm (
 @begin
 ---
-    - name: update repositories cache and apt install slurm dependences in Deb systems
+    - name: update repositories cache and apt install ckptman dependences in Deb systems
       action: apt pkg=python-dev,git,cython update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
 
-    - name: update repositories cache and yum install slurm dependences in REL systems
+    - name: update repositories cache and yum install ckptman dependences in REL systems
       action: yum pkg=python-devel,git,python-pip
       when: ansible_os_family == "RedHat"
 
@@ -53,12 +54,54 @@ configure pyslurm (
       when: ansible_os_family == "RedHat"
 
     - name: git checkout the pyslurm repository
-      git: repo=git://github.com/gingergeeks/pyslurm dest=/tmp/pyslurm accept_hostkey=yes
+      #Now the last version of pyslurm works with slurm 14.11
+      #git: repo=git://github.com/gingergeeks/pyslurm dest=/opt/tmp/pyslurm accept_hostkey=yes
+      git: repo=git://github.com/gingergeeks/pyslurm dest=/opt/tmp/pyslurm accept_hostkey=yes version=slurm-2.5
 
     - name: build pyslurm
-      command: python setup.py build --slurm=/usr/local chdir=/tmp/pyslurm creates=/tmp/pyslurm/pyslurm/pyslurm.c
+      command: python setup.py build --slurm=/usr/local chdir=/opt/tmp/pyslurm creates=/opt/tmp/pyslurm/pyslurm/pyslurm.c
 
     - name: install pyslurm
-      command: python setup.py install chdir=/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
+      command: python setup.py install chdir=/opt/tmp/pyslurm creates=/usr/local/lib/python2.7/dist-packages/pyslurm
+@end
+)
+
+configure slurm_epilog (
+@begin
+    - name: prepare epilog files
+      file: path=/usr/local/slurm state=directory owner=slurm group=slurm
+    - copy:
+        dest: /usr/local/slurm/epilog_controller
+        content: "{{EPILOG_FILE}}"
+        mode: 0755
+        owner: slurm
+        group: slurm
+
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#Epilog=' line='Epilog=/usr/local/slurm/epilog_controller' state=present
+    - shell: scontrol reconfig
+@end
+)
+
+configure wn (
+@begin
+---
+  - vars:
+      EPILOG_FILE: 
+        ec3_file: epilog_controller
+    tasks:
+    - file: path=/opt/tmp state=directory
+    #- include: slurm_epilog.yml
+@end
+)
+
+configure front (
+@begin
+---
+  - vars:
+      EPILOG_FILE: 
+        ec3_file: epilog_controller
+    tasks:
+    - file: path=/opt/tmp state=directory
+    - include: ckptman.yml
 @end
 )

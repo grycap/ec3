@@ -1,6 +1,9 @@
-# Example of cluster with regular and spot instances: when there are two
-# regular instances running, next working nodes will be launched as spot
-# instances.
+description ubuntu_hybrid_spot_ec2 (
+    kind = 'images' and
+    short = 'Example of hybrid cluster with regular and spot instances on EC2.' and
+    content = 'Example of cluster with regular and spot instances: when there are two regular instances running, next working nodes will be launched as spot instances. Images are Ubuntu 14.04 amd64 on EC2.'
+)
+
 
 system front (
     disk.0.os.name = 'linux' and
@@ -23,11 +26,4 @@ system wn_spot (
     spot = 'yes' and price = 0.008 and      # indicate spot and maximum price
     ec3_max_instances = 8 and               # maximum instances of this kind
     ec3_if_fail = ''
-)
-
-# Configure wn_spot working nodes as wn.
-configure wn_spot (
-@begin
-    - include: wn.yml
-@end
 )

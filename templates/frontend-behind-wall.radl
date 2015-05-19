@@ -1,10 +1,17 @@
+description fbw (
+    kind = 'component' and
+    short = 'Create SSH tunnels from the frontend to the working nodes.' and
+    content = 'Allow connectivity between frontend and working nodes when frontend is behind a firewall by using SSH tunnels. Once established the tunnels, working nodes redirect traffic to the frontend throw the tunnel. For that it is installed redsocks and inserted some rules in IPTables. See: http://darkk.net.ru/redsocks/.
 
-system wn (
-      net_interface.0.connection='public'
+To use this template append the configure "fbw_wn" to the nodes\' configure like this:
+configure wn_outside (
+@begin
+  - ec3_append: fbw_wn
+@end
+)'
 )
 
-
-configure wn (
+configure fbw_wn (
 @begin
 ---
   - ec3_prio: -10
@@ -16,8 +23,10 @@ configure wn (
     tasks:
     - local_action: shell nohup /tmp/sshconnect.sh {{IM_NODE_USER}}@{{IM_NODE_HOSTNAME}} &
     - apt: name=redsocks update_cache=yes cache_valid_time=3600
-    - shell: |
-            test -f /tmp/.iptables && exit
+    - copy:
+        content: |
+            #! /bin/bash
+            test -f /tmp/.redsocksetup0 && exit
             service redsocks stop || true
             echo 'base { 
                 log_debug = off;
@@ -52,8 +61,16 @@ configure wn (
             done >> /etc/redsocks.conf
             chgrp ssh /usr/sbin/sshd
             chmod g+s /usr/sbin/sshd
-            service ssh stop
+            touch /tmp/.redsocksetup0
             killall -9 sshd
+            service ssh start
+        dest: /tmp/redsocksetup0.sh
+        mode: 0755
+
+    - copy:
+        content: |
+            #! /bin/bash
+            test -f /tmp/.redsocksetup1 && exit
             /sbin/iptables -t nat -A OUTPUT -p tcp -d {{FRONTEND}} -m owner ! --gid-owner ssh -j REDIRECT --to-ports 12345;
             port="12346";
             for p in $UDPPORTS; do
@@ -61,8 +78,12 @@ configure wn (
                 port="$(( port+1 ))";
             done
             /usr/sbin/redsocks -c /etc/redsocks.conf
-            service ssh start
-            touch /tmp/.iptables
+            touch /tmp/.redsocksetup1
+        dest: /tmp/redsocksetup1.sh
+        mode: 0755
+
+    - command: /tmp/redsocksetup0.sh
+    - command: /tmp/redsocksetup1.sh
 @end
 ) 
 
@@ -82,11 +103,16 @@ configure front (
             node="$1"
             [ -f /tmp/sshconnect.${node}.lock ] && [ -d /proc/`cat /tmp/sshconnect.${node}.lock` ] && exit
             echo $$ > /tmp/sshconnect.${node}.lock
-            pid="nnn"
+            pid="nnn"; fails="0"
             while true; do
-                if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i /tmp/ansible_key $1 grep -q 0100007F:270E /proc/net/tcp; then
+                ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i /tmp/ansible_key $node grep -q 0100007F:270E /proc/net/tcp
+                r="$?"
+                if [ $r -eq 255 ] ; then
+                    fails="$(( fails + 1 ))"
+                    [ $fails -ge 3 ] && exit
+                elif [ $r -ne 0 ] ; then
                     test -d /proc/$pid && kill -9 $pid
-                    ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R 9998:{{FRONTEND}}:9999 $1 > /tmp/.ssh_$node 2>&1 &
+                    ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R 9998:{{FRONTEND}}:9999 $node > /tmp/.ssh_$node 2>&1 &
                     pid="$!"
                 fi
                 sleep 10

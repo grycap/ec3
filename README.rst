@@ -3,7 +3,8 @@ Elastic Cloud Computing Cluster (EC3)
 =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
-of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_)
+of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_, 
+`Google Cloud`_ or `Microsoft Azure`_)
 or on-premise (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
 (optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
@@ -14,16 +15,17 @@ This introduces a cost-efficient approach for Cluster-based computing.
 Installation
 ------------
 
-The program `ec3` requires Python 2.6+ and an `IM`_ server, which is used to launch
-virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing
-the next commands::
+The program `ec3` requires Python 2.6+, `PyYAML`_ and an `IM`_ server, which is used to
+launch virtual machines. By default `ec3` uses our public `IM`_ server in
+`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
+next commands::
 
     sudo pip install im
     sudo service im start
 
-`ec3` can be download from `this <https://github.com/grycap/ec3>`_
-git repository::
+`PyYAML`_ is usually available in distribution repositories (``python-yaml`` in Debian;
+``PyYAML`` in Red Hat; and ``PyYAML`` in pip).
+`ec3` can be download from `this <https://github.com/grycap/ec3>`_ git repository::
 
    git clone https://github.com/grycap/ec3
 
@@ -45,7 +47,7 @@ This file is the authorization file (see `Authorization file`_), and can have mo
 
 The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
-   $ ec3 launch mycluster torque ec3_control ubuntu-ec2 -a auth.txt -y
+   $ ec3 launch mycluster torque clues2 ubuntu-ec2 -a auth.txt -y
    WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
    Creating infrastructure
    Infrastructure successfully created with ID: 60
@@ -53,7 +55,7 @@ The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
 If you deployed a local `IM`_ server, use the next command instead::
 
-   $ ec3 launch mycluster torque ec3_control ubuntu-ec2 -a auth.txt -u http://localhost:8899
+   $ ec3 launch mycluster torque clues2 ubuntu-ec2 -a auth.txt -u http://localhost:8899
 
 This can take several minutes. After that, open a ssh session to the front-end::
 
@@ -87,8 +89,12 @@ Additional information
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
+.. _`Google Cloud`: http://cloud.google.com/ 
+.. _`Microsoft Azure`: http://azure.microsoft.com/
 .. _`IM`: https://github.com/grycap/im
-.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/master/doc/build/md/ec3.rst#ec3-command-line-interface
-.. _`Command templates`: https://github.com/grycap/ec3/blob/master/doc/build/md/ec3.rst#command-templates
-.. _`Authorization file`: https://github.com/grycap/ec3/blob/master/doc/build/md/ec3.rst#authorization-file
-.. _`Templates`: https://github.com/grycap/ec3/blob/master/doc/build/md/templates.rst#templates
+.. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
+.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
+.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
+.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
+.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates
+

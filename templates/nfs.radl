@@ -19,36 +19,88 @@ network public (
    outports contains '2049/udp'
 )
 
-configure nfs_front (
+system front ( ec3_templates contains 'nfs' )
+
+configure front (
 @begin
----
+  - tasks:
     - name: update repositories cache and install NFS
-      apt: pkg=nfs-kernel-server update_cache=yes cache_valid_time=3600
+      apt: name=nfs-kernel-server update_cache=yes cache_valid_time=3600
+
+    - name: set the domain in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain=localdomain" state=present
+
+    #- name: set nobody in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
+
+    #- name: set the nogroup in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-Group = nogroup' line="Nobody-Group = ubuntu" state=present
+
+    #- name: set verbosity in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
+
+    - name: set translation in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"
+    - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+
+    - name: specify the use of idmapd.conf
+      lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+
+    - name: restart idmapd service
+      service: name=idmapd state=restarted
 
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-kernel-server regexp=^RPCMOUNTDOPTS line='RPCMOUNTDOPTS="--manage-gids --port 2048"'
 
     - name: export the directories editing the file /etc/exports
-      lineinfile: dest=/etc/exports line="/home           10.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)"
-      #when: "cloud == 'one'"
-    - name: export the directories editing the file /etc/exports
-      lineinfile: dest=/etc/exports line="/home           10.0.0.0/8(rw,sync,no_root_squash,no_subtree_check)"
-      #when: "cloud == 'ec2'"
+      lineinfile: dest=/etc/exports line="/home *(rw,async,no_root_squash,no_subtree_check,insecure)"
+
+    - service: name=nfs-kernel-server state=started
     - name: export exports file
-      command: exportfs -ra chdir=/home/ubuntu/
+      command: exportfs -ra
 @end
 )
 
-configure nfs_wn (
+system wn ( ec3_templates contains 'nfs' )
+configure wn (
 @begin
----
+  - vars:
+      FRONTEND:
+        # ec3_xpath: /system/front/net_interface.1.dns_name
+        ec3_xpath: /system/front/net_interface.0.dns_name
+    tasks:
     - name: update repositories cache and install NFS
-      apt: pkg=nfs-common update_cache=yes cache_valid_time=3600
+      apt: name=nfs-common update_cache=yes cache_valid_time=3600
+
+    - name: set the domain in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain = localdomain" state=present
+
+    #- name: set nobody in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
+
+    #- name: set nogroup in idmapd.conf
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-Group = nogroup' line="Nobody-Group = ubuntu" state=present
+
+    #- name: set verbosity in idmapd.conf      
+    #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
+
+    - name: set translation in idmapd.conf
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"                                    
+    - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+
+    - name: specify the use of idmapd.conf
+      lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+
+    #- name: modify nsswitch
+    #  lineinfile: "dest=/etc/nsswitch.conf regexp='hosts' line='hosts:          files dns' state=present"
+
+    - name: restart idmapd service
+      service: name=idmapd state=restarted
 
     - name: specify the NFS port
-      lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='TATDOPTS="--port 2046 --outgoing-port 2047"'
+      lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='STATDOPTS="--port 2046 --outgoing-port 2047"'
 
     - name: mount the shared directories
-      command: mount -t nfs {{ hostvars[groups['front'][0]]['IM_NODE_NET_1_IP']}}:/home /home
+      shell: mountpoint /home || mount -t nfs {{FRONTEND}}:/home /home
 @end
 )

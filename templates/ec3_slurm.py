@@ -11,7 +11,7 @@ def run_command(command):
         if p.returncode != 0:
             raise Exception("return code: %d\nError output: %s" % (p.returncode, err))
         return out
-    except Exception, e:
+    except Exception as e:
         raise Exception("Error executing '%s': %s" % (" ".join(command), str(e)))
 
 def parse_scontrol(out):
@@ -25,6 +25,17 @@ def parse_scontrol(out):
             if s: d[f] = k
             else: f = k
             s = not s
+    return r
+
+def expand_num_names(s):
+    r = [""]
+    while s:
+        a, b, s = s.partition("[")
+        r = [ r0 + a for r0 in r ]
+        if not b: break
+        a, b, s = s.partition("]")
+        l = a.split("-")
+        r = [ r0 + str(l0) for r0 in r for l0 in range(int(l[0]), int(l[1])+1) ]
     return r
 
 def get_queued_jobs():
@@ -48,6 +59,13 @@ def get_meta_state():
     return dict([ (node.get("NodeName", None), find_state(node.get("State", "DOWN").split("+")))
                   for node in root ])
 
+def get_node_class():
+    root = parse_scontrol(run_command("scontrol -o show part".split(" ")))
+    r = {}
+    for j in root:
+        for h in expand_num_names(j["Nodes"]): r[h] = j["PartitionName"]
+    return r
+
 def disable_node(hostname):
     subprocess.check_call("scontrol update NodeName=%s State=DRAIN Reason=Ec3_control" % hostname, shell=True)
 
@@ -61,6 +79,7 @@ def enable_node(hostname, _=None):
 def ec3_init(Control):
     Control.get_meta_state = staticmethod(get_meta_state)
     Control.get_queued_jobs = staticmethod(get_queued_jobs)
+    Control.get_node_class = staticmethod(get_node_class)
     Control.enable_node = staticmethod(enable_node)
     Control.disable_node = staticmethod(disable_node)
     old_remove_node = Control.remove_node

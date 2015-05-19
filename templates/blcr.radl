@@ -8,55 +8,67 @@ Webpage: http://crd.lbl.gov/departments/computer-science/CLaSS/research/BLCR/'
 
 configure blcr (
 @begin
----
-      #Se puede obtener con uname -r
-      #KERNEL_RELEASE para la imagen de EC2: 3.2.0-33-virtual
-      #KERNEL_RELEASE para la imagen de ONE: 3.2.0-23-virtual
     - command: uname -r
       register: KERNEL_RELEASE
 
     - name: obtain the BLCR code
-      get_url: url=http://crd.lbl.gov/assets/Uploads/FTG/Projects/CheckpointRestart/downloads/blcr-0.8.5.tar.gz dest=/tmp/blcr-0.8.5.tar.gz
-
-    - name: decompress BLCR
-      command: tar zxf blcr-0.8.5.tar.gz chdir=/tmp/ creates=/tmp/blcr-0.8.5
+      get_url: url=http://crd.lbl.gov/assets/Uploads/FTG/Projects/CheckpointRestart/downloads/blcr-0.8.5.tar.gz dest=/opt/tmp/blcr-0.8.5.tar.gz
+      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '<=')
+    - shell: tar zxf blcr-0.8.5.tar.gz; mv /opt/tmp/blcr-0.8.5 /opt/tmp/blcr chdir=/opt/tmp creates=/opt/tmp/blcr
+      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '<=')
+    - get_url: url=https://upc-bugs.lbl.gov/blcr-dist/blcr-0.8.6_b4.tar.gz dest=/opt/tmp/blcr-0.8.6_b4.tar.gz
+      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '>')
+    - shell: tar zxf blcr-0.8.6_b4.tar.gz; mv /opt/tmp/blcr-0.8.6_b4 /opt/tmp/blcr chdir=/opt/tmp creates=/opt/tmp/blcr
+      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '>')
 
     - name: create a folder where compile the code of BLCR
-      file: path=/tmp/blcr-0.8.5/builddir state=directory
+      file: path=/opt/tmp/blcr/builddir state=directory
 
     - name: install all dependences of BLCR
-      apt: pkg=make update_cache=yes cache_valid_time=3600
-    - apt: pkg=gcc update_cache=yes cache_valid_time=3600
-    - apt: pkg=linux-headers-{{KERNEL_RELEASE.stdout}} update_cache=yes cache_valid_time=3600
+      apt: name=make,gcc,linux-headers-{{KERNEL_RELEASE.stdout}} update_cache=yes cache_valid_time=3600
 
     - name: configure blcr
-      shell: ../configure chdir=/tmp/blcr-0.8.5/builddir creates=/tmp/blcr-0.8.5/builddir/config.log
+      shell: ../configure chdir=/opt/tmp/blcr/builddir creates=/opt/tmp/blcr/builddir/config.log
 
     - name: compile (make) BLCR
-      command: make chdir=/tmp/blcr-0.8.5/builddir creates=/tmp/blcr-0.8.5/builddir/bin
-
-#    Lo quito para que vaya mas rapido
-#    - name: check the compilation of BLCR
-#      shell: make insmod check > test.log chdir=/tmp/blcr-0.8.5/builddir creates=/tmp/blcr-0.8.5/builddir/test.log
+      command: make chdir=/opt/tmp/blcr/builddir creates=/opt/tmp/blcr/builddir/bin
 
     - name: install BLCR
-      command: make install chdir=/tmp/blcr-0.8.5/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
+      command: make install chdir=/opt/tmp/blcr/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
 
     - name: load kernel modules
-      command: /sbin/insmod /usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr_imports.ko
-      ignore_errors: yes
-    - command: /sbin/insmod /usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
-      ignore_errors: yes
+      shell: grep -q "\<blcr\>" /proc/modules || make insmod chdir=/opt/tmp/blcr/builddir
 
     - name: updating ld.so.cache
       command: ldconfig
 
-    - name: configure evironment variables
-      shell: echo 'PREFIX=/usr/local' >> /etc/profile chdir=/tmp
-    - shell: echo 'PATH=$PATH:$PREFIX/bin' >> /etc/profile chdir=/tmp
-    - shell: echo 'MANPATH=$PREFIX/man' >> /etc/profile chdir=/tmp
-    - shell: echo 'LD_LIBRARY_PATH=$PREFIX/lib:$PREFIX/lib64' >> /etc/profile chdir=/tmp
-    - shell: echo 'export PATH MANPATH LD_LIBRARY_PATH' >> /etc/profile chdir=/tmp
+    - name: configure environment variables
+      copy:
+        dest: /etc/profile.d/blcr.sh
+        content: |
+            export PATH="$PATH:/usr/local/bin"
+            export MANPATH="$MANPATH:/usr/local/man"
+            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64"
 
+@end
+)
+
+system front ( ec3_templates contains 'blcr' )
+
+configure front (
+@begin
+  - tasks:
+    - file: path=/opt/tmp state=directory
+    - include: blcr.yml
+@end
+)
+
+system wn ( ec3_templates contains 'blcr' )
+
+configure wn (
+@begin
+  - tasks:
+    - file: path=/opt/tmp state=directory
+    - include: blcr.yml
 @end
 )

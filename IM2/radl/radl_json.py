@@ -26,17 +26,21 @@ try:
 	import yaml
 except ImportError:
 	yaml = None
+try:
+	unicode("hola")
+except NameError:
+	class unicode: pass
 
-from radl import Feature, Features, Aspect, RADL, configure, contextualize, contextualize_item, deploy, SoftFeatures
-import radl
+from .radl import Feature, Features, Aspect, RADL, configure, contextualize, contextualize_item, deploy, SoftFeatures
+from . import radl
 import os.path
 schema_path = os.path.join(os.path.dirname(os.path.abspath(radl.__file__ )), "radl_schema.json")
-radl_schema = json.load(file(schema_path))
+radl_schema = json.load(open(schema_path, 'r'))
 
 def encode_simple(d):
 	"""Encode strings in basic python objects."""
 	if isinstance(d, unicode): return d.encode()
-	if isinstance(d, list): return map(encode_simple, d)
+	if isinstance(d, list): return list(map(encode_simple, d))
 	if isinstance(d, dict): return dict([ (encode_simple(k), encode_simple(v)) for k,v in d.items() ])
 	return d
 	
@@ -76,7 +80,7 @@ def p_configure(a):
 	if isinstance(recipe, str) and yaml:
 		try:
 			recipe = yaml.safe_load(recipe)
-		except Exception, e:
+		except Exception as e:
 			raise RADLParseException("Error parsing YAML: %s" % str(e))
 	return configure(a["id"], recipe)
 
