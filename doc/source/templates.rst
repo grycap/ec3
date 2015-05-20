@@ -152,6 +152,28 @@ machine.  The supported features are:
    can be installed during the contextualization of the virtual machine if it
    is not installed.
 
+Special EC3 Features
+^^^^^^^^^^^^^^^^^^^^
+
+There are also other special features related with EC3. These features enable to customize
+the behaviour of EC3 with this kind of instances:
+
+``ec3_max_instances = <integer value>``
+   Set maximum number of nodes with this system configuration; a negative value is like no constrain. 
+   The default value is -1.
+   
+``ec3_destroy_interval = <positive integer value>``
+   Some cloud providers pay a certain amount of time in advance, like AWS EC2. The node will be destroyed 
+   only when it is idle at the end of the interval expressed by this option in seconds. 
+   The default value is 0. 
+
+``ec3_destroy_safe = <positive integer value>``
+   Set the seconds before the deadline set by ``ec3_destroy_interval`` that the node can be destroyed.
+   The default value is 0. 
+
+``ec3_if_fail = <string>``
+   Set the name of the next system configuration to try when the number of instances saturates.
+   The default value is ''. 
 
 System and network inheritance
 ------------------------------
