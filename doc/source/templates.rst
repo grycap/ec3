@@ -156,24 +156,26 @@ Special EC3 Features
 ^^^^^^^^^^^^^^^^^^^^
 
 There are also other special features related with EC3. These features enable to customize
-the behaviour of EC3 with this kind of instances:
+the behaviour of EC3:
 
 ``ec3_max_instances = <integer value>``
-   Set maximum number of nodes with this system configuration; a negative value is like no constrain. 
+   Set maximum number of nodes with this system configuration; a negative value means no constrain.
    The default value is -1.
-   
+
 ``ec3_destroy_interval = <positive integer value>``
-   Some cloud providers pay a certain amount of time in advance, like AWS EC2. The node will be destroyed 
-   only when it is idle at the end of the interval expressed by this option in seconds. 
-   The default value is 0. 
+   Some cloud providers require paying in advance by the hour, like AWS. Therefore, the node will be destroyed
+   only when it is idle and at the end of the interval expressed by this option (in seconds).
+   The default value is 0.
 
 ``ec3_destroy_safe = <positive integer value>``
-   Set the seconds before the deadline set by ``ec3_destroy_interval`` that the node can be destroyed.
-   The default value is 0. 
+   This value (in seconds) stands for a security margin to avoid incurring in a new charge for the next hour.
+   The instance will be destroyed (if idle) in up to (``ec3_destroy_interval`` - ``ec3_destroy_safe`) seconds.
+   The default value is 0.
 
 ``ec3_if_fail = <string>``
-   Set the name of the next system configuration to try when the number of instances saturates.
-   The default value is ''. 
+   Set the name of the next system configuration to try when no more instances can be allocated from a cloud provider.
+   Used for hybrid clusters.
+   The default value is ''.
 
 System and network inheritance
 ------------------------------
@@ -330,7 +332,7 @@ The next ansible recipe will copy the content of ``slurm.conf`` into
     )
 
 .. warning::
-    Avoid to use variables with file content in compact expressions like this::
+    Avoid using variables with file content in compact expressions like this::
 
         - copy: dest=/etc/slurm-llnl/slurm.conf content={{SLURM_CONF_FILE}}
 
