@@ -204,9 +204,12 @@ class Feature(object):
 			if self.unit:
 				raise RADLParseException("Invalid unit; expected none", line=self.line)
 		elif len(check) > 2 and check[2]:
-			if self.unit.upper() not in check[2]:
-				raise RADLParseException(
-					"Invalid unit; expected one of %s" % check[2], line=self.line)
+			if self.unit is None:
+				if self.unit not in check[2]:
+					raise RADLParseException("Empty unit; expected some value", line=self.line)
+			else:
+				if self.unit.upper() not in check[2]:
+					raise RADLParseException("Invalid unit; expected one of %s" % check[2], line=self.line)
 		return True
 
 class Features(object):
@@ -900,11 +903,14 @@ class FeaturesApp(Features):
 		"""Check the features in this application."""
 
 		def is_version(version, _):
-			return all([num.isdigit() for num in version.split(".")])
+			if version.value == "":
+				return True
+			else:
+				return all([num.isdigit() for num in version.value.split(".")])
 
 		SIMPLE_FEATURES = {
-			"name": (str, lambda x,_: bool(x.value)),
-			"path": (str, lambda x,_: bool(x.value)),
+			"name": (str, True),
+			"path": (str, True),
 			"version": (str, is_version),
 			"preinstalled": (str, ["YES", "NO"])
 		}
@@ -936,7 +942,7 @@ class _system(Features):
 		def positive(f, _):
 			return f.value >= 0
 
-		mem_units = ["", "B", "K", "M", "G", "KB", "MB", "GB"]
+		mem_units = [None, "", "B", "K", "M", "G", "KB", "MB", "GB"]
 		SIMPLE_FEATURES = {
 			"image_type": (str, ["VMDK", "QCOW", "QCOW2", "RAW"]),
 			"virtual_system_type": (str, system._check_virtual_system_type),

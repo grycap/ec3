@@ -3,9 +3,9 @@ Elastic Cloud Computing Cluster (EC3)
 =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
-of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_, 
+of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_,
 `Google Cloud`_ or `Microsoft Azure`_)
-or on-premise (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
+or on-premises (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
 (optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
 to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
@@ -89,7 +89,7 @@ Additional information
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
-.. _`Google Cloud`: http://cloud.google.com/ 
+.. _`Google Cloud`: http://cloud.google.com/
 .. _`Microsoft Azure`: http://azure.microsoft.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
@@ -97,4 +97,3 @@ Additional information
 .. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
 .. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
 .. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates
-
