@@ -8,7 +8,7 @@ of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon 
 or on-premises (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
 (optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
-to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
+to fit increasing load, in terms of the number of jobs at the LRMS (Local Resource Management System). Working nodes will be undeployed when they are idle.
 This introduces a cost-efficient approach for Cluster-based computing.
 
 
@@ -57,20 +57,34 @@ If you deployed a local `IM`_ server, use the next command instead::
 
    $ ec3 launch mycluster torque clues2 ubuntu-ec2 -a auth.txt -u http://localhost:8899
 
-This can take several minutes. After that, open a ssh session to the front-end::
+This can take several minutes.
+
+You can show basic information about the deployed clusters by executing::
+
+    $ ec3 list
+        name       state          IP        nodes
+     ---------------------------------------------
+      mycluster  configured  132.43.105.28    0
+
+Once the cluster has been deployed, open a ssh session to the front-end::
 
    $ ec3 ssh mycluster
    Welcome to Ubuntu 14.04.1 LTS (GNU/Linux 3.13.0-24-generic x86_64)
-    * Documentation:  https://help.ubuntu.com/
-
+   Documentation:  https://help.ubuntu.com/
    ubuntu@torqueserver:~$
 
-Also you can show basic information about the deployed clusters by executing::
+Yoy may use the cluster as usual, depending on the LRMS.
+For Torque, you can decide to submit a couple of jobs using qsub, to test elasticity in the cluster:
 
-    $ ec3 list
-       name       state          IP        nodes
-    ---------------------------------------------
-     mycluster  configured  132.43.105.28    0
+   $ for i in 1 2; do echo "/bin/sleep 50" | qsub; done
+
+Notice that CLUES will intercept the jobs submited to the LRMS to deploy additional working nodes if needed.
+This might result in a customizable (180 seconds by default) blocking delay when submitting jobs when no additional working nodes are available.
+This guarantees that jobs will enter execution as soon as the working nodes are deployed and integrated in the cluster.
+
+Working nodes will be provisioned and relinquished automatically to increase and decrease the cluster size according to the elasticity policies provided by CLUES.
+
+Enjoy your virtual elastic cluster!
 
 Additional information
 ----------------------

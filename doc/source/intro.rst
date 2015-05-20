@@ -3,8 +3,9 @@ Elastic Cloud Computing Cluster (EC3)
 =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
-of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_)
-or on-premise (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
+of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_,
+`Google Cloud`_ or `Microsoft Azure`_)
+or on-premises (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
 (optionally with `MAUI`_) and `SLURM`_ clusters that can be self-managed with `CLUES`_:
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
 to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
@@ -42,11 +43,11 @@ Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` with the correspondi
 for the AWS account where the cluster will be deployed. It is safer to use the credentials
 of an IAM user created within your AWS account.
 
-This file is the :ref:`authorization file <auth-file>`, and can have more than one set of credentials.
+This file is the authorization file (see `Authorization file`_), and can have more than one set of credentials.
 
 The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
-   $ ec3 launch mycluster torque ec3_control ubuntu-ec2 -a auth.txt -y
+   $ ec3 launch mycluster torque clues2 ubuntu-ec2 -a auth.txt -y
    WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
    Creating infrastructure
    Infrastructure successfully created with ID: 60
@@ -54,7 +55,7 @@ The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
 If you deployed a local `IM`_ server, use the next command instead::
 
-   $ ec3 launch mycluster torque ec3_control ubuntu-ec2 -a auth.txt -u http://localhost:8899
+   $ ec3 launch mycluster torque clues2 ubuntu-ec2 -a auth.txt -u http://localhost:8899
 
 This can take several minutes. After that, open a ssh session to the front-end::
 
@@ -74,8 +75,8 @@ Also you can show basic information about the deployed clusters by executing::
 Additional information
 ----------------------
 
-* :ref:`ec3-cli`.
-* :ref:`templates`.
+* `EC3 Command-line Interface`_.
+* `Templates`_.
 * Information about available templates: ``ec3 templates [--search <topic>] [--full-description]``.
 
 .. _`CLUES`: http://www.grycap.upv.es/clues/
@@ -88,5 +89,11 @@ Additional information
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
+.. _`Google Cloud`: http://cloud.google.com/
+.. _`Microsoft Azure`: http://azure.microsoft.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
+.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
+.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
+.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
+.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates

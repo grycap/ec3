@@ -4,14 +4,14 @@
 Templates
 =========
 
-ec3 recipes are described in a superset of `RADL`_, which is specification of virtual
+ec3 recipes are described in a superset of `RADL`_, which is a specification of virtual
 machines (e.g., instance type, disk images, networks, etc.) and contextualization
 scripts.
 
 Basic structure
 ---------------
 
-An RADL document has the next general structure::
+An RADL document has the following general structure::
 
    network <network_id> (<features>)
 
@@ -19,11 +19,11 @@ An RADL document has the next general structure::
 
    configure <configure_id> (<Ansible recipes>)
 
-   deploy <system_id> <num> [<cloud_id>] 
+   deploy <system_id> <num> [<cloud_id>]
 
 The keywords ``network``, ``system`` and ``configure`` assign some *features*
 or *recipes* to an identity ``<id>``. The features are a list of constrains
-separated by ``and``, and a constrain is form by
+separated by ``and``, and a constrain is formed by
 ``<feature name> <operator> <value>``. For instance::
 
    system tomcat_node (
@@ -37,7 +37,7 @@ This RADL defines a *system* with the feature ``cpu.count`` equal to four, the f
 ``net_interface.0.connection`` bounded to ``'net'``.
 
 The ``deploy`` keyword is a request to deploy a number of virtual machines.
-Some identity of a cloud provider can be specified.
+Some identity of a cloud provider can be specified to deploy on a particular cloud.
 
 Network Features
 ----------------
@@ -80,7 +80,7 @@ machine.  The supported features are:
    Constrain the total computational performance of the virtual machine.
 
 ``memory.size <=|=|=> <positive integer value>B|K|M|G``
-   Constrain the amount of *RAM* memory (principal memory) in the virtual
+   Constrain the amount of *RAM* memory (main memory) in the virtual
    machine.
 
 ``net_interface.<netId>``
@@ -152,6 +152,30 @@ machine.  The supported features are:
    can be installed during the contextualization of the virtual machine if it
    is not installed.
 
+Special EC3 Features
+^^^^^^^^^^^^^^^^^^^^
+
+There are also other special features related with EC3. These features enable to customize
+the behaviour of EC3:
+
+``ec3_max_instances = <integer value>``
+   Set maximum number of nodes with this system configuration; a negative value means no constrain.
+   The default value is -1.
+
+``ec3_destroy_interval = <positive integer value>``
+   Some cloud providers require paying in advance by the hour, like AWS. Therefore, the node will be destroyed
+   only when it is idle and at the end of the interval expressed by this option (in seconds).
+   The default value is 0.
+
+``ec3_destroy_safe = <positive integer value>``
+   This value (in seconds) stands for a security margin to avoid incurring in a new charge for the next hour.
+   The instance will be destroyed (if idle) in up to (``ec3_destroy_interval`` - ``ec3_destroy_safe`) seconds.
+   The default value is 0.
+
+``ec3_if_fail = <string>``
+   Set the name of the next system configuration to try when no more instances can be allocated from a cloud provider.
+   Used for hybrid clusters.
+   The default value is ''.
 
 System and network inheritance
 ------------------------------
@@ -168,7 +192,7 @@ Next example shows a system ``wn_ec2`` that inherits features from system ``wn``
         disk.0.image.url = 'one://myopennebula.com/999' and
         net_interface.0.connection='public'
     )
-    
+
     system wn_ec2 (
         ec3_inherit_from = system wn and
         disk.0.image.url = 'aws://us-east-1/ami-e50e888c' and
@@ -185,9 +209,9 @@ The system ``wn_ec2`` that ec3 sends finally to IM is::
         ec3_if_fail = ''
     )
 
-In case of systems, if system *A* inherits features from system *B*, it is copied the
-content of the configure named after system *B* to a configure named after system *A*.
-Following the previous example, these are the configures named after the systems::
+In case of systems, if system *A* inherits features from system *B*, the
+new configure section is composed by the one from system *A* followed by the one of system *B*.
+Following the previous example, these are the configured named after the systems::
 
     configure wn (
     @begin
@@ -199,7 +223,7 @@ Following the previous example, these are the configures named after the systems
     configure wn_ec2 (
     @begin
     - tasks:
-      - apt: name=caca
+      - apt: name=pkg
     @end
     )
 
@@ -210,7 +234,7 @@ Then the configure ``wn_ec2`` that ec3 sends finally to IM is::
     - tasks:
       - user: name=user1   password=1234
     - tasks:
-      - apt: name=caca
+      - apt: name=pkg
     @end
     )
 
@@ -232,7 +256,7 @@ tags ``@begin`` and ``@end``, like that::
 Exported variables from IM
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To easy some contextualization tasks, IM publishes a set of variables that 
+To easy some contextualization tasks, IM publishes a set of variables that
 can be accessed by the recipes and have information about the virtual machine.
 
 ``IM_NODE_HOSTNAME``
@@ -305,10 +329,10 @@ The next ansible recipe will copy the content of ``slurm.conf`` into
             dest: /etc/slurm-llnl/slurm.conf
             content: "{{SLURM_CONF_FILE}}"
     @end
-    ) 
+    )
 
 .. warning::
-    Avoid to use variables with file content in compact expressions like this::
+    Avoid using variables with file content in compact expressions like this::
 
         - copy: dest=/etc/slurm-llnl/slurm.conf content={{SLURM_CONF_FILE}}
 
@@ -337,11 +361,11 @@ Consider the next example::
         net_interface.0.dns_name = 'slurmserver' and
         queue_system = 'slurm'
     )
-    
+
     system wn (
       net_interface.0.connection='public'
     )
-    
+
     configure slum_rocks (
     @begin
       - vars:
