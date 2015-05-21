@@ -914,7 +914,7 @@ class CmdClone:
         parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
         parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
-        parser.add_argument("-d", "--destination", action="append", help="Cloud infrastructure destination for the cloned cluster")
+        parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
         parser.set_defaults(func=CmdClone.run)
 
