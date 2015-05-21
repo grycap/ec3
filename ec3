@@ -939,6 +939,11 @@ class CmdClone:
                     auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
                                     (random.random()*1e15, random.random()*1e15))
                 auth_data = Authentication.read_auth_data(auth_content)
+            elif options.destination:
+                for auth in auth_data:
+                    if auth.has_key('id') and auth['id'] == options.destination[0]:
+                        dest = auth_data.pop(auth_data.index(auth))
+                        auth_data.insert(0, dest)
             else:
                 auth_data.reverse()
         except Exception as e:
