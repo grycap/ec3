@@ -68,6 +68,7 @@ configure front (
 #        - { section: 'monitoring', option: 'PERIOD_MONITORING_JOBS', value: '5' }
         - { section: 'general', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
         - { section: 'client', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
+        - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '0' }
       notify: restart cluesd
 
     # CLUES2 IM plugin Config file
