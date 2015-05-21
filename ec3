@@ -908,9 +908,102 @@ class CmdTemplates:
             output = dump_table(info, ["name", "kind", "summary"], {"summary": "<"})
         sys.stdout.write(output + "\n")
 
+class CmdClone:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
+        parser.add_argument("clustername", help="name of the cluster you want to clone")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-d", "--destination", action="append", help="Cloud infrastructure destination for the cloned cluster")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.set_defaults(func=CmdClone.run)
+
+    # TODO: De momento clonar la infraestructura y luego ver que pasa con las aplicaciones
+    @staticmethod
+    def run(options):
+        # Check cluster name, authentication and IM server
+        try:
+            r = ClusterStore.load(options.clustername)
+            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+        except Exception as e:
+            CLI.display(str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Para decirle al IM en que cloud lanzar el cluster, se usa la primera linea del auth file (a no ser que se indique lo contrario en el deploy).
+        # Si el usuario no nos da un nuevo auth file ya ordenado, reordenar el auth_data
+        try:
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+                auth_data = Authentication.read_auth_data(auth_content)
+            else:
+                auth_data.reverse()
+        except Exception as e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Recover RADL
+        radl = ""
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            success, radl = im_server.GetInfrastructureRADL(infrId, auth_data)
+        except Exception as e:
+            CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Modificamos el deploy del RADL para no indique en que infraestructura lanzar (y lance en la primera del auth file)
+        radl_obj = parse_radl(radl)
+        for d in radl_obj.gets(deploy):
+                radl_obj.delete(d)
+        new_deploy = deploy('front', 1)
+        radl_obj.add(new_deploy)
+
+        # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
+        # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
+        for s in radl_obj.gets(system):
+            id = s.getId()
+            if s.getValue("ec3_class") is not None:
+                radl_obj.delete(s)
+                for c in radl_obj.gets(configure):
+                    if c.getId() == id:
+                        radl_obj.delete(c)
+
+        radl = dump_radl(radl_obj)
+
+        # Clone infrastructure
+        CLI.display("Cloning infrastructure")
+
+        # Si el usuario indica una URL de IM, usamos este, sino, el de por defecto
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL
+
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            #print auth_data
+            success, infrId = im_server.CreateInfrastructure(radl, auth_data)
+            if not success: raise Exception(infrId)
+            CLI.display("Success creating infrastructure " + str(infrId))
+            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
+            if not success: raise Exception(vm_ids)
+        except Exception as e:
+            CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+        new_clustername = options.clustername + "_cloned"
+        
+        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        CLI.display("Infrastructure successfully cloned with ID: " + str(infrId) + ". The cluster name now is: " + new_clustername)
+                                     
+        # Apagar el cluster original?
+        sys.exit(0)
+
 
 if __name__ == "__main__":
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
