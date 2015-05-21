@@ -148,11 +148,6 @@ configure clues_slurm (
       notify: restart cluesd
 
     - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o                                                                         
-      ignore_errors: yes
-    - command: mv /usr/bin/sbatch /usr/bin/sbatch.o creates=/usr/bin/sbatch.o
-      ignore_errors: yes
-
-    - command: cp /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
-    - command: cp /usr/local/bin/clues-slurm-wrapper /usr/bin/sbatch creates=/usr/bin/sbatch
+    - command: mw /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
 @end
 )  
