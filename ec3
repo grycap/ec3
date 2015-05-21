@@ -657,7 +657,7 @@ class CmdLaunch:
                 if state in [system.FAILED, system.UNCONFIGURED]:
                     success, info = im_server.GetInfrastructureContMsg(infrId, auth_data)
                     raise Exception(info if success else "unexpected failure")
-                if state not in system.IS_ACCESSIBLE: raise Exception("unexpected failure")
+                if state not in system.IS_ACCESSIBLE: raise Exception("Frontend in incorrect state")
                 if time.time() - time0 > TIMEOUT:
                     raise Exception("Time out! Infrastructure is not still configured!")
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
