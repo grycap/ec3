@@ -193,6 +193,27 @@ The command displays basic information about the available templates like *name*
 
    Print the information in JSON format.
 
+Command ``clone``
+---------------
+
+The command clones an infrastructure front-end previously deployed from one provider to another::
+
+   ec3 clone <clustername> [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>]
+
+.. program:: ec3 clone
+
+.. option:: -a <file>, --auth-file <file>
+
+   New authorization file to use to deploy the cloned cluster. See :ref:`auth-file`.
+
+.. option:: -d <provider>, --destination <provider>
+
+   Provider ID, it must match with the id provided in the auth file. See :ref:`auth-file`.
+
+.. option:: -u <url>, --xmlrpc-url <url>
+
+   URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+
 Configuration file
 ------------------
 
