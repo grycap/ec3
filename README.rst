@@ -1,6 +1,14 @@
 
-Elastic Cloud Computing Cluster (EC3)
-=====================================
+
+.. image:: doc/EC3-logo-3d.png
+   :height: 50px
+   :width: 41 px
+   :scale: 50 %
+   :alt: alternate text
+   :align: right
+   
+.. Elastic Cloud Computing Cluster (EC3)
+.. =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
 of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_,
@@ -10,13 +18,6 @@ or on-premises (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to dep
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
 to fit increasing load, in terms of the number of jobs at the LRMS (Local Resource Management System). Working nodes will be undeployed when they are idle.
 This introduces a cost-efficient approach for Cluster-based computing.
-
-.. image:: doc/EC3-logo-3d.png
-   :height: 50px
-   :width: 41 px
-   :scale: 50 %
-   :alt: alternate text
-   :align: right
    
 Installation
 ------------
