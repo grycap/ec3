@@ -11,7 +11,13 @@ it starts with a single-node cluster and working nodes will be dynamically deplo
 to fit increasing load, in terms of the number of jobs at the LRMS (Local Resource Management System). Working nodes will be undeployed when they are idle.
 This introduces a cost-efficient approach for Cluster-based computing.
 
-
+.. image:: doc/EC3-logo-3d.png
+   :height: 100px
+   :width: 82 px
+   :scale: 50 %
+   :alt: alternate text
+   :align: right
+   
 Installation
 ------------
 
