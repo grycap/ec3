@@ -12,8 +12,8 @@ to fit increasing load, in terms of the number of jobs at the LRMS (Local Resour
 This introduces a cost-efficient approach for Cluster-based computing.
 
 .. image:: doc/EC3-logo-3d.png
-   :height: 100px
-   :width: 82 px
+   :height: 50px
+   :width: 41 px
    :scale: 50 %
    :alt: alternate text
    :align: right
