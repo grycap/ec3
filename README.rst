@@ -1,5 +1,11 @@
-
-Elastic Cloud Computing Cluster (EC3)
+.. image:: doc/EC3-logo-3d.png
+   :height: 50px
+   :width: 41 px
+   :scale: 50 %
+   :alt: alternate text
+   :align: right
+   
+.. Elastic Cloud Computing Cluster (EC3)
 =====================================
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
