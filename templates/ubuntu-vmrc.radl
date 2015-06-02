@@ -1,0 +1,20 @@
+## Ubuntu 14.04
+
+system front (
+    cpu.arch='x86_64' and
+    cpu.count>=1 and
+    memory.size>=1280m and
+    disk.0.os.name='linux' and
+    disk.0.os.flavour='ubuntu' and
+    disk.0.os.version='14.04'
+)
+
+system wn (
+    ec3_max_instances = 5 and
+    cpu.arch='x86_64' and
+    cpu.count>=1 and
+    memory.size>=1280m and
+    disk.0.os.name='linux' and
+    disk.0.os.flavour='ubuntu' and
+    disk.0.os.version='14.04'
+)
