@@ -1,5 +1,11 @@
 ## Ubuntu 14.04
 
+description ubuntu_vmrc (
+    kind = 'images' and
+    short = 'Ubuntu 14.04 to search on the VMRC.' and
+    content = 'Ubuntu 14.04 to search on the VMRC.'
+)
+
 system front (
     cpu.arch='x86_64' and
     cpu.count>=1 and
