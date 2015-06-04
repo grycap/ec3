@@ -309,7 +309,7 @@ class Display:
     @staticmethod
     def display(msg):
         Display.clean()
-        sys.stdout.write(msg + "\n")
+        sys.stdout.write(str(msg) + "\n")
         sys.stdout.flush()
 
 class ClusterStore:
