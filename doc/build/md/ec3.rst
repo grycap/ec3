@@ -125,12 +125,16 @@ Command ``destroy``
 
 The command undeploys the cluster and removes the associated information in the local database.::
 
-   ec3 destroy <clustername> [--force]
+   ec3 destroy <clustername> [--force] [-y]
 
 .. program:: ec3 destroy
 *  --force
 
    Removes local information of the cluster even when the cluster could not be undeployed successfully.
+   
+*  -y, --yes
+
+   Don't ask to confirm the deleting process.
 
 Command ``show``
 ----------------
