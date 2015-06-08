@@ -286,7 +286,7 @@ class Display:
             time.sleep(min(max(delay - (time.time() - time0), 0.), .7))
 
     @staticmethod
-    def _display_waiting_notty(msg):
+    def _display_notty(msg):
         if msg == Display.last_msg: return
         sys.stdout.write(msg)
         sys.stdout.flush()
@@ -298,7 +298,8 @@ class Display:
         if sys.stdout.isatty():
             Display._display_waiting_tty(msg, delay)
         else:
-            Display._display_waiting_notty(msg)
+            Display._display_notty(msg)
+            time.sleep(delay)
 
     @staticmethod
     def clean():
@@ -509,8 +510,10 @@ class CLI:
 
     @staticmethod
     def display_waiting(msg, delay=0.):
-        if CLI.options.quiet: return
-        Display.display_waiting(msg, delay)
+        if CLI.options.quiet:
+            time.sleep(delay)
+        else:
+            Display.display_waiting(msg, delay)
 
 class CmdLaunch:
     @staticmethod
