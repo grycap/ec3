@@ -1,8 +1,8 @@
 
 .. _ec3-cli:
 
-EC3 Command-line Interface
-==========================
+Command-line Interface
+======================
 
 The program is called like this::
 
@@ -194,7 +194,7 @@ The command displays basic information about the available templates like *name*
    Print the information in JSON format.
 
 Command ``clone``
----------------
+-----------------
 
 The command clones an infrastructure front-end previously deployed from one provider to another::
 

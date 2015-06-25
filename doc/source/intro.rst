@@ -1,6 +1,6 @@
 
-Elastic Cloud Computing Cluster (EC3)
-=====================================
+Introduction
+============
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
 of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_,
