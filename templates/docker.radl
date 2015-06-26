@@ -9,7 +9,7 @@ Webpage: https://www.docker.com/'
 configure docker (
 @begin
     - name: Apt install Docker dependencies in Deb system
-      apt: name=wget update_cache=yes cache_valid_time=3600
+      apt: name=wget,linux-image-generic-lts-trusty update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
 
     - name: download docker code from repository
