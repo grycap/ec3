@@ -271,6 +271,15 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
 
+Notice that the user credentials that you specify are *only* employed to provision the resources
+(Virtual Machines, security groups, keypairs, etc.) on your behalf.
+No other resources will be accessed/deleted.
+However, if you are concerned about specifying your credentials to EC3, note that you can (and should)
+create an additional set of credentials, perhaps with limited privileges, so that EC3 can access the Cloud on your behalf.
+In particular, if you are using Amazon Web Services, we suggest you use the Identity and Access Management (`IAM`_)
+service to create a user with a new set of credentials. This way, you can rest assured that these credentials can
+be cancelled at anytime. 
+
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
@@ -284,3 +293,4 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`IM`: https://github.com/grycap/im
 .. _`YAML`: http://yaml.org/
 .. _ `VMRC`: https://github.com/grycap/vmrc
+.. _ `IAM`: http://aws.amazon.com/iam/
