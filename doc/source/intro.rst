@@ -94,6 +94,6 @@ Additional information
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
-.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
-.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
-.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates
+.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst#command-templates
+.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst#authorization-file
+.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/source/templates.rst#templates
