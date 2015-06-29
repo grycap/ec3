@@ -1,5 +1,3 @@
-
-
 .. image:: doc/EC3-logo-3d.png
    :height: 50px
    :width: 41 px
