@@ -1,0 +1,40 @@
+description docker (
+    kind = 'component' and
+    short = 'An open-source tool to deploy applications inside software containers.' and
+    content = 'Docker automates the deployment of applications inside software containers, by providing an additional layer of abstraction and automation of operating-system-level virtualization on Linux.
+
+Webpage: https://www.docker.com/'
+)
+
+configure docker (
+@begin
+    - name: Apt install Docker dependencies in Deb system
+      apt: name=wget,linux-image-generic-lts-trusty update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+
+    - name: download docker code from repository
+      shell: wget -qO- https://get.docker.com/ | sh creates=/etc/default/docker
+      when: ansible_os_family == "Debian"
+
+    - name: Yum install Docker in REL system (only works with centos7)
+      yum: name=docker state=latest update_cache=yes
+      when: ansible_os_family == "RedHat"
+
+    - service: name=docker state=started
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: docker.yml
+@end
+)
+
+configure wn (
+@begin
+  - tasks:
+    - include: docker.yml
+@end
+)
+

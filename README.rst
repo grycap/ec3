@@ -16,8 +16,7 @@ or on-premises (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to dep
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
 to fit increasing load, in terms of the number of jobs at the LRMS (Local Resource Management System). Working nodes will be undeployed when they are idle.
 This introduces a cost-efficient approach for Cluster-based computing.
-
-
+   
 Installation
 ------------
 

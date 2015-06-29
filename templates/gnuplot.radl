@@ -1,0 +1,33 @@
+description gnuplot (
+    kind = 'component' and
+    short = 'A program to generate two- and three-dimensional plots.' and
+    content = 'A program to generate two- and three-dimensional plots.
+
+Webpage: http://www.gnuplot.info/'
+)
+
+configure gnuplot (
+@begin
+    - name: Apt install GNUplot in Deb system
+      apt: name=gnuplot update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+
+    - name: Yum install GNUplot in REL system
+      yum: name=gnuplot state=latest update_cache=yes
+      when: ansible_os_family == "RedHat"
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: gnuplot.yml
+@end
+)
+
+configure wn (
+@begin
+  - tasks:
+    - include: gnuplot.yml
+@end
+)

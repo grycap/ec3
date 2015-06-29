@@ -1,0 +1,33 @@
+description octave (
+    kind = 'component' and
+    short = 'A high-level programming language, primarily intended for numerical computations.' and
+    content = 'A high-level programming language, primarily intended for numerical computations.
+
+Webpage: http://www.gnu.org/software/octave/'
+)
+
+configure octave (
+@begin
+    - name: Apt install Octave in Deb system
+      apt: name=octave update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+
+    - name: Yum install Octave in REL system
+      yum: name=epel-release,octave state=latest update_cache=yes
+      when: ansible_os_family == "RedHat"
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: octave.yml
+@end
+)
+
+configure wn (
+@begin
+  - tasks:
+    - include: octave.yml
+@end
+)

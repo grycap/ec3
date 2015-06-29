@@ -12,8 +12,10 @@ Contents:
    :maxdepth: 2
 
    intro
+   arch
    ec3
    templates
+   about
 
 Indices and tables
 ==================

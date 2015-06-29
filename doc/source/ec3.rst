@@ -1,8 +1,8 @@
 
 .. _ec3-cli:
 
-EC3 Command-line Interface
-==========================
+Command-line Interface
+======================
 
 The program is called like this::
 
@@ -193,6 +193,27 @@ The command displays basic information about the available templates like *name*
 
    Print the information in JSON format.
 
+Command ``clone``
+-----------------
+
+The command clones an infrastructure front-end previously deployed from one provider to another::
+
+   ec3 clone <clustername> [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>]
+
+.. program:: ec3 clone
+
+.. option:: -a <file>, --auth-file <file>
+
+   New authorization file to use to deploy the cloned cluster. See :ref:`auth-file`.
+
+.. option:: -d <provider>, --destination <provider>
+
+   Provider ID, it must match with the id provided in the auth file. See :ref:`auth-file`.
+
+.. option:: -u <url>, --xmlrpc-url <url>
+
+   URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+
 Configuration file
 ------------------
 
@@ -250,6 +271,15 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
 
+Notice that the user credentials that you specify are *only* employed to provision the resources
+(Virtual Machines, security groups, keypairs, etc.) on your behalf.
+No other resources will be accessed/deleted.
+However, if you are concerned about specifying your credentials to EC3, note that you can (and should)
+create an additional set of credentials, perhaps with limited privileges, so that EC3 can access the Cloud on your behalf.
+In particular, if you are using Amazon Web Services, we suggest you use the Identity and Access Management (`IAM`_)
+service to create a user with a new set of credentials. This way, you can rest assured that these credentials can
+be cancelled at anytime. 
+
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
@@ -263,3 +293,4 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 .. _`IM`: https://github.com/grycap/im
 .. _`YAML`: http://yaml.org/
 .. _ `VMRC`: https://github.com/grycap/vmrc
+.. _ `IAM`: http://aws.amazon.com/iam/

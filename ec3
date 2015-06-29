@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# EC3 command-line interface
-# Copyright (C) 2014 - GRyCAP - Universitat Politecnica de Valencia
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# -------------------------------------------------------------------------- #
+#             EC3 command-line interface                                     #
+# Copyright 2015, Universitat Politecnica de Valencia                        #
+#                                                                            #
+# Licensed under the Apache License, Version 2.0 (the "License"); you may    #
+# not use this file except in compliance with the License. You may obtain    #
+# a copy of the License at                                                   #
+#                                                                            #
+# http://www.apache.org/licenses/LICENSE-2.0                                 #
+#                                                                            #
+# Unless required by applicable law or agreed to in writing, software        #
+# distributed under the License is distributed on an "AS IS" BASIS,          #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+# See the License for the specific language governing permissions and        #
+# limitations under the License.                                             #
+#--------------------------------------------------------------------------- #
 
 import sys, time, logging, os, argparse, tempfile, random, re, io
 try:
@@ -134,7 +134,7 @@ def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl, join_sets=True):
                 return [ a for a in aspect if a["id"] == aspect0.getId() and a["class"] == aspect0.__class__.__name__ ][0]
     if not xpath0: return aspect
     raise Exception("Invalid path: attributes can get from featured aspects only")
-    
+
 def ec3_xpath_features(features, xpath):
     if len(xpath) == 0: return features
     if not isinstance(features, Features):
@@ -220,7 +220,7 @@ class description(IM_RADL.FeaturedAspect):
     def check(self, r):
         self.check_simple(dict(short=(str, None), content=(str, None), kind=(str, None)), r)
 IM_RADL.description = description
-    
+
 class Display:
     # Private variables, just don't bother them!
     LEN_SCREEN = 90
@@ -286,19 +286,20 @@ class Display:
             time.sleep(min(max(delay - (time.time() - time0), 0.), .7))
 
     @staticmethod
-    def _display_waiting_notty(msg):
+    def _display_notty(msg):
         if msg == Display.last_msg: return
         sys.stdout.write(msg)
         sys.stdout.flush()
         Display.last_msg = msg
-            
+
     @staticmethod
     def display_waiting(msg, delay=0.):
         # Animations are funny, but only in proper consoles
         if sys.stdout.isatty():
             Display._display_waiting_tty(msg, delay)
         else:
-            Display._display_waiting_notty(msg)
+            Display._display_notty(msg)
+            time.sleep(delay)
 
     @staticmethod
     def clean():
@@ -309,7 +310,7 @@ class Display:
     @staticmethod
     def display(msg):
         Display.clean()
-        sys.stdout.write(msg + "\n")
+        sys.stdout.write(str(msg) + "\n")
         sys.stdout.flush()
 
 class ClusterStore:
@@ -366,7 +367,7 @@ class ClusterStore:
                         level=logging.ERROR)
             s0.setValue("state", system.UNKNOWN)
         return r
- 
+
     @staticmethod
     def remove(clustername):
         ClusterStore._check_dir()
@@ -411,7 +412,7 @@ class argparse_configyaml:
 #    auth_file: |
 #       type = OpenNebula; host = myone.com:9999; username = user; password = 1234
 #       type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-#         
+#
 # - a mapping with the key 'filename': it will be treated as the file path, e.g.:
 #    auth_file:
 #       filename: /home/user/auth.txt
@@ -439,7 +440,7 @@ default:
         else:
             return argparse_configyaml(_self=self._self.add_parser(section, help=help), _section=section,
                                        _defaults=self._defaults.get(section, {}))
- 
+
     def add_argument(self, *args, **kw):
         prop = sorted(map(lambda s: (-len(s), s), args))[0][1].strip("-").replace("-", "_")
         if (self._configfile and kw.get("config", True) and args[0][0] == "-" and kw.get("action", None) != "append"):
@@ -471,7 +472,7 @@ default:
 
     def set_defaults(self, *args, **kw):
         return self._self.set_defaults(*args, **kw)
- 
+
 class CLI:
     # Private variables, just don't bother them!
     options = None
@@ -509,8 +510,10 @@ class CLI:
 
     @staticmethod
     def display_waiting(msg, delay=0.):
-        if CLI.options.quiet: return
-        Display.display_waiting(msg, delay)
+        if CLI.options.quiet:
+            time.sleep(delay)
+        else:
+            Display.display_waiting(msg, delay)
 
 class CmdLaunch:
     @staticmethod
@@ -558,7 +561,7 @@ class CmdLaunch:
         except Exception as e:
             CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
-         
+
         # Instantiate templates
         radl = CmdLaunch.generate_radl(options.templates, options.add if options.add else [], auth_content)
 
@@ -657,7 +660,7 @@ class CmdLaunch:
                 if state in [system.FAILED, system.UNCONFIGURED]:
                     success, info = im_server.GetInfrastructureContMsg(infrId, auth_data)
                     raise Exception(info if success else "unexpected failure")
-                if state not in system.IS_ACCESSIBLE: raise Exception("unexpected failure")
+                if state not in system.IS_ACCESSIBLE: raise Exception("Frontend in incorrect state")
                 if time.time() - time0 > TIMEOUT:
                     raise Exception("Time out! Infrastructure is not still configured!")
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
@@ -908,9 +911,107 @@ class CmdTemplates:
             output = dump_table(info, ["name", "kind", "summary"], {"summary": "<"})
         sys.stdout.write(output + "\n")
 
+class CmdClone:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
+        parser.add_argument("clustername", help="name of the cluster you want to clone")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.set_defaults(func=CmdClone.run)
+
+    # TODO: De momento clonar la infraestructura y luego ver que pasa con las aplicaciones
+    @staticmethod
+    def run(options):
+        # Check cluster name, authentication and IM server
+        try:
+            r = ClusterStore.load(options.clustername)
+            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+        except Exception as e:
+            CLI.display(str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Para decirle al IM en que cloud lanzar el cluster, se usa la primera linea del auth file (a no ser que se indique lo contrario en el deploy).
+        # Si el usuario no nos da un nuevo auth file ya ordenado, reordenar el auth_data
+        try:
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+                auth_data = Authentication.read_auth_data(auth_content)
+            elif options.destination:
+                for auth in auth_data:
+                    if auth.has_key('id') and auth['id'] == options.destination[0]:
+                        dest = auth_data.pop(auth_data.index(auth))
+                        auth_data.insert(0, dest)
+            else:
+                auth_data.reverse()
+        except Exception as e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Recover RADL
+        radl = ""
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            success, radl = im_server.GetInfrastructureRADL(infrId, auth_data)
+        except Exception as e:
+            CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Modificamos el deploy del RADL para no indique en que infraestructura lanzar (y lance en la primera del auth file)
+        radl_obj = parse_radl(radl)
+        for d in radl_obj.gets(deploy):
+                radl_obj.delete(d)
+        new_deploy = deploy('front', 1)
+        radl_obj.add(new_deploy)
+
+        # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
+        # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
+        for s in radl_obj.gets(system):
+            id = s.getId()
+            if s.getValue("ec3_class") is not None:
+                radl_obj.delete(s)
+                for c in radl_obj.gets(configure):
+                    if c.getId() == id:
+                        radl_obj.delete(c)
+
+        radl = dump_radl(radl_obj)
+
+        # Clone infrastructure
+        CLI.display("Cloning infrastructure")
+
+        # Si el usuario indica una URL de IM, usamos este, sino, el de por defecto
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL
+
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            #print auth_data
+            success, infrId = im_server.CreateInfrastructure(radl, auth_data)
+            if not success: raise Exception(infrId)
+            CLI.display("Success creating infrastructure " + str(infrId))
+            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
+            if not success: raise Exception(vm_ids)
+        except Exception as e:
+            CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+        new_clustername = options.clustername + "_cloned"
+
+        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        CLI.display("Infrastructure successfully cloned with ID: " + str(infrId) + ". The cluster name now is: " + new_clustername)
+
+        # Apagar el cluster original?
+        sys.exit(0)
+
 
 if __name__ == "__main__":
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
