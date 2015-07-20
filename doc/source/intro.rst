@@ -93,7 +93,7 @@ Additional information
 .. _`Microsoft Azure`: http://azure.microsoft.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
-.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
-.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst#command-templates
-.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/source/ec3.rst#authorization-file
-.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/source/templates.rst#templates
+.. _`EC3 Command-line Interface`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
+.. _`Authorization file`: http://servproject.i3m.upv.es/ec3/doc/ec3.html#authorization-file
+.. _`Templates`: http://servproject.i3m.upv.es/ec3/doc/templates.html
+.. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
