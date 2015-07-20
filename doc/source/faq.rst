@@ -45,14 +45,21 @@ If you want to deploy an hybrid cluster, we encourage you to use the `CLI`_ inte
 Because no support is provided yet by the EC3aaS service. 
 If you want to use another supported Cloud provider, like `Microsoft Azure`_, `Openstack`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
 
+
+**Why I am receiving this error *Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type* when I deploy a cluster in Amazon EC2?**
+
+This error is showed by the Cloud provider, because the instance type and the Amazon Machine Image selected are incompatible.  
+The Linux AMI with HVM virtualization cannot be used to launch a non-cluster compute instance. 
+Select another AMI with with a virtualization type of paravirtual and try again.
+
 .. _`CLI`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
-.. _`Amazon Web Services`: https://aws.amazon.com/
+.. _`Amazon EC2`: https://aws.amazon.com/en/ec2
 .. _`OCCI`: http://occi-wg.org/
 .. _`Microsoft Azure`: http://azure.microsoft.com/
 .. _`Docker`: https://www.docker.com/
 .. _`LibVirt`: http://libvirt.org/
 .. _`LibCloud`: https://libcloud.apache.org/
-.. _`Google Cloud Eengine`: https://cloud.google.com/compute/
+.. _`Google Cloud Engine`: https://cloud.google.com/compute/
