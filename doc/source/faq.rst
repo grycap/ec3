@@ -46,7 +46,7 @@ Because no support is provided yet by the EC3aaS service.
 If you want to use another supported Cloud provider, like `Microsoft Azure`_, `Openstack`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
 
 
-**Why I am receiving this error *Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type* when I deploy a cluster in Amazon EC2?**
+**Why I am receiving this error "Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
 
 This error is showed by the Cloud provider, because the instance type and the Amazon Machine Image selected are incompatible.  
 The Linux AMI with HVM virtualization cannot be used to launch a non-cluster compute instance. 
