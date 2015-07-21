@@ -814,6 +814,7 @@ class CmdDestroy:
             success, info = new_im_server.DestroyInfrastructure(infrId, auth)
             if not success:
                 raise Exception(info)
+            CLI.display("Success deleting the cluster!")
         except Exception as e:
             CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
                         level=logging.ERROR)

@@ -257,19 +257,52 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 
 * ``type`` indicates the service that refers the credential. The services
   supported are ``InfrastructureManager``, ``VMRC``, ``OpenNebula``, ``EC2``,
-  ``OpenStack``, ``OCCI``, ``LibCloud`` and ``LibVirt``.
+  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure``, and ``LibVirt``.
 
 * ``username`` indicates the user name associated to the credential. In EC2 and
-  OpenStack it refers to the *Access Key ID*.
+  OpenStack it refers to the *Access Key ID*. In Azure it refers to the user
+  Subscription ID. In GCE it refers to *Service Account’s Email Address*.
 
 * ``password`` indicates the password associated to the credential. In EC2 and
-  OpenStack it refers to the *Secret Acess Key*.
+  OpenStack it refers to the *Secret Access Key*. In GCE it refers to *Service
+  Private Key*. See how to get it and how to extract the private key file from
+  `here info <https://cloud.google.com/storage/docs/authentication#service_accounts>`_).
 
 * ``host`` indicates the address of the access point to the cloud provider.
   This field is not used in IM and EC2 credentials.
 
+* ``proxy`` indicates the content of the proxy file associated to the credential.
+  To refer to a file you must use the function "file(/tmp/proxyfile.pem)" as shown in the example.
+  This field is only used in the OCCI plugin.
+
+* ``project`` indicates the project name associated to the credential.
+  This field is only used in the GCE plugin.
+
+* ``public_key`` indicates the content of the public key file associated to the credential.
+  To refer to a file you must use the function "file(cert.pem)" as shown in the example.
+  This field is only used in the Azure plugin. See how to get it
+  `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`_
+
+* ``private_key`` indicates the content of the private key file associated to the credential.
+  To refer to a file you must use the function "file(key.pem)" as shown in the example.
+  This field is only used in the Azure plugin. See how to get it
+  `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`_
+
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
+
+An example of the auth file::
+
+   id = one; type = OpenNebula; host = osenserve:2633; username = user; password = pass
+   type = InfrastructureManager; username = user; password = pass
+   type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
+   id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
+   id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
+   id = gce; type = GCE; username = username.apps.googleusercontent.com; password = pass; project = projectname
+   id = docker; type = Docker; host = http://host:2375
+   id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
+   id = azure; type = Azure; username = subscription-id; public_key = file(cert.pem); private_key = file(key.pem)
+   id = kub; type = Kubernetes; host = http://server:8080; username = user; password = pass
 
 Notice that the user credentials that you specify are *only* employed to provision the resources
 (Virtual Machines, security groups, keypairs, etc.) on your behalf.
@@ -292,5 +325,5 @@ be cancelled at anytime.
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
 .. _`YAML`: http://yaml.org/
-.. _ `VMRC`: https://github.com/grycap/vmrc
-.. _ `IAM`: http://aws.amazon.com/iam/
+.. _`VMRC`: https://github.com/grycap/vmrc
+.. _`IAM`: http://aws.amazon.com/iam/

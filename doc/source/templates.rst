@@ -4,7 +4,7 @@
 Templates
 =========
 
-ec3 recipes are described in a superset of `RADL`_, which is a specification of virtual
+EC3 recipes are described in a superset of `RADL`_, which is a specification of virtual
 machines (e.g., instance type, disk images, networks, etc.) and contextualization
 scripts.
 

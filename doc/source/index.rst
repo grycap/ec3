@@ -15,6 +15,7 @@ Contents:
    arch
    ec3
    templates
+   faq
    about
 
 Indices and tables

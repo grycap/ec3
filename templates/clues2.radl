@@ -62,7 +62,7 @@ configure front (
         - { section: 'general', option: 'POWERMANAGER_CLASS', value: 'cluesplugins.im' }
         - { section: 'scheduling', option: 'SCHEDULER_CLASSES', value: 'clueslib.schedulers.CLUES_Scheduler_PowOn_Requests,clueslib.schedulers.CLUES_Scheduler_PowOff_IDLE' }
         - { section: 'scheduler_power_off_idle', option: 'IDLE_TIME', value: '300' }
-        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '1000' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '2000' }
         - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
         - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
 #        - { section: 'monitoring', option: 'PERIOD_MONITORING_JOBS', value: '5' }
