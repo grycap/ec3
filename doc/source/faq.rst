@@ -46,11 +46,19 @@ Because no support is provided yet by the EC3aaS service.
 If you want to use another supported Cloud provider, like `Microsoft Azure`_, `Openstack`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
 
 
-**Why I am receiving this error "Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
+**Why I am receiving this error "InvalidParameterCombination - Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
 
 This error is showed by the Cloud provider, because the instance type and the Amazon Machine Image selected are incompatible.  
 The Linux AMI with HVM virtualization cannot be used to launch a non-cluster compute instance. 
 Select another AMI with with a virtualization type of paravirtual and try again.
+
+
+**Why I am receiving this error "VPCResourceNotSpecified - The specified instance type can only be used in a VPC. A subnet ID or network interface ID is required to carry out the request." when I deploy a cluster in Amazon EC2?**
+
+This error is showed by the Cloud provider, because the instance type selected can only be used in a VPC.  
+To use a VPC, please, employ the CLI interface of EC3. You can specify the name of an existent VPC in the RADL file.
+More info about `Amazon VPC`_.
+
 
 .. _`CLI`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
@@ -63,3 +71,4 @@ Select another AMI with with a virtualization type of paravirtual and try again.
 .. _`LibVirt`: http://libvirt.org/
 .. _`LibCloud`: https://libcloud.apache.org/
 .. _`Google Cloud Engine`: https://cloud.google.com/compute/
+.. _`Amazon VPC`: http://aws.amazon.com/es/vpc/
