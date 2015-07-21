@@ -257,8 +257,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 
 * ``type`` indicates the service that refers the credential. The services
   supported are ``InfrastructureManager``, ``VMRC``, ``OpenNebula``, ``EC2``,
-  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure``, 
-   and ``LibVirt``.
+  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure``, and ``LibVirt``.
 
 * ``username`` indicates the user name associated to the credential. In EC2 and
   OpenStack it refers to the *Access Key ID*. In Azure it refers to the user
