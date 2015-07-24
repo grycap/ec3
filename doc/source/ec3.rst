@@ -259,14 +259,17 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
   supported are ``InfrastructureManager``, ``VMRC``, ``OpenNebula``, ``EC2``,
   ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure``, and ``LibVirt``.
 
-* ``username`` indicates the user name associated to the credential. In EC2 and
-  OpenStack it refers to the *Access Key ID*. In Azure it refers to the user
-  Subscription ID. In GCE it refers to *Service Account’s Email Address*.
+* ``username`` indicates the user name associated to the credential. In EC2
+  it refers to the *Access Key ID*. In Azure it refers to the user 
+  Subscription ID. In GCE it refers to *Service Account’s Email Address*. 
 
-* ``password`` indicates the password associated to the credential. In EC2 and
-  OpenStack it refers to the *Secret Access Key*. In GCE it refers to *Service
+* ``password`` indicates the password associated to the credential. In EC2
+  it refers to the *Secret Access Key*. In GCE it refers to *Service 
   Private Key*. See how to get it and how to extract the private key file from
   `here info <https://cloud.google.com/storage/docs/authentication#service_accounts>`_).
+
+* ``tenant`` indicates the tenant associated to the credential.
+  This field is only used in the OpenStack plugin.
 
 * ``host`` indicates the address of the access point to the cloud provider.
   This field is not used in IM and EC2 credentials.
@@ -294,6 +297,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 An example of the auth file::
 
    id = one; type = OpenNebula; host = osenserve:2633; username = user; password = pass
+   id = ost; type = OpenStack; host = ostserver:5000; username = user; password = pass; tenant = tenant
    type = InfrastructureManager; username = user; password = pass
    type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
    id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
