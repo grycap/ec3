@@ -48,7 +48,7 @@ If you want to deploy a hybrid cluster, we encourage you to use the `CLI`_ inter
 Because no support is provided yet by the EC3aaS service.
 If you want to use another supported Cloud provider, like `Microsoft Azure`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
 
-**What is the correct format for the *endpoint* in the OpenNebula and Openstack wizards?**
+**What is the correct format for the "endpoint" in the OpenNebula and Openstack wizards?**
 
 The user needs to provide EC3 the endpoint of the on-premises Cloud provider. The correct format is *name_of_the_server:port*. 
 For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*. 
@@ -80,7 +80,7 @@ More info about `Amazon VPC`_.
 .. _`Google Cloud Engine`: https://cloud.google.com/compute/
 .. _`Amazon VPC`: http://aws.amazon.com/vpc/
 .. _`IAM`: http://aws.amazon.com/iam/
-.. _`SLURM`:http://www.schedmd.com/slurmdocs/slurm.html
-.. _`Torque`:http://www.adaptivecomputing.com/products/open-source/torque/
-.. _`SGE`:http://sourceforge.net/projects/gridscheduler/
-.. _`Apache Mesos`:http://mesos.apache.org/
+.. _`SLURM`: http://www.schedmd.com/slurmdocs/slurm.html
+.. _`Torque`: http://www.adaptivecomputing.com/products/open-source/torque/
+.. _`SGE`: http://sourceforge.net/projects/gridscheduler/
+.. _`Apache Mesos`: http://mesos.apache.org/
