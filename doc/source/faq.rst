@@ -11,8 +11,11 @@ General FAQs
 
 Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
 All providers and interfaces are supported by the `CLI`_ interface.
-However, from the `EC3aaS`_ interface, only support for Amazon EC2 and OpenNebula is provided. More providers will be added soon.
+However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack and OpenNebula is provided. More providers will be added soon.
 
+**What Local Resource Management Systems (LRMS) are supported by EC3?**
+
+Currently, EC3 supports `SLURM`_, `Torque`_ and `SGE`_. Support for `Apache Mesos`_ is comming soon, stay tunned!
 
 **Is it secure to provide my credentials to EC3?**
 
@@ -40,10 +43,16 @@ There is a tricky way to find out when the cluster is already configured: When n
 Because no support is provided yet by the EC3aaS service.
 If you want to deploy a hybrid cluster, we encourage you to use the `CLI`_ interface.
 
-**Why can I only access to Amazon EC2 and OpenNebula Cloud providers while other Cloud providers are supported by EC3?**
+**Why can I only access to Amazon EC2, Openstack and OpenNebula Cloud providers while other Cloud providers are supported by EC3?**
 
 Because no support is provided yet by the EC3aaS service.
-If you want to use another supported Cloud provider, like `Microsoft Azure`_, `Openstack`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
+If you want to use another supported Cloud provider, like `Microsoft Azure`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
+
+**What is the correct format for the *endpoint* in the OpenNebula and Openstack wizards?
+
+The user needs to provide EC3 the endpoint of the on-premises Cloud provider. The correct format is *name_of_the_server:port*. 
+For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*. 
+The same format is employed in the authorization file required to use the CLI interface of EC3.
 
 **Why am I receiving this error "InvalidParameterCombination - Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
 
@@ -53,7 +62,7 @@ Select another AMI with a virtualization type of paravirtual and try again.
 
 **Why am I receiving this error "VPCResourceNotSpecified - The specified instance type can only be used in a VPC. A subnet ID or network interface ID is required to carry out the request." when I deploy a cluster in Amazon EC2?**
 
-This error is showed by the Cloud provider, because the instance type selected can only be used in a VPC.
+This error is shown by the Cloud provider, because the instance type selected can only be used in a VPC.
 To use a VPC, please, employ the CLI interface of EC3. You can specify the name of an existent VPC in the RADL file.
 More info about `Amazon VPC`_.
 
@@ -71,3 +80,7 @@ More info about `Amazon VPC`_.
 .. _`Google Cloud Engine`: https://cloud.google.com/compute/
 .. _`Amazon VPC`: http://aws.amazon.com/vpc/
 .. _`IAM`: http://aws.amazon.com/iam/
+.. _`SLURM`:http://www.schedmd.com/slurmdocs/slurm.html
+.. _`Torque`:http://www.adaptivecomputing.com/products/open-source/torque/
+.. _`SGE`:http://sourceforge.net/projects/gridscheduler/
+.. _`Apache Mesos`:http://mesos.apache.org/
