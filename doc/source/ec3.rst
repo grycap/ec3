@@ -301,7 +301,6 @@ An example of the auth file::
    type = InfrastructureManager; username = user; password = pass
    type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
    id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
-   id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
    id = gce; type = GCE; username = username.apps.googleusercontent.com; password = pass; project = projectname
    id = docker; type = Docker; host = http://host:2375
    id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
