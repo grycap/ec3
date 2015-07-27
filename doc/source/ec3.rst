@@ -296,7 +296,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 
 An example of the auth file::
 
-   id = one; type = OpenNebula; host = osenserve:2633; username = user; password = pass
+   id = one; type = OpenNebula; host = oneserver:2633; username = user; password = pass
    id = ost; type = OpenStack; host = ostserver:5000; username = user; password = pass; tenant = tenant
    type = InfrastructureManager; username = user; password = pass
    type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
