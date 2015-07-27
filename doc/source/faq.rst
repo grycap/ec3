@@ -48,11 +48,11 @@ If you want to deploy a hybrid cluster, we encourage you to use the `CLI`_ inter
 Because no support is provided yet by the EC3aaS service.
 If you want to use another supported Cloud provider, like `Microsoft Azure`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
 
-**What is the correct format for the *endpoint* in the OpenNebula and Openstack wizards?
+**What is the correct format for the *endpoint* in the OpenNebula and Openstack wizards?**
 
 The user needs to provide EC3 the endpoint of the on-premises Cloud provider. The correct format is *name_of_the_server:port*. 
 For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*. 
-The same format is employed in the authorization file required to use the CLI interface of EC3.
+The same format is employed in the authorization file required to use the `CLI`_ interface of EC3.
 
 **Why am I receiving this error "InvalidParameterCombination - Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
 
