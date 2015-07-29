@@ -152,8 +152,8 @@ configure front (
       template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
       when: ansible_os_family == "RedHat"
 
-#    - include: im_devel_pip.yml
-    - include: im_devel_git.yml
+    - include: im_devel_pip.yml
+#    - include: im_devel_git.yml
 
     # Users creation
     - user: name={{item.name}} password={{item.password}} generate_ssh_key=yes shell=/bin/bash
