@@ -950,7 +950,7 @@ class _system(Features):
 			"cpu.count": (int, positive, None),
 			"cpu.arch": (str, ['I386', 'X86_64']),
 			"cpu.performance": ((int,float), positive, ["ECU", "GCEU", "HRZ"]),
-			"memory.size": (int, positive, mem_units),
+			"memory.size": ((int,float), positive, mem_units),
 			SoftFeatures.SOFT: (SoftFeatures, lambda x, r: x.check(r))
 		}
 		self.check_simple(SIMPLE_FEATURES, radl)

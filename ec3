@@ -548,6 +548,7 @@ class CmdLaunch:
                 auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
                                     (random.random()*1e15, random.random()*1e15))
                 auth_data = Authentication.read_auth_data(auth_content)
+            auth_content = Authentication.dump(auth_data)
         except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
