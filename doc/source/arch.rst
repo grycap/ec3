@@ -54,7 +54,12 @@ means of the following steps:
 One of the main LRMS configuration steps is to set up the names of the cluster nodes. This is done using a 
 sysadmin-specified name pattern (e.g. vnode-*) so that the LRMS considers a set of nodes such as vnode-1, 
 vnode-2, ... , vnode-n, where n is the maximum cluster size. This procedure results in a fully operational 
-elastic cluster.
+elastic cluster. :ref:`Fig. 2 <figure_deployment>` represents the sequence diagram and the interaction of the main components and actors during the deployment of the frontend of the cluster using EC3. 
+
+.. _figure_deployment:
+.. figure:: images/deployment.png
+
+   Fig 2. Sequence diagram for the deployment of the frontend.
 
 Once the front-end and the elasticity manager (CLUES) have been deployed, the virtual cluster becomes 
 totally autonomous and every user will be able to submit jobs to the LRMS, either from the cluster 
@@ -68,6 +73,13 @@ used as working nodes for the cluster. For that, it uses a RADL document defined
 the features of the working nodes are specified. Once these nodes are available, they are automatically 
 integrated in the cluster as new available nodes for the LRMS. Thus, the process to deploy the working nodes 
 is similar to the one employed to deploy the front-end.
+
+:ref:`Fig. 3 <figure_jobs>` represents the sequence diagram and the interaction when a new job arrives to the LRMS and no nodes are available for the execution of the job. 
+
+.. _figure_jobs:
+.. figure:: images/job_submission.png
+
+   Fig 3. Sequence diagram that represents when a new job arrives to the cluster.
 
 Note that the EC3-L tool can be executed on any machine that has a connection with the Cloud system and 
 it is only employed to bootstrap the cluster. Once deployed, the cluster becomes autonomous and self-managed, 
