@@ -182,7 +182,7 @@ md:
 		f="`basename $$i`"; \
 		gawk "	BEGIN {a=t=\"\";} \
 			/\.\. _[a-zA-Z0-9-]+:/ { a=gensub(/^\.\. _\`?([^\` ]+)\`?:.*$$/,\"\\\\1\",\"g\") } \
-			/^[=-]{3,}/ { if (a && t) {printf(\"s/\`%s\`/\`%s\`/g; s/<%s>/<%s>/g;\", a,t,a,t); printf(\".. _\`%s\`: https://github.com/grycap/ec3/blob/devel/doc/$(BUILDDIR)/md/$$f#%s\n\",a,tolower(tag)) > \"/dev/fd/3\" }; a=\"\" } \
+			/^[=-]{3,}/ { if (a && t) {printf(\"s/\`%s\`/\`%s\`/g; s/<%s>/<%s>/g;\", a,t,a,t); printf(\".. _\`%s\`: https://github.com/grycap/ec3/blob/master/doc/$(BUILDDIR)/md/$$f#%s\n\",a,tolower(tag)) > \"/dev/fd/3\" }; a=\"\" } \
 			{ t=gensub(/\`/, \"\", \"g\"); tag=gensub(/(^ +)|( +$$)|\`/,\"\",\"g\",t); gsub(/ +/,\"-\",tag) } \
 		" $$i; \
 	done 3> /tmp/index.tmp > /tmp/r.sed;
