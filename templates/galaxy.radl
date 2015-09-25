@@ -1,0 +1,135 @@
+description galaxy (
+    kind = 'component' and
+    short = 'Galaxy is an open, web-based platform for data intensive biomedical research.' and
+    content = 'Galaxy is an open, web-based platform for data intensive biomedical research. 
+
+Webpage: https://galaxyproject.org/'
+)
+
+
+network public (
+    outports contains '8080/tcp'
+)
+
+system front (
+      cpu.count>=1 and
+      memory.size>=3g and
+      net_interface.0.connection='public' and
+      net_interface.0.dns_name = 'galaxyserver'
+)
+
+configure galaxy_vars (
+@begin
+ADMIN_MAIL: admin@admin.com
+GALAXY_USER_ID: 4001
+GALAXY_USER: galaxy
+INSTALL_PATH: /home/{{GALAXY_USER}}/galaxy
+GALAXY_USER_PASSWORD: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
+@end
+)
+
+configure wn (
+@begin
+   - tasks:
+     - include_vars: galaxy_vars.yml
+     # Create galaxy user
+     - user: name={{GALAXY_USER}} password={{GALAXY_USER_PASSWORD}} shell=/bin/bash uid={{GALAXY_USER_ID}}
+@end
+)
+
+configure front (
+@begin
+  - vars:
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
+
+    handlers:
+    - name: restart cluesd
+      service: name=cluesd state=restarted
+
+    tasks:
+    - include_vars: galaxy_vars.yml
+    # Configure CLUES to Reconsider queued jobs each 30 seconds
+    - ini_file: dest=/etc/clues2/clues2.cfg section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
+      with_items:
+        - { section: 'scheduling', option: 'RECONSIDER_JOB_TIME', value: '30' }
+      notify: restart cluesd
+
+    # Install requisites
+    - apt: name=git update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+    - yum: name=git
+      when: ansible_os_family == "RedHat"
+    # Download Galaxy
+    - git: repo=https://github.com/galaxyproject/galaxy/ dest={{INSTALL_PATH}} version=master
+
+    # General configuration
+    - copy: src={{INSTALL_PATH}}/config/galaxy.ini.sample dest={{INSTALL_PATH}}/config/galaxy.ini force=no
+    - ini_file: dest={{INSTALL_PATH}}/config/galaxy.ini section="server:main" option=host value=0.0.0.0 
+    - ini_file: dest={{INSTALL_PATH}}/config/galaxy.ini section="app:main" option=admin_users value={{ADMIN_MAIL}}
+
+    # LRMS specific configuration
+    - include: galaxy_pbs.yml
+      when: "{{ QUEUE_SYSTEM == 'torque' }}"
+
+    # Create galaxy user to launch the daemon
+    - user: name={{GALAXY_USER}} password={{GALAXY_USER_PASSWORD}} generate_ssh_key=yes shell=/bin/bash uid={{GALAXY_USER_ID}}
+    - local_action: command cp /home/{{GALAXY_USER}}/.ssh/id_rsa.pub /tmp/{{GALAXY_USER}}_id_rsa.pub creates=/tmp/{{GALAXY_USER}}_id_rsa.pub
+    - name: Add the authorized_key to the user {{GALAXY_USER}}
+      authorized_key: user={{GALAXY_USER}} key="{{ lookup('file', '/tmp/' + GALAXY_USER + '_id_rsa.pub') }}"
+
+    - file: path=/home/{{GALAXY_USER}} state=directory owner={{GALAXY_USER}} group={{GALAXY_USER}}
+    - file: path={{INSTALL_PATH}} state=directory recurse=yes owner={{GALAXY_USER}}
+
+    # Launch the server
+    - shell: bash run.sh --daemon chdir={{INSTALL_PATH}}/ creates={{INSTALL_PATH}}/main.pid
+      environment:
+         PYTHON_EGG_CACHE: "{{INSTALL_PATH}}/egg"
+         GALAXY_RUN_ALL: 1
+      sudo: true
+      sudo_user: galaxy
+
+@end
+)
+
+configure galaxy_pbs (
+@begin
+    # Install pbs_python egg
+    - file: path={{INSTALL_PATH}}/eggs state=directory
+    - shell:  python scripts/scramble.py -e pbs_python chdir={{INSTALL_PATH}}
+      environment:
+         LIBTORQUE_DIR: /usr/lib
+
+    # Configure job_conf.xml
+    - copy:
+        content: |
+            <?xml version="1.0"?>
+            <job_conf>
+            	<plugins>
+            		<plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
+            		<plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="{{NNODES}}" />
+            	</plugins>
+            	<handlers>
+            		<handler id="main" />
+            	</handlers>
+            	<destinations default="pbs">
+            		<destination id="local" runner="local"/>
+            		<destination id="pbs" runner="pbs" tags="mycluster" />
+            		<destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
+            			<param id="Resource_List">walltime=72:00:00</param>
+            		</destination>
+            	</destinations>
+            	<tools>
+            		<tool id="upload1" destination="local"/>
+            	</tools>
+            </job_conf>
+        dest: "{{INSTALL_PATH}}/config/job_conf.xml"
+
+    # Set the databse galaxy path to NFS shared dir
+    - file: path={{INSTALL_PATH}}/database/pbs state=directory recurse=yes
+@end
+)
+
