@@ -11,7 +11,7 @@ configure ckptman (
 ---
     # install dependences
     #- include: pyslurm.yml
-    #- include: slurm_epilog.yml
+    - include: slurm_epilog.yml
 
     # download ckptman
     - name: obtain the ckptman code
@@ -77,7 +77,7 @@ configure slurm_epilog (
         owner: slurm
         group: slurm
 
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#Epilog=' line='Epilog=/usr/local/slurm/epilog_controller' state=present
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='^Epilog=' line='Epilog=/usr/local/slurm/epilog_controller' state=present
     - shell: scontrol reconfig
 @end
 )
