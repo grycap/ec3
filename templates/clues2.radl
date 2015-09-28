@@ -1,16 +1,8 @@
-description clues2 (
-    kind = 'component' and
-    short = 'Tool for self-management of clusters TORQUE, SGE and SLURM.' and
-    content = 'CLUES is an energy management system for High Performance Computing (HPC) Clusters and Cloud infrastructures. The tool deploys new working nodes using the system "wn" to fit increasing load. The recipe installs the corresponding plugin for TORQUE, SGE and SLURM.
-
-Webpage: http://www.grycap.upv.es/clues/'
-)
-
 configure front (
 @begin
 ---
-  - vars:
-      REPOSITORY: https://github.com/grycap
+  - ec3_prio: -1
+    vars:
       CLUES_SECRET_TOKEN: not_very_secret_token
       AUTH:
         ec3_xpath: /system/front/auth
@@ -18,7 +10,7 @@ configure front (
         ec3_xpath: /system/front/queue_system
 
     tasks:
-    - get_url: url={{REPOSITORY}}/{{item}}/archive/master.zip dest=/tmp/{{item}}.zip
+    - get_url: url=https://github.com/grycap/{{item}}/archive/master.zip dest=/tmp/{{item}}.zip
       register: result
       until: result|success
       retries: 5
@@ -60,7 +52,6 @@ configure front (
     - ini_file: dest=/etc/clues2/clues2.cfg section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
       with_items:
         - { section: 'general', option: 'POWERMANAGER_CLASS', value: 'cluesplugins.im' }
-        - { section: 'scheduling', option: 'SCHEDULER_CLASSES', value: 'clueslib.schedulers.CLUES_Scheduler_PowOn_Requests,clueslib.schedulers.CLUES_Scheduler_PowOff_IDLE' }
         - { section: 'scheduler_power_off_idle', option: 'IDLE_TIME', value: '300' }
         - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '2000' }
         - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
@@ -100,6 +91,7 @@ configure front (
       service: name=cluesd state=restarted
 @end
 )
+
 
 # PBS plugin installation
 configure clues_pbs (

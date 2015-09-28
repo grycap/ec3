@@ -108,13 +108,14 @@ configure wn (
 )
 
 include slurm_misc (
-  template = 'im munge'
+  template = 'clues2 im munge'
 )
 
 configure front (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       SYSTEMS:
         ec3_jpath: /system/*
       SLURM_CONF_FILE:

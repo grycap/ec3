@@ -96,9 +96,9 @@ def dump_list(l, order, width=80, indent=4):
 
 def getPublicIP(s):
     for i in range(4):
-       if not s.hasFeature("net_interface.%d.connection" % i): break
-       if s.getValue("net_interface.%d.connection" % i, default=network("")).getValue("outbound") == "yes":
-           return s.getValue("net_interface.%d.ip" % i)
+        if not s.hasFeature("net_interface.%d.connection" % i): break
+        if s.getValue("net_interface.%d.connection" % i, default=network("")).getValue("outbound") == "yes":
+            return s.getValue("net_interface.%d.ip" % i)
     return None
 
 def get_content_from_template_file(filename):
@@ -161,7 +161,7 @@ def apply_ec3_expressions(r):
     def rm_ec3_prio(t):
         t[1].pop("ec3_prio", None); return t[1]
     for conf in recipes_prio:
-       conf.recipe = map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ]))
+        conf.recipe = map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ]))
     def sanitize(cad):
         return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
     recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
@@ -564,7 +564,11 @@ class CmdLaunch:
             sys.exit(1)
 
         # Instantiate templates
-        radl = CmdLaunch.generate_radl(options.templates, options.add if options.add else [], auth_content)
+        try:
+            radl = CmdLaunch.generate_radl(options.templates, options.add if options.add else [], auth_content)
+        except Exception as e:
+            CLI.display("Error generating RADL: %s Check the templates used." % str(e), level=logging.ERROR)
+            sys.exit(1)
 
         # Finish if dry run
         if options.dry_run:
@@ -629,7 +633,37 @@ class CmdLaunch:
             CLI.display(str(e), level=logging.ERROR, exception=True)
             sys.exit(1)
 
+        # Check if the generated RADL is correct
+        CmdLaunch.check_radl(radl)
+
         return radl
+
+    @staticmethod
+    def check_radl(radl):
+        """
+        Check that the RADL generated is "EC3 correct".
+        """ 
+        radl.check()
+        
+        if not radl.get(system("front")):
+            raise Exception("There must be at least one system with name 'front'")
+        else:
+            front = radl.get(system("front"))
+            if not front.getValue("disk.0.image.url"):
+                raise Exception("system 'front' has no image URL.")
+
+        if not radl.get(system("wn")):
+            raise Exception("There must be at least one system with name 'wn'")
+        else:
+            wn = radl.get(system("wn"))
+            if not wn.getValue("disk.0.image.url"):
+                raise Exception("system 'wn' has no image URL.")
+           
+        deploys = radl.gets(deploy)
+        if len(deploys) != 1 or deploys[0].id != 'front': 
+            raise Exception("There must be only one deploy of the 'front' system")
+        
+        return True
 
     @staticmethod
     def wait_transfer_save(infrId, vmId, auth_data, im_server_url, options_destroy, options_not_store,

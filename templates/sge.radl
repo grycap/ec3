@@ -14,7 +14,7 @@ network public (
 network private ()
 
 include sge_misc (
-  template = 'im sudo-copy'
+  template = 'clues2 im sudo-copy'
 )
 
 system front (
@@ -105,7 +105,8 @@ configure wn (
 configure front (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       SYSTEMS:
         ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'

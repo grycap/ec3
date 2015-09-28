@@ -1,14 +1,7 @@
-description clues (
-    kind = 'component' and
-    short = 'Tool for self-management of clusters TORQUE, SGE and SLURM.' and
-    content = 'CLUES is an energy management system for High Performance Computing (HPC) Clusters and Cloud infrastructures. The tool deploys new working nodes using the system "wn" to fit increasing load. The recipe installs the corresponding plugin for TORQUE, SGE and SLURM.
-
-Webpage: http://www.grycap.upv.es/clues/'
-)
-
 configure front (
 @begin
 ---
+  - ec3_prio: -1
   - vars:
       REPOSITORY: http://www.grycap.upv.es/clues/download
       CLUES_FILE: CLUES-0.89

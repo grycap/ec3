@@ -110,13 +110,14 @@ configure wn (
 )
 
 include torque_misc (
-  template = 'im munge openports sudo-copy'
+  template = 'im clues2 munge openports sudo-copy'
 )
 
 configure front (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       SYSTEMS:
         ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
