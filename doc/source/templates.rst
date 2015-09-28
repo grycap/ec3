@@ -41,7 +41,7 @@ Some identity of a cloud provider can be specified to deploy on a particular clo
 
 EC3 types of Templates 
 ----------------------
-In EC3, there are three types of templates::
+In EC3, there are three types of templates:
 
 * ``images``, that includes the ``system`` section of the basic template. It describes the main features of the machines that will compose the cluster, like the operating system or the CPU and RAM memory required;
 * ``main``, that includes the ``deploy`` section of the frontend. Also, they include the configuration of the chosen LRMS.
