@@ -192,6 +192,8 @@ The command displays basic information about the available templates like *name*
 .. option:: --json
 
    Print the information in JSON format.
+   
+If you want to see more information about templates and its kinds in EC3, visit `Templates`_.
 
 Command ``clone``
 -----------------
@@ -330,3 +332,5 @@ be cancelled at anytime.
 .. _`YAML`: http://yaml.org/
 .. _`VMRC`: https://github.com/grycap/vmrc
 .. _`IAM`: http://aws.amazon.com/iam/
+.. _`Templates`: http://servproject.i3m.upv.es/ec3/doc/templates.html
+

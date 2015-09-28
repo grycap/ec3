@@ -17,6 +17,11 @@ However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack an
 
 Currently, EC3 supports `SLURM`_, `Torque`_ and `SGE`_. Support for `Apache Mesos`_ is comming soon, stay tunned!
 
+**Is it necessary to indicate a LRMS recipe in the deployment?**
+
+Yes, it is *mandatory*, because the cluster needs to have an LRMS system installed. 
+This is why the LRMS recipes are considered *main* recipes, needed to perform a deployment with EC3.
+
 **Is it secure to provide my credentials to EC3?**
 
 The user credentials that you specify are *only* employed to provision the resources
@@ -27,6 +32,7 @@ create an additional set of credentials, perhaps with limited privileges, so tha
 In particular, if you are using Amazon Web Services, we suggest you use the Identity and Access Management (`IAM`_)
 service to create a user with a new set of credentials. This way, you can rest assured that these credentials can
 be cancelled at anytime.
+
 
 EC3aaS Webpage
 --------------
