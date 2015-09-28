@@ -459,7 +459,7 @@ RADL configure ``slurm_rocks`` is transformed into::
 Adding your own templates
 -------------------------
 
-If you want to add your own customized templates to EC3, you need to consider some aspects::
+If you want to add your own customized templates to EC3, you need to consider some aspects:
 
 * For ``image`` templates, respect the frontend and working nodes nomenclatures. The system section for the frontend *must* receive the name ``front``, while at least one type of working node *must* receive the name ``wn``.
 * For ``component`` templates, add a ``configure`` section with the name of the component. You also need to add an ``include`` statement to import the configure in the system that you want. See :ref:`cmd-include` for more details.
