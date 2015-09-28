@@ -60,29 +60,17 @@ simply use the ``ec3 templates`` command like in the example above::
    ---------------------------------------------------------------------------------------------------------------------
    
              blcr           component Tool for checkpoint the applications.                            
-			 
           centos-ec2         images   CentOS 6.5 amd64 on EC2.                                               
-		  
            ckptman          component Tool to automatically checkpoint applications running on Spot instances.    
-		   
             docker          component An open-source tool to deploy applications inside software containers.      
-			
            gnuplot          component A program to generate two- and three-dimensional plots.                     
-		   
              nfs            component Tool to configure shared directories inside a network.                       
-			 
             octave          component A high-level programming language, primarily intended for numerical computations  
-			
            openvpn          component Tool to create a VPN network.                                                     
-		   
              sge              main    Install and configure a cluster SGE from distribution repositories.               
-			 
             slurm             main    Install and configure a cluster SLURM 14.11 from source code.                      
-			
             torque            main    Install and configure a cluster TORQUE from distribution repositories.            
-			
          ubuntu-azure        images   Ubuntu 12.04 amd64 on Azure.                                                      
-		 
           ubuntu-ec2         images   Ubuntu 14.04 amd64 on EC2.                                                        
 
 
