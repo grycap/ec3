@@ -51,38 +51,24 @@ In order to deploy a cluster with EC3, it is mandatory to indicate in the ``ec3 
 The ``component`` recipes are optional, and you can include all that you need.
 
 To consult the type (*kind*) of template from the ones offered with EC3, 
-simply use the ``ec3 templates`` command like in the example above::
+simply use the ``ec3 templates`` command like in the example above:
 
    $ ./ec3 templates
    
              name             kind                                         summary                                      
-
    ---------------------------------------------------------------------------------------------------------------------
-   
-             blcr           component Tool for checkpoint the applications.                            
-			 
-          centos-ec2         images   CentOS 6.5 amd64 on EC2.                                               
-		  
-           ckptman          component Tool to automatically checkpoint applications running on Spot instances.    
-		   
-            docker          component An open-source tool to deploy applications inside software containers.      
-			
-           gnuplot          component A program to generate two- and three-dimensional plots.                     
-		   
-             nfs            component Tool to configure shared directories inside a network.                       
-			 
-            octave          component A high-level programming language, primarily intended for numerical computations  
-			
-           openvpn          component Tool to create a VPN network.                                                     
-		   
-             sge              main    Install and configure a cluster SGE from distribution repositories.               
-			 
-            slurm             main    Install and configure a cluster SLURM 14.11 from source code.                      
-			
-            torque            main    Install and configure a cluster TORQUE from distribution repositories.            
-			
-         ubuntu-azure        images   Ubuntu 12.04 amd64 on Azure.                                                      
-		 
+             blcr           component Tool for checkpoint the applications.                            			 
+          centos-ec2         images   CentOS 6.5 amd64 on EC2.                                               		  
+           ckptman          component Tool to automatically checkpoint applications running on Spot instances.    		   
+            docker          component An open-source tool to deploy applications inside software containers.      			
+           gnuplot          component A program to generate two- and three-dimensional plots.                     		   
+             nfs            component Tool to configure shared directories inside a network.                       			 
+            octave          component A high-level programming language, primarily intended for numerical computations  			
+           openvpn          component Tool to create a VPN network.                                                     		   
+             sge              main    Install and configure a cluster SGE from distribution repositories.               			 
+            slurm             main    Install and configure a cluster SLURM 14.11 from source code.                      			
+            torque            main    Install and configure a cluster TORQUE from distribution repositories.            			
+         ubuntu-azure        images   Ubuntu 12.04 amd64 on Azure.                                                      		 
           ubuntu-ec2         images   Ubuntu 14.04 amd64 on EC2.                                                        
 
 
@@ -459,7 +445,7 @@ RADL configure ``slurm_rocks`` is transformed into::
 Adding your own templates
 -------------------------
 
-If you want to add your own customized templates to EC3, you need to consider some aspects::
+If you want to add your own customized templates to EC3, you need to consider some aspects:
 
 * For ``image`` templates, respect the frontend and working nodes nomenclatures. The system section for the frontend *must* receive the name ``front``, while at least one type of working node *must* receive the name ``wn``.
 * For ``component`` templates, add a ``configure`` section with the name of the component. You also need to add an ``include`` statement to import the configure in the system that you want. See :ref:`cmd-include` for more details.
