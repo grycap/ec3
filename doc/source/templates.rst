@@ -56,9 +56,7 @@ simply use the ``ec3 templates`` command like in the example above::
    $ ./ec3 templates
    
              name             kind                                         summary                                      
-
    ---------------------------------------------------------------------------------------------------------------------
-   
              blcr           component Tool for checkpoint the applications.                            
           centos-ec2         images   CentOS 6.5 amd64 on EC2.                                               
            ckptman          component Tool to automatically checkpoint applications running on Spot instances.    
@@ -450,7 +448,7 @@ Adding your own templates
 If you want to add your own customized templates to EC3, you need to consider some aspects:
 
 * For ``image`` templates, respect the frontend and working nodes nomenclatures. The system section for the frontend *must* receive the name ``front``, while at least one type of working node *must* receive the name ``wn``.
-* For ``component`` templates, add a ``configure`` section with the name of the component. You also need to add an ``include`` statement to import the configure in the system that you want. See `include`_ for more details.
+* For ``component`` templates, add a ``configure`` section with the name of the component. You also need to add an ``include`` statement to import the configure in the system that you want. See `Including a recipe from another`_ for more details.
 
 Also, it is important to provide a ``description`` section in each new template, to be considered by the ``ec3 templates`` command.
 
@@ -465,4 +463,4 @@ Also, it is important to provide a ``description`` section in each new template,
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
-.. _`include`: http://servproject.i3m.upv.es/ec3/doc/templates.html#including-a-recipe-from-another
+.. _`Including a recipe from another`: http://servproject.i3m.upv.es/ec3/doc/templates.html#including-a-recipe-from-another
