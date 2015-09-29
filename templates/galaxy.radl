@@ -30,7 +30,9 @@ GALAXY_USER_PASSWORD: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8
 
 configure wn (
 @begin
-   - tasks:
+   # This step must be performed before the configuration of torque (-5 prio)
+  - ec3_prio: -7
+    tasks:
      - include_vars: galaxy_vars.yml
      # Create galaxy user
      - user: name={{GALAXY_USER}} password={{GALAXY_USER_PASSWORD}} shell=/bin/bash uid={{GALAXY_USER_ID}}

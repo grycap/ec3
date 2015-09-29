@@ -23,31 +23,42 @@ system front ( ec3_templates contains 'nfs' )
 
 configure front (
 @begin
-  - tasks:
+  - handlers:
+    - name: restart idmapd
+      service: name=idmapd state=restarted
+
+    tasks:
     - name: update repositories cache and install NFS
       apt: name=nfs-kernel-server update_cache=yes cache_valid_time=3600
 
     - name: set the domain in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain=localdomain" state=present
+      notify: restart idmapd
 
     #- name: set nobody in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
+    #  notify: restart idmapd
 
     #- name: set the nogroup in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-Group = nogroup' line="Nobody-Group = ubuntu" state=present
+    #  notify: restart idmapd
 
     #- name: set verbosity in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
+    #  notify: restart idmapd
 
     - name: set translation in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf line="[Translation]"
+      notify: restart idmapd
     - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+      notify: restart idmapd
 
     - name: specify the use of idmapd.conf
       lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+      notify: restart idmapd
 
-    - name: restart idmapd service
-      service: name=idmapd state=restarted
+    - name: start idmapd service
+      service: name=idmapd state=started
 
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-kernel-server regexp=^RPCMOUNTDOPTS line='RPCMOUNTDOPTS="--manage-gids --port 2048"'
@@ -68,39 +79,51 @@ configure wn (
       FRONTEND:
         # ec3_xpath: /system/front/net_interface.1.dns_name
         ec3_xpath: /system/front/net_interface.0.dns_name
+    handlers:
+    - name: restart idmapd
+      service: name=idmapd state=restarted
     tasks:
     - name: update repositories cache and install NFS
       apt: name=nfs-common update_cache=yes cache_valid_time=3600
 
     - name: set the domain in idmapd.conf
       lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain = localdomain" state=present
+      notify: restart idmapd
 
     #- name: set nobody in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
+    #  notify: restart idmapd
 
     #- name: set nogroup in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-Group = nogroup' line="Nobody-Group = ubuntu" state=present
+    #  notify: restart idmapd
 
     #- name: set verbosity in idmapd.conf      
     #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
+    #  notify: restart idmapd
 
     - name: set translation in idmapd.conf
-      lineinfile: dest=/etc/idmapd.conf line="[Translation]"                                    
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"     
+      notify: restart idmapd                               
     - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+      notify: restart idmapd
 
     - name: specify the use of idmapd.conf
       lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+      notify: restart idmapd
 
     #- name: modify nsswitch
     #  lineinfile: "dest=/etc/nsswitch.conf regexp='hosts' line='hosts:          files dns' state=present"
+    #  notify: restart idmapd
 
-    - name: restart idmapd service
-      service: name=idmapd state=restarted
+    - name: start idmapd service
+      service: name=idmapd state=started
 
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='STATDOPTS="--port 2046 --outgoing-port 2047"'
 
     - name: mount the shared directories
-      shell: mountpoint /home || mount -t nfs {{FRONTEND}}:/home /home
+      # shell: mountpoint /home || mount -t nfs {{FRONTEND}}:/home /home
+      mount: name=/home src='{{FRONTEND}}:/home' fstype=nfs state=mounted
 @end
 )
