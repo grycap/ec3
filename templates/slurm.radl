@@ -89,7 +89,8 @@ configure slurm_common (
 configure wn (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
     tasks:
