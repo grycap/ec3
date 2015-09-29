@@ -106,6 +106,7 @@ configure wn (
       #command: slurmd
     - shell: scontrol reconfig
     - local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
+      ignore_errors: yes
 @end
 )
 
