@@ -39,6 +39,39 @@ This RADL defines a *system* with the feature ``cpu.count`` equal to four, the f
 The ``deploy`` keyword is a request to deploy a number of virtual machines.
 Some identity of a cloud provider can be specified to deploy on a particular cloud.
 
+EC3 types of Templates 
+----------------------
+In EC3, there are three types of templates:
+
+* ``images``, that includes the ``system`` section of the basic template. It describes the main features of the machines that will compose the cluster, like the operating system or the CPU and RAM memory required;
+* ``main``, that includes the ``deploy`` section of the frontend. Also, they include the configuration of the chosen LRMS.
+* ``component``, for all the recipes that install and configure software packages that can be useful for the cluster.
+
+In order to deploy a cluster with EC3, it is mandatory to indicate in the ``ec3 launch`` command, *one* recipe of kind ``main`` and *one* recipe of kind ``image``.
+The ``component`` recipes are optional, and you can include all that you need.
+
+To consult the type (*kind*) of template from the ones offered with EC3, 
+simply use the ``ec3 templates`` command like in the example above::
+
+   $ ./ec3 templates
+   
+             name             kind                                         summary                                      
+   ---------------------------------------------------------------------------------------------------------------------
+             blcr           component Tool for checkpoint the applications.                            
+          centos-ec2         images   CentOS 6.5 amd64 on EC2.                                               
+           ckptman          component Tool to automatically checkpoint applications running on Spot instances.    
+            docker          component An open-source tool to deploy applications inside software containers.      
+           gnuplot          component A program to generate two- and three-dimensional plots.                     
+             nfs            component Tool to configure shared directories inside a network.                       
+            octave          component A high-level programming language, primarily intended for numerical computations  
+           openvpn          component Tool to create a VPN network.                                                     
+             sge              main    Install and configure a cluster SGE from distribution repositories.               
+            slurm             main    Install and configure a cluster SLURM 14.11 from source code.                      
+            torque            main    Install and configure a cluster TORQUE from distribution repositories.            
+         ubuntu-azure        images   Ubuntu 12.04 amd64 on Azure.                                                      
+          ubuntu-ec2         images   Ubuntu 14.04 amd64 on EC2.                                                        
+
+
 Network Features
 ----------------
 
@@ -281,6 +314,7 @@ can be accessed by the recipes and have information about the virtual machine.
 ``IM_MASTER_FQDN``
    Complete FQDN of the virtual machine doing the *master* role.
 
+.. _cmd-include:
 Including a recipe from another
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -408,6 +442,16 @@ RADL configure ``slurm_rocks`` is transformed into::
     @end
     )
 
+Adding your own templates
+-------------------------
+
+If you want to add your own customized templates to EC3, you need to consider some aspects:
+
+* For ``image`` templates, respect the frontend and working nodes nomenclatures. The system section for the frontend *must* receive the name ``front``, while at least one type of working node *must* receive the name ``wn``.
+* For ``component`` templates, add a ``configure`` section with the name of the component. You also need to add an ``include`` statement to import the configure in the system that you want. See `Including a recipe from another`_ for more details.
+
+Also, it is important to provide a ``description`` section in each new template, to be considered by the ``ec3 templates`` command.
+
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
@@ -419,3 +463,4 @@ RADL configure ``slurm_rocks`` is transformed into::
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: https://github.com/grycap/im
+.. _`Including a recipe from another`: http://servproject.i3m.upv.es/ec3/doc/templates.html#including-a-recipe-from-another
