@@ -1,0 +1,51 @@
+description galaxy_tools (
+    kind = 'component' and
+    short = 'This component is for automated installation of tools from a Tool Shed into Galaxy Portal.' and
+    content = 'This component is for automated installation of tools from a Tool Shed into Galaxy Portal. 
+
+Webpage: https://github.com/galaxyproject/ansible-galaxy-tools'
+)
+
+include bowtie2_bin (
+  # install dependecies
+  template = 'bowtie2'
+)
+
+configure my_tool_list (
+@begin
+tools:
+- name: 'bowtie2'
+  owner: 'devteam'
+  tool_panel_section_id: 'ngs_mapping'
+  revisions:
+  - 'ceb6467e276c'  # v0.4
+  - 'c1ec08cb34f9'  # v0.3
+  - 'a54de7e658f7'  # v0.2
+
+- name: data_manager_bowtie2_index_builder
+  owner:  devteam
+  tool_shed_url: https://toolshed.g2.bx.psu.edu
+@end
+)
+
+
+configure front (
+@begin
+  - tasks:
+    - name: Install script dependencies
+      pip: name=bioblend 
+
+    - name: Place the tool management script
+      get_url: url=https://raw.githubusercontent.com/galaxyproject/ansible-galaxy-tools/master/files/install_tool_shed_tools.py dest={{GALAXY_INSTALL_PATH}}/install_tool_shed_tools.py
+
+    - name: Copy tool list files
+      copy: src=my_tool_list.yml dest={{GALAXY_INSTALL_PATH}}/my_tool_list.yml
+
+    - name: Wait for Galaxy to start
+      wait_for: port=8080 delay=5 state=started timeout=150
+
+    - name: Install Tool Shed tools
+      shell: chdir={{GALAXY_INSTALL_PATH}} python install_tool_shed_tools.py -t my_tool_list.yml -a {{GALAXY_ADMIN_API_KEY}} -g 127.0.0.1:8080 creates={{GALAXY_INSTALL_PATH}}//tool_dependency_dir/bowtie2
+@end
+)
+

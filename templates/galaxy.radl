@@ -20,10 +20,11 @@ system front (
 
 configure galaxy_vars (
 @begin
-ADMIN_MAIL: admin@admin.com
+GALAXY_ADMIN_API_KEY: not_very_secret_api_key
+GALAXY_ADMIN_MAIL: admin@admin.com
 GALAXY_USER_ID: 4001
 GALAXY_USER: galaxy
-INSTALL_PATH: /home/{{GALAXY_USER}}/galaxy
+GALAXY_INSTALL_PATH: /home/{{GALAXY_USER}}/galaxy
 GALAXY_USER_PASSWORD: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
 @end
 )
@@ -61,17 +62,22 @@ configure front (
       notify: restart cluesd
 
     # Install requisites
-    - apt: name=git update_cache=yes cache_valid_time=3600
+    - apt: name=git,python-virtualenv update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
     - yum: name=git
       when: ansible_os_family == "RedHat"
     # Download Galaxy
-    - git: repo=https://github.com/galaxyproject/galaxy/ dest={{INSTALL_PATH}} version=master
+    - git: repo=https://github.com/galaxyproject/galaxy/ dest={{GALAXY_INSTALL_PATH}} version=master
 
     # General configuration
-    - copy: src={{INSTALL_PATH}}/config/galaxy.ini.sample dest={{INSTALL_PATH}}/config/galaxy.ini force=no
-    - ini_file: dest={{INSTALL_PATH}}/config/galaxy.ini section="server:main" option=host value=0.0.0.0 
-    - ini_file: dest={{INSTALL_PATH}}/config/galaxy.ini section="app:main" option=admin_users value={{ADMIN_MAIL}}
+    - copy: src={{GALAXY_INSTALL_PATH}}/config/galaxy.ini.sample dest={{GALAXY_INSTALL_PATH}}/config/galaxy.ini force=no
+    - ini_file: dest={{GALAXY_INSTALL_PATH}}/config/galaxy.ini section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
+      with_items:
+        - { section: 'server:main', option: 'host', value: '0.0.0.0' }
+        - { section: 'app:main', option: 'admin_users', value: "{{GALAXY_ADMIN_MAIL}}" }
+        - { section: 'app:main', option: 'master_api_key', value: "{{GALAXY_ADMIN_API_KEY}}" }
+        - { section: 'app:main', option: 'tool_dependency_dir', value: "{{GALAXY_INSTALL_PATH}}/tool_dependency_dir" }
+
 
     # LRMS specific configuration
     - include: galaxy_pbs.yml
@@ -84,15 +90,14 @@ configure front (
       authorized_key: user={{GALAXY_USER}} key="{{ lookup('file', '/tmp/' + GALAXY_USER + '_id_rsa.pub') }}"
 
     - file: path=/home/{{GALAXY_USER}} state=directory owner={{GALAXY_USER}} group={{GALAXY_USER}}
-    - file: path={{INSTALL_PATH}} state=directory recurse=yes owner={{GALAXY_USER}}
+    - file: path={{GALAXY_INSTALL_PATH}} state=directory recurse=yes owner={{GALAXY_USER}}
+
+    - copy: dest="{{GALAXY_INSTALL_PATH}}/config/local_env.sh" content="PYTHON_EGG_CACHE={{GALAXY_INSTALL_PATH}}/egg\nGALAXY_RUN_ALL=1\nexport PYTHON_EGG_CACHE GALAXY_RUN_ALL"
 
     # Launch the server
-    - shell: bash run.sh --daemon chdir={{INSTALL_PATH}}/ creates={{INSTALL_PATH}}/main.pid
-      environment:
-         PYTHON_EGG_CACHE: "{{INSTALL_PATH}}/egg"
-         GALAXY_RUN_ALL: 1
+    - shell: bash run.sh --daemon chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/main.pid
       sudo: true
-      sudo_user: galaxy
+      sudo_user: "{{GALAXY_USER}}"
 
 @end
 )
@@ -100,8 +105,8 @@ configure front (
 configure galaxy_pbs (
 @begin
     # Install pbs_python egg
-    - file: path={{INSTALL_PATH}}/eggs state=directory
-    - shell:  python scripts/scramble.py -e pbs_python chdir={{INSTALL_PATH}}
+    - file: path={{GALAXY_INSTALL_PATH}}/eggs state=directory
+    - shell:  python scripts/scramble.py -e pbs_python chdir={{GALAXY_INSTALL_PATH}}
       environment:
          LIBTORQUE_DIR: /usr/lib
 
@@ -128,10 +133,10 @@ configure galaxy_pbs (
             		<tool id="upload1" destination="local"/>
             	</tools>
             </job_conf>
-        dest: "{{INSTALL_PATH}}/config/job_conf.xml"
+        dest: "{{GALAXY_INSTALL_PATH}}/config/job_conf.xml"
 
     # Set the databse galaxy path to NFS shared dir
-    - file: path={{INSTALL_PATH}}/database/pbs state=directory recurse=yes
+    - file: path={{GALAXY_INSTALL_PATH}}/database/pbs state=directory recurse=yes
 @end
 )
 

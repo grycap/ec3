@@ -1,0 +1,47 @@
+description escherichia_coli_genome (
+    kind = 'component' and
+    short = 'Download and add the Escherichia_coli_K_12_DH10B NCBI 2008-03-17 genome index in the Galaxy portal.' and
+    content = 'Download and add the Escherichia_coli_K_12_DH10B NCBI 2008-03-17 genome index in the Galaxy portal. 
+
+Webpage: http://support.illumina.com/sequencing/sequencing_software/igenome.html'
+)
+
+configure front (
+@begin
+  - handlers:
+    - name: Stop Galaxy
+      shell: bash run.sh --stop-daemon chdir={{GALAXY_INSTALL_PATH}}
+      sudo: true
+      sudo_user: "{{GALAXY_USER}}"
+
+    - name: Wait Galaxy stop
+      wait_for: port=8080 delay=5 state=stopped timeout=150
+
+    - name: Start Galaxy
+      shell: bash run.sh --daemon chdir={{GALAXY_INSTALL_PATH}}
+      sudo: true
+      sudo_user: "{{GALAXY_USER}}"
+
+    - name: Wait Galaxy start
+      wait_for: port=8080 delay=5 state=started timeout=150
+
+
+    tasks:
+    - name: Download the Escherichia coli genome
+      get_url: url=ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/Escherichia_coli_K_12_DH10B/NCBI/2008-03-17/Escherichia_coli_K_12_DH10B_NCBI_2008-03-17.tar.gz dest=/tmp/Escherichia_coli_K_12_DH10B_NCBI_2008-03-17.tar.gz
+
+    - name: Unarchive the Escherichia coli genome
+      unarchive: src=/tmp/Escherichia_coli_K_12_DH10B_NCBI_2008-03-17.tar.gz dest={{GALAXY_INSTALL_PATH}} copy=no creates={{GALAXY_INSTALL_PATH}}/Escherichia_coli_K_12_DH10B
+
+    - name: Add the Escherichia coli genome index in the Galaxy portal
+      lineinfile: dest={{GALAXY_INSTALL_PATH}}/tool-data/toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/ceb6467e276c/bowtie2_indices.loc regexp=^dm1 line="dm1\tdm1\tEscherichia coli K 12 DH10B NCBI 2008-03-17\t{{GALAXY_INSTALL_PATH}}/Escherichia_coli_K_12_DH10B/NCBI/2008-03-17/Sequence/Bowtie2Index/genome"
+      notify:
+      - Stop Galaxy
+      - Wait Galaxy stop
+      - Start Galaxy
+      - Wait Galaxy start
+@end
+)
+
+
+

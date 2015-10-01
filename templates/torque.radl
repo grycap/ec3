@@ -55,7 +55,8 @@ configure RedHat (
 configure wn (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       USERS:
         - {name: user1, password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0}
 
