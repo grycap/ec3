@@ -623,7 +623,7 @@ class CmdLaunch:
 
         # Set auth in system "front"
         if radl.get(system("front")):
-            radl.get(system("front")).setValue("auth", "".join(auth_content))
+            radl.get(system("front")).setValue("auth", "".join(auth_content).replace("'","\'"))
 
         # Replace "ec3_*" expression in YAML recipes and systems
         try:
