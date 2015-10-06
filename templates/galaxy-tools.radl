@@ -32,8 +32,16 @@ tools:
 configure front (
 @begin
   - tasks:
+    - name: Uninstall old version of python-requests in Ubuntu
+      shell: dpkg --force-all -r python-requests
+      when: ansible_os_family == "Debian"
+      ignore_errors: yes
+
     - name: Install script dependencies
-      pip: name=bioblend 
+      pip: name={{item}} state=latest
+      with_items:
+        - bioblend
+        - requests
 
     - name: Place the tool management script
       get_url: url=https://raw.githubusercontent.com/galaxyproject/ansible-galaxy-tools/master/files/install_tool_shed_tools.py dest={{GALAXY_INSTALL_PATH}}/install_tool_shed_tools.py
