@@ -623,7 +623,7 @@ class CmdLaunch:
 
         # Set auth in system "front"
         if radl.get(system("front")):
-            radl.get(system("front")).setValue("auth", "".join(auth_content).replace("'","\'"))
+            radl.get(system("front")).setValue("auth", "".join(auth_content).replace("'","\047"))
 
         # Replace "ec3_*" expression in YAML recipes and systems
         try:
@@ -674,6 +674,7 @@ class CmdLaunch:
         time0 = time.time()
         system_front = None
         res = None
+        radl = None
         im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
         try:
             while True:
