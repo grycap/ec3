@@ -28,7 +28,7 @@ next commands::
     sudo pip install im
     sudo service im start
 
-`PyYAML`_ and `PLY`_ are usually available in distribution repositories (``python-yaml``,``python-ply`` in Debian; ``PyYAML``,``python-ply`` in Red Hat; and ``PyYAML``,``PLY`` in pip).
+`PyYAML`_ and `PLY`_ are usually available in distribution repositories (``python-yaml``, ``python-ply`` in Debian; ``PyYAML``, ``python-ply`` in Red Hat; and ``PyYAML``, ``PLY`` in pip).
 
 `ec3` can be download from `this <https://github.com/grycap/ec3>`_ git repository::
 
