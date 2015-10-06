@@ -71,14 +71,14 @@ You can show basic information about the deployed clusters by executing::
      ---------------------------------------------
       mycluster  configured  132.43.105.28    0
 
-Once the cluster has been deployed, open a ssh session to the front-end::
+Once the cluster has been deployed, open a ssh session to the front-end (you may need to install the ``sshpass`` library)::
 
    $ ec3 ssh mycluster
    Welcome to Ubuntu 14.04.1 LTS (GNU/Linux 3.13.0-24-generic x86_64)
    Documentation:  https://help.ubuntu.com/
    ubuntu@torqueserver:~$
 
-Yoy may use the cluster as usual, depending on the LRMS.
+You may use the cluster as usual, depending on the LRMS.
 For Torque, you can decide to submit a couple of jobs using qsub, to test elasticity in the cluster:
 
    $ for i in 1 2; do echo "/bin/sleep 50" | qsub; done
