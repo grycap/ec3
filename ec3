@@ -483,6 +483,7 @@ class CLI:
     @staticmethod
     def run(commands):
         parser = argparse_configyaml(prog="ec3")
+        parser.add_argument("--version", action="version", version='EC3 current version: 1.0')
         parser.add_argument("-l", "--log-file", dest="log_file", nargs=1, type=argparse.FileType('w'), default=[sys.stderr], help="log output file")
         parser.add_argument("-ll", "--log-level", dest="log_level", nargs=1, type=int, default=[5], help="log level. 1: debug; 2: info; 3: warning; 4: error")
         parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False, help="only print messages from front-end")
