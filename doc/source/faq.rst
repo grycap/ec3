@@ -72,6 +72,11 @@ This error is shown by the Cloud provider, because the instance type selected ca
 To use a VPC, please, employ the CLI interface of EC3. You can specify the name of an existent VPC in the RADL file.
 More info about `Amazon VPC`_.
 
+**Why can't I download the private key of my cluster?**
+
+If you are experimenting problems downloading the private key of your cluster (deployed in Amazon EC2),
+please, try with another browser. The website is currently optimized for Google Chrome.
+
 
 .. _`CLI`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
