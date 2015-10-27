@@ -64,6 +64,8 @@ If you deployed a local `IM`_ server, use the next command instead::
 
 This can take several minutes.
 
+Bear in mind that you have to specify a resource manager (like ``torque`` in our example) in addition to the images that you want to deploy (e.g. ``ubuntu-ec2``). For more information about this check the `templates documentation`_.
+
 You can show basic information about the deployed clusters by executing::
 
     $ ec3 list
@@ -71,14 +73,14 @@ You can show basic information about the deployed clusters by executing::
      ---------------------------------------------
       mycluster  configured  132.43.105.28    0
 
-Once the cluster has been deployed, open a ssh session to the front-end::
+Once the cluster has been deployed, open a ssh session to the front-end (you may need to install the ``sshpass`` library)::
 
    $ ec3 ssh mycluster
    Welcome to Ubuntu 14.04.1 LTS (GNU/Linux 3.13.0-24-generic x86_64)
    Documentation:  https://help.ubuntu.com/
    ubuntu@torqueserver:~$
 
-Yoy may use the cluster as usual, depending on the LRMS.
+You may use the cluster as usual, depending on the LRMS.
 For Torque, you can decide to submit a couple of jobs using qsub, to test elasticity in the cluster:
 
    $ for i in 1 2; do echo "/bin/sleep 50" | qsub; done
@@ -113,7 +115,8 @@ Additional information
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`PLY`: http://www.dabeaz.com/ply/
-.. _`EC3 Command-line Interface`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#ec3-command-line-interface
+.. _`EC3 Command-line Interface`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
 .. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
 .. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
-.. _`Templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/templates.rst#templates
+.. _`Templates`: http://servproject.i3m.upv.es/ec3/doc/templates.html
+.. _`templates documentation`: http://servproject.i3m.upv.es/ec3/doc/templates.html#ec3-types-of-templates
