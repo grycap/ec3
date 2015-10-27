@@ -1,9 +1,7 @@
-description galaxy_tools (
+description galaxy_declic_tool (
     kind = 'component' and
-    short = 'This component is for automated installation of tools from a Tool Shed into Galaxy Portal.' and
-    content = 'This component is for automated installation of tools from a Tool Shed into Galaxy Portal. 
-
-Webpage: https://github.com/galaxyproject/ansible-galaxy-tools'
+    short = 'This component is for automated installation of the INRA Declic tool into Galaxy Portal.' and
+    content = 'This component is for automated installation of the INRA Declic tool into Galaxy Portal.'
 )
 
 configure wn (
