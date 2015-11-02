@@ -9,7 +9,7 @@ General FAQs
 
 **What Cloud Providers are supported by EC3 (Elastic Cloud Computing Cluster)?**
 
-Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ ,`LibVirt`_ and `EGI FedCloud`_.
+Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_, `LibVirt`_ and `EGI FedCloud`_.
 All providers and interfaces are supported by the `CLI`_ interface.
 However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, OpenNebula and EGI FedCloud is provided. More providers will be added soon.
 
