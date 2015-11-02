@@ -74,7 +74,7 @@ More info about `Amazon VPC`_.
 
 **Why can't I download the private key of my cluster?**
 
-If you are experimenting problems downloading the private key of your cluster (deployed in Amazon EC2),
+If you are experimenting problems downloading the private key of your cluster,
 please, try with another browser. The website is currently optimized for Google Chrome.
 
 **Can I configure software packages in my cluster that are not available in the wizard?**
