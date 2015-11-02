@@ -9,9 +9,9 @@ General FAQs
 
 **What Cloud Providers are supported by EC3 (Elastic Cloud Computing Cluster)?**
 
-Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
+Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ ,`LibVirt`_ and `EGI FedCloud`_.
 All providers and interfaces are supported by the `CLI`_ interface.
-However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack and OpenNebula is provided. More providers will be added soon.
+However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, OpenNebula and EGI FedCloud is provided. More providers will be added soon.
 
 **What Local Resource Management Systems (LRMS) are supported by EC3?**
 
@@ -77,6 +77,11 @@ More info about `Amazon VPC`_.
 If you are experimenting problems downloading the private key of your cluster (deployed in Amazon EC2),
 please, try with another browser. The website is currently optimized for Google Chrome.
 
+**Can I configure software packages in my cluster that are not available in the wizard?**
+
+You can configure them by using the EC3 `CLI`_ interface. Thus, you will need to provide a valid Ansible recipe to automatically install the dependence. 
+You can also contact us by using the contact section, and we would try to add the software package you need.
+
 
 .. _`CLI`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
@@ -95,3 +100,4 @@ please, try with another browser. The website is currently optimized for Google 
 .. _`Torque`: http://www.adaptivecomputing.com/products/open-source/torque/
 .. _`SGE`: http://sourceforge.net/projects/gridscheduler/
 .. _`Apache Mesos`: http://mesos.apache.org/
+.. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
