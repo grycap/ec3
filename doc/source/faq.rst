@@ -9,9 +9,9 @@ General FAQs
 
 **What Cloud Providers are supported by EC3 (Elastic Cloud Computing Cluster)?**
 
-Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_, `LibVirt`_ and `EGI FedCloud`_.
+Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
 All providers and interfaces are supported by the `CLI`_ interface.
-However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, OpenNebula and EGI FedCloud is provided. More providers will be added soon.
+However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack and OpenNebula is provided. More providers will be added soon.
 
 **What Local Resource Management Systems (LRMS) are supported by EC3?**
 
@@ -57,7 +57,7 @@ If you want to use another supported Cloud provider, like `Microsoft Azure`_ or 
 **What is the correct format for the "endpoint" in the OpenNebula and Openstack wizards?**
 
 The user needs to provide EC3 the endpoint of the on-premises Cloud provider. The correct format is *name_of_the_server:port*. 
-For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*. 
+For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*.
 The same format is employed in the authorization file required to use the `CLI`_ interface of EC3.
 
 **Why am I receiving this error "InvalidParameterCombination - Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
@@ -74,13 +74,12 @@ More info about `Amazon VPC`_.
 
 **Why can't I download the private key of my cluster?**
 
-If you are experimenting problems downloading the private key of your cluster,
+If you are experimenting problems downloading the private key of your cluster (deployed in Amazon EC2),
 please, try with another browser. The website is currently optimized for Google Chrome.
 
-**Can I configure software packages in my cluster that are not available in the wizard?**
+**Where can I get the endpoint and VMI identifier for the EGI FedCloud wizard?**
 
-You can configure them by using the EC3 `CLI`_ interface. Thus, you will need to provide a valid Ansible recipe to automatically install the dependence. 
-You can also contact us by using the contact section, and we would try to add the software package you need.
+In the EGI FedCloud case, the endpoint and VMI identifier can be obtained from the `AppDB portal`_. In the cloud marketplace select the desired VMI then select the site to launch it and click the "get IDs" button. The field "Site endpoint" shows the value of the endpoint to specify in the wizard and the value after the "#" char of the OCCI ID field the VMI Indentifier.
 
 
 .. _`CLI`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
@@ -100,4 +99,5 @@ You can also contact us by using the contact section, and we would try to add th
 .. _`Torque`: http://www.adaptivecomputing.com/products/open-source/torque/
 .. _`SGE`: http://sourceforge.net/projects/gridscheduler/
 .. _`Apache Mesos`: http://mesos.apache.org/
-.. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
+.. _`AppDB portal`: https://appdb.egi.eu
+
