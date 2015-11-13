@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# EC3 documentation build configuration file, created by
-# sphinx-quickstart on Mon Sep  8 10:02:04 2014.
+# IM Documentation documentation build configuration file, created by
+# sphinx-quickstart on Tue Sep 22 10:07:54 2015.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -14,6 +15,8 @@
 
 import sys
 import os
+
+sys.path.append(os.path.abspath('.'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -28,10 +31,18 @@ import os
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = []
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
+]
+
+# Math
+mathjax_path = "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -43,8 +54,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'EC3'
-copyright = u'2014, GRyCAP'
+project = u'EC3 Documentation'
+copyright = u'2015, I3M-GRyCAP'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -67,7 +78,7 @@ release = '1.0'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -96,9 +107,27 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output ----------------------------------------------
 
+# Add any paths that contain custom themes here, relative to this directory.
+html_theme_path = ["../..","."]
+
+html_theme = 'sphinx_rtd_theme'
+
+html_theme_options = {
+    # 'sticky_navigation': True  # Set to False to disable the sticky nav while scrolling.
+    # 'logo_only': True,  # if we have a html_logo below, this shows /only/ the logo with no title text
+}
+
+html_static_path = ['_static'] 
+
+html_context = {
+    'css_files': [
+        '_static/theme_overrides.css',  # overrides for wide tables in RTD theme
+        ],
+    }
+
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+#html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -106,7 +135,7 @@ html_theme = 'sphinx_rtd_theme'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ["."]
+#html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -127,7 +156,6 @@ html_theme_path = ["."]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -153,13 +181,19 @@ html_static_path = ['_static']
 #html_domain_indices = True
 
 # If false, no index is generated.
-#html_use_index = True
+html_use_index = True
 
 # If true, the index is split into individual pages for each letter.
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
+
+# If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
+#html_show_sphinx = True
+
+# If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
+#html_show_copyright = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 html_show_sphinx = False
@@ -176,7 +210,7 @@ html_show_copyright = False
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'EC3doc'
+htmlhelp_basename = 'EC3Documentation'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -196,8 +230,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'EC3.tex', u'EC3 Documentation',
-   u'GRyCAP', 'manual'),
+  ('index', 'EC3Documentation.tex', u'EC3 Documentation',
+   u'EC3', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -226,8 +260,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'ec3', u'EC3 Documentation',
-     [u'GRyCAP'], 1)
+    ('index', 'ec3documentation', u'EC3 Documentation',
+     [u'EC3'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -240,8 +274,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'EC3', u'EC3 Documentation',
-   u'GRyCAP', 'EC3', 'One line description of project.',
+  ('index', 'EC3Documentation', u'EC3 Documentation',
+   u'EC3', 'EC3Documentation', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -256,3 +290,12 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+# -- Extension interface -------------------------------------------------------
+
+def setup(app):
+    app.add_object_type('confval', 'confval',
+                        objname='configuration value',
+                        indextemplate='pair: %s; configuration value')
+                        
+

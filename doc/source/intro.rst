@@ -80,7 +80,7 @@ Additional information
 * Information about available templates: ``ec3 templates [--search <topic>] [--full-description]``.
 
 .. _`CLUES`: http://www.grycap.upv.es/clues/
-.. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
+.. _`RADL`: http://imdocs.readthedocs.org/en/devel/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
 .. _`MAUI`: http://www.adaptivecomputing.com/products/open-source/maui/
 .. _`SLURM`: http://slurm.schedmd.com/
@@ -91,9 +91,10 @@ Additional information
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`Google Cloud`: http://cloud.google.com/
 .. _`Microsoft Azure`: http://azure.microsoft.com/
-.. _`IM`: https://github.com/grycap/im
+.. _`IM`: http://www.grycap.upv.es/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
-.. _`EC3 Command-line Interface`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
+.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/latest/ec3.html
 .. _`Authorization file`: http://servproject.i3m.upv.es/ec3/doc/ec3.html#authorization-file
-.. _`Templates`: http://servproject.i3m.upv.es/ec3/doc/templates.html
+.. _`Templates`: http://ec3.readthedocs.org/en/latest/templates.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
+

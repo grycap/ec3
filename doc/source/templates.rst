@@ -202,7 +202,7 @@ the behaviour of EC3:
 
 ``ec3_destroy_safe = <positive integer value>``
    This value (in seconds) stands for a security margin to avoid incurring in a new charge for the next hour.
-   The instance will be destroyed (if idle) in up to (``ec3_destroy_interval`` - ``ec3_destroy_safe`) seconds.
+   The instance will be destroyed (if idle) in up to (``ec3_destroy_interval`` - ``ec3_destroy_safe``) seconds.
    The default value is 0.
 
 ``ec3_if_fail = <string>``
@@ -314,7 +314,8 @@ can be accessed by the recipes and have information about the virtual machine.
 ``IM_MASTER_FQDN``
    Complete FQDN of the virtual machine doing the *master* role.
 
-.. _cmd-include:
+.. _cmd-include: 
+
 Including a recipe from another
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -453,7 +454,7 @@ If you want to add your own customized templates to EC3, you need to consider so
 Also, it is important to provide a ``description`` section in each new template, to be considered by the ``ec3 templates`` command.
 
 .. _`CLUES`: http://www.grycap.upv.es/clues/
-.. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
+.. _`RADL`: http://imdocs.readthedocs.org/en/devel/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
 .. _`MAUI`: http://www.adaptivecomputing.com/products/open-source/maui/
 .. _`SLURM`: http://slurm.schedmd.com/
@@ -462,5 +463,6 @@ Also, it is important to provide a ``description`` section in each new template,
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
-.. _`IM`: https://github.com/grycap/im
-.. _`Including a recipe from another`: http://servproject.i3m.upv.es/ec3/doc/templates.html#including-a-recipe-from-another
+.. _`IM`: http://www.grycap.upv.es/im
+.. _`Including a recipe from another`: http://ec3.readthedocs.org/en/latest/templates.html#including-a-recipe-from-another
+
