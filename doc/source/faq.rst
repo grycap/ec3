@@ -79,8 +79,7 @@ please, try with another browser. The website is currently optimized for Google 
 
 **Where can I get the endpoint and VMI identifier for the EGI FedCloud wizard?**
 
-In the EGI FedCloud case, the endpoint and VMI identifier can be obtained from the `AppDB portal`_. In the cloud marketplace select the desired VMI then select the site to launch it and click the "get IDs" button. The field "Site endpoint" shows the value of the endpoint to specify in the wizard and the value after the "#" char of the OCCI ID field the VMI Indentifier.
-
+In the EGI FedCloud case, the endpoint and VMI identifier can be obtained from the `AppDB portal`_. In the cloud marketplace select the desired VMI then select the site to launch it (considering your VO) and click the "get IDs" button. The field "Site endpoint" shows the value of the endpoint to specify in the wizard (without a "/" character after the port) and the value after the "#" char of the OCCI ID field the VMI Indentifier. Finally the value after the "#" char of the Template ID field shows the type of the instance type (In some OpenStack sites you must replace the "." char with a "-", e.g. m1.small to m1-small).
 
 .. _`CLI`: http://ec3.readthedocs.org/en/latest/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
