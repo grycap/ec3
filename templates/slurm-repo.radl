@@ -35,6 +35,8 @@ include slurm_misc (
 configure front (
 @begin
   - vars:
+      FILE:
+        ec3_file: is_cluster_ready
       SLURM_CONF_FILE:
         ec3_file: slurm-repo.conf
       SYSTEMS:
@@ -44,6 +46,10 @@ configure front (
     - fail: msg="Sorry, Red Hat based distributions are not supported by this recipe, use 'slurm'."
       when: ansible_os_family == "RedHat"
 
+    - copy:
+        dest: /bin/is_cluster_ready
+        content: "{{FILE}}"
+        mode: 0755
     - include: im_devel_pip.yml
     - include: munge_repo_front.yml
 
