@@ -119,6 +119,8 @@ configure front (
 ---
   - ec3_prio: -5
     vars:
+      FILE:
+        ec3_file: is_cluster_ready
       SYSTEMS:
         ec3_jpath: /system/*
       SLURM_CONF_FILE:
@@ -127,6 +129,10 @@ configure front (
         ec3_jpath: /system/front/ec3_templates
 
     tasks:
+    - copy:
+        dest: /bin/is_cluster_ready
+        content: "{{FILE}}"
+        mode: 0755
     - name: create epel.repo
       action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
       when: ansible_os_family == "RedHat"
