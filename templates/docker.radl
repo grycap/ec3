@@ -8,9 +8,28 @@ Webpage: https://www.docker.com/'
 
 configure docker (
 @begin
+    - command: uname -r
+      register: KERNEL_RELEASE
+
     - name: Apt install Docker dependencies in Deb system
-      apt: name=wget,linux-image-generic-lts-trusty update_cache=yes cache_valid_time=3600
+      apt: name=wget update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
+
+    - name: Apt upgrade the kernel and install additional packages
+      apt: name=linux-image-generic-lts-trusty update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian" and (KERNEL_RELEASE.stdout | version_compare('3.13.0', '<='))
+
+    - name: restart the machine if kernel was upgraded
+      command: shutdown -r now "Ansible updates triggered"
+      async: 0
+      poll: 0
+      ignore_errors: true
+      when: ansible_os_family == "Debian" and (KERNEL_RELEASE.stdout | version_compare('3.13.0', '<='))
+
+    - name: waiting for machine to come back
+      local_action: wait_for host={{IM_NODE_NET_0_IP}} state=started
+      sudo: false
+      when: ansible_os_family == "Debian" and (KERNEL_RELEASE.stdout | version_compare('3.13.0', '<='))
 
     - name: download docker code from repository
       shell: wget -qO- https://get.docker.com/ | sh creates=/etc/default/docker
@@ -23,6 +42,8 @@ configure docker (
     - service: name=docker state=started
 @end
 )
+
+system front ( ec3_templates contains 'docker' )
 
 configure front (
 @begin
@@ -37,4 +58,3 @@ configure wn (
     - include: docker.yml
 @end
 )
-

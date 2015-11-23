@@ -1,0 +1,249 @@
+#https://www.digitalocean.com/community/tutorials/how-to-configure-a-production-ready-mesosphere-cluster-on-ubuntu-14-04
+description mesos (
+    kind = 'main' and
+    short = 'Install and configure a Mesos cluster from mesosphere repo.' and
+    content = 'The template installs Mesos 0.22.1 and Chronos 2.3.4 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
+    
+Webpage: http://mesos.apache.org/'
+)
+
+#TODO: preparar la receta tambien para centos
+
+network public (
+    outbound = 'yes' and 
+    outports contains '5050/tcp' and
+    outports contains '2181/tcp' and
+    outports contains '2888/tcp' and
+    outports contains '3888/tcp' and
+    outports contains '4400/tcp'
+)
+
+network private ()
+
+system front (
+    cpu.count>=1 and
+    memory.size>=512m and
+    net_interface.0.connection = 'public' and
+    net_interface.0.dns_name = 'mesosserverpublic' and
+    net_interface.1.connection = 'private' and
+    net_interface.1.dns_name = 'mesosserver' and
+    queue_system = 'mesos' and
+    ec3_templates contains 'mesos'
+)
+
+system wn (
+    net_interface.0.connection='private'
+)
+
+configure mesosphere_repo (
+@begin
+    - name: Add key for Mesosphere repository
+      apt_key: url=http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xE56151BF state=present
+ 
+    - name: Determine Linux distribution distributor
+      shell: lsb_release -is | tr '[:upper:]' '[:lower:]'
+      register: release_distributor
+ 
+    - name: Determine Linux distribution codename
+      command: lsb_release -cs
+      register: release_codename
+ 
+    - name: Add Mesosphere repository to sources list
+      copy:
+        content: "deb http://repos.mesosphere.io/{{release_distributor.stdout}} {{release_codename.stdout}} main"
+        dest: /etc/apt/sources.list.d/mesosphere.list
+        mode: 0644
+@end
+)
+
+configure install_mesos (
+@begin
+    - name: Install mesos package
+      apt: pkg=mesos state=present update_cache=yes
+
+    - name: configure containerizers
+      shell: echo 'docker,mesos' | sudo tee /etc/mesos-slave/containerizers
+      when: "'docker' in TEMPLATES"
+    - shell: echo '5mins' | sudo tee /etc/mesos-slave/executor_registration_timeout
+      when: "'docker' in TEMPLATES"
+@end
+)
+
+configure conf_mesos_master (
+@begin
+    - name: Obtain master IP
+      shell: ifconfig eth0 | sed -n '/inet addr/s/.*addr.\([^ ]*\) .*/\1/p'
+      #shell:  wget -qO- ifconfig.me/ip
+      register: master_ip
+    - name: Obtain master nodename
+      shell: hostname | cut -d "." -f 1
+      register: master_hostname
+
+    # Tasks for ZooKeeper nodes only
+#    - name: Create zookeeper myid file
+#      copy: 
+#        content: "1"
+#        dest: /etc/zookeeper/conf/myid
+#        mode: 0644
+#    - name: Create zookeeper config file
+#      copy:
+#        content: "server.1={{master_ip.stdout}}:2888:3888"
+#        dest: /etc/zookeeper/conf/zoo.cfg
+#        mode: 0644
+    - name: Set ZooKeeper URL # used for leader election amongst masters
+      copy:
+        content: "zk://{{master_ip.stdout}}:2181/mesos"
+        dest: /etc/mesos/zk
+        mode: 0644
+    - name: start up zookeeper
+      service: name=zookeeper state=restarted enabled=yes
+
+    # Master tasks
+    - name: Stop the Mesos Slave service
+      service: name=mesos-slave state=stopped
+    - name: Disable the Mesos Slave service
+      copy:
+        content: "manual"
+        dest: /etc/init/mesos-slave.override
+        mode: 0644
+ 
+    - name: Set Mesos Master hostname
+      copy:
+        content: "{{master_hostname.stdout}}"
+        dest: /etc/mesos-master/hostname
+        mode: 0644
+
+    # Tambien se puede configurar la ip del master con (export MESOS_IP=158.42.104.229)
+    - name: Set Mesos Master ip
+      copy:
+        content: "{{master_ip.stdout}}"
+        dest: /etc/mesos-master/ip
+        mode: 0644
+ 
+    - name: Set Mesos Master quorum count
+      copy:
+        content: "{{QUORUM}}"
+        dest: /etc/mesos-master/quorum
+        mode: 0644
+
+    - name: start up the mesos-master
+      service: name=mesos-master state=started enabled=yes
+
+@end
+)
+
+configure conf_mesos_slave (
+@begin
+    - name: Obtain slave IP
+      shell: ifconfig eth0 | sed -n '/inet addr/s/.*addr.\([^ ]*\) .*/\1/p'
+      register: slave_ip
+
+    - name: Obtain slave nodename
+      shell: hostname | cut -d "." -f 1
+      register: slave_hostname
+
+    - name: Stop zookeeper in wns
+      service: name=zookeeper state=stopped
+    - name: Disable the ZooKeeper service
+      copy:
+        content: "manual"
+        dest: /etc/init/zookeeper.override
+        mode: 0644
+    - name: copy zk file from the frontend
+      #copy:
+        #content: "zk://{{IM_NODE_NET_0_IP}}:2181/mesos"
+        #dest: /etc/mesos/zk
+        #mode: 0644
+      copy: src=/etc/mesos/zk dest=/etc/mesos/zk
+
+    - name: Stop mesos master in wns
+      service: name=mesos-master state=stopped
+    - name: Disable mesos master in wns
+      copy:
+        content: "manual"
+        dest: /etc/init/mesos-master.override
+        mode: 0644
+
+    - name: Set Mesos Slave hostname
+      copy:
+        content: "{{slave_hostname.stdout}}"
+        dest: /etc/mesos-slave/hostname
+        mode: 0644
+
+    - name: Set Mesos Slave ip
+      copy:
+        content: "{{slave_ip.stdout}}"
+        dest: /etc/mesos-slave/ip
+        mode: 0644
+
+    #- name: Set Mesos Slave isolation
+    #  copy:
+    #    content: "cgroups/cpu,cgroups/mem"
+    #    dest: /etc/mesos-slave/isolation
+    #    mode: 0644
+
+    - name: start up the mesos-slave
+      service: name=mesos-slave state=started enabled=yes
+@end
+)
+
+configure install_chronos (
+@begin
+    - name: Install chronos package
+      apt: pkg=chronos state=present update_cache=yes
+
+    - name: start chronos
+      service: name=chronos state=started enabled=yes
+@end
+)
+
+include mesos_misc (
+  template = 'im sudo-copy'
+)
+
+configure front (
+@begin
+---
+  - vars:
+      TEMPLATES:
+        ec3_jpath: /system/front/ec3_templates
+      #FRONTEND:
+      #  ec3_xpath: /system/front/net_interface.0.dns_name
+      QUORUM: 1
+      SYSTEMS: 
+         ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+
+    tasks:
+    #- include: im_devel_git.yml
+    - include: im_devel_pip.yml
+    - include: mesosphere_repo.yml
+    - include: install_mesos.yml
+    - include: conf_mesos_master.yml
+    - include: install_chronos.yml
+
+    - copy:
+        content: |
+           {% for number in range(1, NNODES|int + 1) %}
+           vnode{{number}}
+           {% endfor %}
+        dest: "/tmp/vnodes.info"
+@end
+)
+
+configure wn (
+@begin
+---
+  - vars:
+      TEMPLATES:
+        ec3_jpath: /system/front/ec3_templates
+
+    tasks:
+    - include: mesosphere_repo.yml
+    - include: install_mesos.yml
+    - include: conf_mesos_slave.yml
+@end
+)
+
+deploy front 1
+#deploy wn 1
