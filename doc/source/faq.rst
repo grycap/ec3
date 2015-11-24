@@ -33,6 +33,11 @@ In particular, if you are using Amazon Web Services, we suggest you use the Iden
 service to create a user with a new set of credentials. This way, you can rest assured that these credentials can
 be cancelled at anytime.
 
+**Can I configure different software packages than the ones provided with EC3 in my cluster?**
+
+Yes, you can configure them by using the EC3 `CLI`_ interface. Thus, you will need to provide a valid Ansible recipe to 
+automatically install the dependence. You can also contact us by using the contact section, and we would try to add the software package you need.
+
 
 EC3aaS Webpage
 --------------
@@ -40,9 +45,7 @@ EC3aaS Webpage
 **Is my cluster ready when I receive its IP using the EC3aaS webpage?**
 
 Probably not, because the process of configuring the cluster is a batch process that takes several minutes, depending on the chosen configuration.
-However, you are allowed to log in the front-end machine of the cluster since the moment it is deployed.
-If you can't find the desired software packages installed or the chosen LRMS commands available, please, wait a little bit.
-There is a tricky way to find out when the cluster is already configured: When no Ansible processes (named ansible) are running.
+However, you are allowed to log in the front-end machine of the cluster since the moment it is deployed. To know if the cluster is configured, you can use the command *is_cluster_ready*. It will check if the cluster has been configured or if the configuration process is still in progress. If the command *is_cluster_ready* is not recognised, wait a few seconds and try again, because this command is also installed in the configuration process.
 
 **Why can't I deploy an hybrid cluster using the EC3aaS webpage?**
 
@@ -57,7 +60,7 @@ If you want to use another supported Cloud provider, like `Microsoft Azure`_ or 
 **What is the correct format for the "endpoint" in the OpenNebula and Openstack wizards?**
 
 The user needs to provide EC3 the endpoint of the on-premises Cloud provider. The correct format is *name_of_the_server:port*. 
-For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*. 
+For example, for Openstack *ostserver:5000*, or for OpenNebula *oneserver:2633*.
 The same format is employed in the authorization file required to use the `CLI`_ interface of EC3.
 
 **Why am I receiving this error "InvalidParameterCombination - Non-Windows instances with a virtualization type of 'hvm' are currently not supported for this instance type" when I deploy a cluster in Amazon EC2?**
@@ -77,8 +80,16 @@ More info about `Amazon VPC`_.
 If you are experimenting problems downloading the private key of your cluster (deployed in Amazon EC2),
 please, try with another browser. The website is currently optimized for Google Chrome.
 
+**Where can I get the endpoint and VMI identifier for the EGI FedCloud wizard?**
 
-.. _`CLI`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
+In the EGI FedCloud case, the endpoint and VMI identifier can be obtained from the `AppDB portal`_. In the cloud marketplace select the desired VMI then select the site to launch it (considering your VO) and click the "get IDs" button. The field "Site endpoint" shows the value of the endpoint to specify in the wizard (without a "/" character after the port) and the value after the "#" char of the OCCI ID field the VMI Indentifier. Finally the value after the "#" char of the Template ID field shows the type of the instance type (In some OpenStack sites you must replace the "." char with a "-", e.g. m1.small to m1-small).
+
+**Can I configure software packages in my cluster that are not available in the wizard?**
+
+You can configure them by using the EC3 `CLI`_ interface. Thus, you will need to provide a valid Ansible recipe to 
+automatically install the dependence. You can also contact us by using the contact section, and we would try to add the software package you need.
+
+.. _`CLI`: http://ec3.readthedocs.org/en/latest/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
@@ -95,3 +106,5 @@ please, try with another browser. The website is currently optimized for Google 
 .. _`Torque`: http://www.adaptivecomputing.com/products/open-source/torque/
 .. _`SGE`: http://sourceforge.net/projects/gridscheduler/
 .. _`Apache Mesos`: http://mesos.apache.org/
+.. _`AppDB portal`: https://appdb.egi.eu
+

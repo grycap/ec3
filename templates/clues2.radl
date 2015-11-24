@@ -84,6 +84,9 @@ configure front (
     - include: clues_slurm.yml
       when: "{{ QUEUE_SYSTEM == 'slurm' }}"
 
+    - include: clues_mesos.yml
+      when: "{{ QUEUE_SYSTEM == 'mesos' }}"
+
     - service: name=cluesd state=started
     
     handlers:
@@ -143,3 +146,16 @@ configure clues_slurm (
     - command: mv /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
 @end
 )  
+
+# Mesos plugin installation
+configure clues_mesos (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.mesos
+      notify: restart cluesd
+    - copy: src=/etc/clues2/conf.d/plugin-mesos.cfg-example dest=/etc/clues2/conf.d/plugin-mesos.cfg force=no
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_SERVER value=mesosserverpublic
+      notify: restart cluesd
+@end
+) 
