@@ -728,7 +728,7 @@ class CmdLaunch:
                 else:
                     newInfrId = infrId
                 system_front.delValue("__im_server")
-                system_front.delValue("__infrastructure_id")
+                system_front.setValue("__infrastructure_id", newInfrId)
                 if new_im_server_url != im_server_url:
                     success, _ = im_server.ExportInfrastructure(infrId, True, auth_data)
                     if not success: raise Exception(res)
