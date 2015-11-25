@@ -15,7 +15,8 @@ network public (
     outports contains '2181/tcp' and
     outports contains '2888/tcp' and
     outports contains '3888/tcp' and
-    outports contains '4400/tcp'
+    outports contains '4400/tcp' and
+    outports contains '8080/tcp'
 )
 
 network private ()
@@ -197,6 +198,32 @@ configure install_chronos (
 @end
 )
 
+configure install_marathon (
+@begin
+    #Install java 8 dependency for marathon
+    - name: Add webupd8 ppa repository
+      apt_repository: repo='ppa:webupd8team/java'
+
+    - name: apt update
+      shell: apt-get update
+
+    - name: Auto accept oracle jdk license
+      shell: echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+ 
+    - name: Install java8
+      shell: apt-get install -y oracle-java8-installer ca-certificates
+
+    - name: Install oracle-java8-set-default package
+      apt: pkg=oracle-java8-set-default state=present update_cache=yes
+
+    - name: Install marathon package
+      apt: pkg=marathon state=present update_cache=yes
+
+    - name: start marathon
+      service: name=marathon state=started enabled=yes
+@end
+)
+
 include mesos_misc (
   template = 'im sudo-copy'
 )
@@ -221,6 +248,7 @@ configure front (
     - include: install_mesos.yml
     - include: conf_mesos_master.yml
     - include: install_chronos.yml
+    - include: install_marathon.yml
 
     - copy:
         content: |
