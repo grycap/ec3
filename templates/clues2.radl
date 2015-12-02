@@ -8,6 +8,8 @@ configure front (
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
+      EXTRACT_PROXY_FILE:
+        ec3_file: extract_proxy.py
 
     tasks:
     - get_url: url=https://github.com/grycap/{{item}}/archive/master.zip dest=/tmp/{{item}}.zip
@@ -68,6 +70,14 @@ configure front (
         dest: /usr/local/ec3/auth.dat
         content: "{{AUTH}}"
       notify: restart cluesd
+    - copy:
+        dest: /tmp/extract_proxy.py
+        content: "{{EXTRACT_PROXY_FILE}}"
+        mode: 0755
+    - command: /tmp/extract_proxy.py
+      ignore_errors: yes
+      run_once: true
+
     - copy: src=/etc/clues2/conf.d/plugin-im.cfg-example dest=/etc/clues2/conf.d/plugin-im.cfg force=no
       notify: restart cluesd
     - ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE value=/usr/local/ec3/auth.dat
