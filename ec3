@@ -837,6 +837,9 @@ class CmdDestroy:
         parser.add_argument("clustername", help="name of the cluster to destroy")
         parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about deleting the cluster")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""	# auth_file: |
+	#   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
+	#   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
         parser.set_defaults(func=CmdDestroy.run)
 
     @staticmethod
@@ -848,6 +851,11 @@ class CmdDestroy:
                 sys.exit(1)
             new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
+            
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth = Authentication.read_auth_data(auth_content)
+
             success, info = new_im_server.DestroyInfrastructure(infrId, auth)
             if not success:
                 raise Exception(info)
