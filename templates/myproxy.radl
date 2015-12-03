@@ -38,10 +38,7 @@ configure front (
         content: "{{DOWNLOAD_PROXY_FILE}}"
         mode: 0755
 
-    - copy:
-        dest: /etc/cron.d/renew_proxy
-        content: "* */6 * * * *     root   [ -f /usr/local/ec3/proxy.pem ] && /usr/local/ec3/renew_proxy.py"
-        mode: 0644
+    - cron: name="renew proxy" hour="*/6" job="[ -f /usr/local/ec3/proxy.pem ] && /usr/local/ec3/renew_proxy.py" user=root cron_file=renew_proxy state=present
 @end
 )
 
