@@ -196,6 +196,7 @@ configure front (
            vnode{{number}}
            {% endfor %}
         dest: "{{TORQUE_PATH}}/server_priv/nodes"
+        force: no
 
     - include: munge_repo_front.yml
       when: ansible_os_family == "RedHat"
