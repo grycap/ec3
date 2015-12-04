@@ -69,14 +69,16 @@ configure front (
     - copy:
         dest: /usr/local/ec3/auth.dat
         content: "{{AUTH}}"
-      notify: restart cluesd
+        force: no
     - copy:
         dest: /tmp/extract_proxy.py
         content: "{{EXTRACT_PROXY_FILE}}"
         mode: 0755
+        force: no
     - command: /tmp/extract_proxy.py
       ignore_errors: yes
       run_once: true
+      creates: /usr/local/ec3/proxy.pem
 
     - copy: src=/etc/clues2/conf.d/plugin-im.cfg-example dest=/etc/clues2/conf.d/plugin-im.cfg force=no
       notify: restart cluesd
