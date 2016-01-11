@@ -232,6 +232,8 @@ configure front (
 @begin
 ---
   - vars:
+      FILE:
+        ec3_file: is_cluster_ready
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
       #FRONTEND:
@@ -250,6 +252,10 @@ configure front (
     - include: install_chronos.yml
     - include: install_marathon.yml
 
+    - copy:
+        dest: /bin/is_cluster_ready
+        content: "{{FILE}}"
+        mode: 0755
     - copy:
         content: |
            {% for number in range(1, NNODES|int + 1) %}
