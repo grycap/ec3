@@ -52,7 +52,7 @@ However, you are allowed to log in the front-end machine of the cluster since th
 Because no support is provided yet by the EC3aaS service.
 If you want to deploy a hybrid cluster, we encourage you to use the `CLI`_ interface.
 
-**Why can I only access to Amazon EC2, Openstack and OpenNebula Cloud providers while other Cloud providers are supported by EC3?**
+**Why can I only access to Amazon EC2, Openstack, OpenNebula and EGI FedCloud Cloud providers while other Cloud providers are supported by EC3?**
 
 Because no support is provided yet by the EC3aaS service.
 If you want to use another supported Cloud provider, like `Microsoft Azure`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
