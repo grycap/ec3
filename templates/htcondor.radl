@@ -1,0 +1,100 @@
+description htcondor (
+    kind = 'main' and
+    short = 'Install and configure a cluster HTCondor from distribution repositories.' and
+    content = 'The template installs HTCondor from the package repositories. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
+
+Webpage: http://research.cs.wisc.edu/htcondor'
+)
+
+network public (
+      outbound = 'yes' and
+      outports contains '9618/tcp'
+)
+network private ()
+
+system front (
+      cpu.count>=1 and
+      memory.size>=512m and
+      net_interface.0.connection='public' and
+      net_interface.1.connection='private' and
+      net_interface.1.dns_name = 'htcondoreserver' and
+      queue_system = 'htcondor'
+)
+
+system wn (
+      net_interface.0.connection='private'
+)
+
+
+configure htcondorcommon (
+@begin
+---
+    # Installation of htcondor
+    - name: Apt install htcondor
+      apt: name=htcondor update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+      
+    - name: create htcondor.repo
+      get_url: url=https://research.cs.wisc.edu/htcondor/yum/repo.d/htcondor-development-rhel{{ansible_distribution_major_version}}.repo dest=/etc/yum.repos.d/htcondor.repo mode=0440
+      when: ansible_os_family == "RedHat"
+
+    - name: Yum install condor in REL system
+      yum: name=condor
+      when: ansible_os_family == "RedHat"
+
+    - lineinfile: dest=/etc/condor/condor_config regexp=REQUIRE_LOCAL_CONFIG_FILE line="REQUIRE_LOCAL_CONFIG_FILE=TRUE"
+    - copy:
+        content: |
+           CONDOR_HOST = htcondoreserver
+           BIND_ALL_INTERFACES = FALSE
+           NETWORK_INTERFACE = {{IM_NODE_NET_0_IP}}
+           ALLOW_WRITE = htcondoreserver {% for number in range(1, NNODES|int + 1) %} , vnode{{number}} {% endfor %}
+           DAEMON_LIST = MASTER, STARTD
+        dest: "/etc/condor/condor_config.local"
+@end
+)
+
+configure wn (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+    tasks:
+    # Installation of htcondor
+    - include: htcondorcommon.yml
+
+    - service: name=condor state=started
+@end
+)
+
+include htcondor_misc (
+  template = 'im clues2 openports'
+)
+
+configure front (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+    tasks:
+    # Installation of htcondor
+    - command: hostname htcondoreserver
+    - include: htcondorcommon.yml
+
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=DAEMON_LIST line="DAEMON_LIST = MASTER, COLLECTOR, NEGOTIATOR, SCHEDD"
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=NETWORK_INTERFACE line="NETWORK_INTERFACE = {{IM_NODE_NET_1_IP}}"
+
+    - include: im_devel_git.yml
+#    - include: im_devel_pip.yml
+
+    - service: name=condor state=started
+@end
+)
+
+deploy front 1

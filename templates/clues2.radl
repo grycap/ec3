@@ -97,6 +97,9 @@ configure front (
     - include: clues_mesos.yml
       when: "{{ QUEUE_SYSTEM == 'mesos' }}"
 
+    - include: clues_htcondor.yml
+      when: "{{ QUEUE_SYSTEM == 'htcondor' }}"
+
     - service: name=cluesd state=started
     
     handlers:
@@ -169,3 +172,13 @@ configure clues_mesos (
       notify: restart cluesd
 @end
 ) 
+
+# HTCondor plugin installation
+configure clues_htcondor (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.condor
+      notify: restart cluesd
+@end
+) 
+
