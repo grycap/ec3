@@ -11,7 +11,7 @@ General FAQs
 
 Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
 All providers and interfaces are supported by the `CLI`_ interface.
-However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack and OpenNebula is provided. More providers will be added soon.
+However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, OpenNebula and `EGI FedCloud`_ is provided. More providers will be added soon.
 
 **What Local Resource Management Systems (LRMS) are supported by EC3?**
 
@@ -107,4 +107,5 @@ automatically install the dependence. You can also contact us by using the conta
 .. _`SGE`: http://sourceforge.net/projects/gridscheduler/
 .. _`Apache Mesos`: http://mesos.apache.org/
 .. _`AppDB portal`: https://appdb.egi.eu
+.. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
 
