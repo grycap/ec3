@@ -256,6 +256,7 @@ configure front (
         dest: /bin/is_cluster_ready
         content: "{{FILE}}"
         mode: 0755
+    - file: path=/etc/clues2/ state=directory
     - copy:
         content: |
            {% for number in range(1, NNODES|int + 1) %}
