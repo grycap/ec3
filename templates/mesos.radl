@@ -225,13 +225,14 @@ configure install_marathon (
 )
 
 include mesos_misc (
-  template = 'im sudo-copy'
+  template = 'clues2 im sudo-copy'
 )
 
 configure front (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       FILE:
         ec3_file: is_cluster_ready
       TEMPLATES:
@@ -269,7 +270,8 @@ configure front (
 configure wn (
 @begin
 ---
-  - vars:
+  - ec3_prio: -5
+    vars:
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
 
