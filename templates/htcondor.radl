@@ -66,6 +66,11 @@ configure wn (
     # Installation of htcondor
     - include: htcondorcommon.yml
 
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=START line="START = TRUE"
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=SUSPEND line="SUSPEND = FALSE"
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=PREEMPT line="PREEMPT = FALSE"
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=KILL line="KILL = FALSE"
+
     - service: name=condor state=restarted
 @end
 )
@@ -90,7 +95,7 @@ configure front (
     - copy:
         content: |
            {% for number in range(1, NNODES|int + 1) %}
-           vnode{{number}}
+           vnode{{number}}.localdomain
            {% endfor %}
         dest: "/etc/clues2/condor_vnodes.info"
 
@@ -98,6 +103,8 @@ configure front (
 
     - lineinfile: dest=/etc/condor/condor_config.local regexp=DAEMON_LIST line="DAEMON_LIST = MASTER, COLLECTOR, NEGOTIATOR, SCHEDD"
     - lineinfile: dest=/etc/condor/condor_config.local regexp=NETWORK_INTERFACE line="NETWORK_INTERFACE = {{IM_NODE_NET_1_IP}}"
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=NEGOTIATOR_INTERVAL line="NEGOTIATOR_INTERVAL = 30"
+    - lineinfile: dest=/etc/condor/condor_config.local regexp=NEGOTIATE_ALL_JOBS_IN_CLUSTER line="NEGOTIATE_ALL_JOBS_IN_CLUSTER = True"
 
     - include: im_devel_git.yml
 #    - include: im_devel_pip.yml
