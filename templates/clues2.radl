@@ -23,11 +23,11 @@ configure front (
 
     # CLUES2 requirements
     - name: Apt install CLUES2 requirements in Deb system
-      apt: pkg=python-sqlite,unzip
+      apt: pkg=python-sqlite,unzip,curl
       when: ansible_os_family == "Debian"
 
     - name: Yum install CLUES2 requirements in REL system
-      yum: pkg=python-sqlite2,unzip
+      yum: pkg=python-sqlite2,unzip,curl
       when: ansible_os_family == "RedHat"
 
     - name: Install CLUES pip requirements

@@ -59,9 +59,6 @@ configure mesosphere_repo (
 
 configure install_mesos (
 @begin
-    - name: Install mesos dependences
-      apt: pkg=curl state=present update_cache=yes
-
     - name: Install mesos package
       apt: pkg=mesos state=present update_cache=yes
 
