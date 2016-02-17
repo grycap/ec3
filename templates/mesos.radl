@@ -97,7 +97,7 @@ configure conf_mesos_master (
         dest: /etc/mesos/zk
         mode: 0644
     - name: start up zookeeper
-      service: name=zookeeper state=restarted enabled=yes
+      service: name=zookeeper state=started enabled=yes
 
     # Master tasks
     - name: Stop the Mesos Slave service
