@@ -27,7 +27,7 @@ configure front (
       when: ansible_os_family == "Debian"
 
     - name: Yum install CLUES2 requirements in REL system
-      yum: pkg=python-sqlite2,unzip,curl
+      yum: pkg=python-sqlite,unzip,curl
       when: ansible_os_family == "RedHat"
 
     - name: Install CLUES pip requirements
