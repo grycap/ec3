@@ -18,7 +18,7 @@ def read(fname):
 setup(
     name = "ec3",
     version = "0.0.1",
-    author = "Eloy Romero, Amanda Calatrava",
+    author = "Amanda Calatrava, Eloy Romero, Miguel Caballer",
     author_email = "",
     description = ("Tool to deploy virtual elastic clusters on the cloud."),
     license = "Apache 2.0",
