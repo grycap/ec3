@@ -184,7 +184,7 @@ configure conf_mesos_slave (
     #    mode: 0644
 
     - name: start up the mesos-slave
-      service: name=mesos-slave state=started enabled=yes
+      service: name=mesos-slave state=started
 @end
 )
 
