@@ -35,8 +35,23 @@ configure docker (
       shell: wget -qO- https://get.docker.com/ | sh creates=/etc/default/docker
       when: ansible_os_family == "Debian"
 
+    - name: Create the docker.repo file for CentOS 7
+      copy:
+        dest: "/etc/yum.repos.d/docker.repo"
+        content: |
+            [dockerrepo]
+            name=Docker Repository
+            baseurl=https://yum.dockerproject.org/repo/main/centos/7
+            enabled=1
+            gpgcheck=1
+            gpgkey=https://yum.dockerproject.org/gpg
+        mode: 0644
+        owner: root
+        group: root
+      when: ansible_os_family == "RedHat"
+
     - name: Yum install Docker in REL system (only works with centos7)
-      yum: name=docker state=latest update_cache=yes
+      yum: name=docker-engine state=latest update_cache=yes
       when: ansible_os_family == "RedHat"
 
     - service: name=docker state=started
