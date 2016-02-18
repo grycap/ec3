@@ -47,7 +47,8 @@ system front ( ec3_templates contains 'docker' )
 
 configure front (
 @begin
-  - tasks:
+  - ec3_prio: -10
+    tasks:
     - include: docker.yml
 @end
 )
