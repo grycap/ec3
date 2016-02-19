@@ -1,4 +1,3 @@
-#https://www.digitalocean.com/community/tutorials/how-to-configure-a-production-ready-mesosphere-cluster-on-ubuntu-14-04
 description mesos (
     kind = 'main' and
     short = 'Install and configure a Mesos cluster from mesosphere repo.' and
@@ -6,8 +5,6 @@ description mesos (
     
 Webpage: http://mesos.apache.org/'
 )
-
-#TODO: preparar la receta tambien para centos
 
 network public (
     outbound = 'yes' and 
@@ -38,29 +35,45 @@ system wn (
 
 configure mesosphere_repo (
 @begin
-    - name: Add key for Mesosphere repository
+    - name: Add key for Mesosphere repository for RedHat 7 systems
+      command: rpm -Uvh http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm creates=/usr/bin/mesos
+      #rpm_key: key=http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm state=present
+      #rpm_key: key=http://repos.mesosphere.io/el/6/noarch/RPMS/mesosphere-el-repo-6-2.noarch.rpm state=present
+      #rpm_key: key=http://archive.cloudera.com/cdh4/one-click-install/redhat/6/x86_64/cloudera-cdh-4-0.x86_64.rpm state=present
+      when: ansible_os_family == "RedHat"
+
+    - name: Add key for Mesosphere repository for Debian systems
       apt_key: url=http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xE56151BF state=present
+      when: ansible_os_family == "Debian"
  
     - name: Determine Linux distribution distributor
       shell: lsb_release -is | tr '[:upper:]' '[:lower:]'
       register: release_distributor
+      when: ansible_os_family == "Debian"
  
     - name: Determine Linux distribution codename
       command: lsb_release -cs
       register: release_codename
+      when: ansible_os_family == "Debian"
  
     - name: Add Mesosphere repository to sources list
       copy:
         content: "deb http://repos.mesosphere.io/{{release_distributor.stdout}} {{release_codename.stdout}} main"
         dest: /etc/apt/sources.list.d/mesosphere.list
         mode: 0644
+      when: ansible_os_family == "Debian"
 @end
 )
 
 configure install_mesos (
 @begin
-    - name: Install mesos package
+    - name: Install mesos package in Debian
       apt: pkg=mesos state=present update_cache=yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install mesos package in RedHat 7
+      yum: name=mesos,mesosphere-zookeeper,wget update_cache=yes
+      when: ansible_os_family == "RedHat"
 
     - name: configure containerizers
       shell: echo 'docker,mesos' | sudo tee /etc/mesos-slave/containerizers
@@ -72,10 +85,17 @@ configure install_mesos (
 
 configure conf_mesos_master (
 @begin
-    - name: Obtain master IP
+    - name: Obtain master IP in Deb systems
       shell: ifconfig eth0 | sed -n '/inet addr/s/.*addr.\([^ ]*\) .*/\1/p'
       #shell:  wget -qO- ifconfig.me/ip
-      register: master_ip
+      register: master_ip_deb
+      when: ansible_os_family == "Debian"
+
+    - name: Obtain master IP in RedHat systems
+      shell: ifconfig ens3 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
+      register: master_ip_rht
+      when: ansible_os_family == "RedHat"
+
     - name: Obtain master nodename
       shell: hostname | cut -d "." -f 1
       register: master_hostname
@@ -91,22 +111,47 @@ configure conf_mesos_master (
 #        content: "server.1={{master_ip.stdout}}:2888:3888"
 #        dest: /etc/zookeeper/conf/zoo.cfg
 #        mode: 0644
-    - name: Set ZooKeeper URL # used for leader election amongst masters
+
+    - name: Set ZooKeeper URL (debian)# used for leader election amongst masters
       copy:
-        content: "zk://{{master_ip.stdout}}:2181/mesos"
+        #content: "zk://{{IM_NODE_PUBLIC_IP}}:2181/mesos"
+        content: "zk://{{master_ip_deb.stdout}}:2181/mesos"
         dest: /etc/mesos/zk
         mode: 0644
+      when: ansible_os_family == "Debian"
+
+    - name: Set ZooKeeper URL (redhat)# used for leader election amongst masters
+      copy:
+        #content: "zk://{{IM_NODE_PUBLIC_IP}}:2181/mesos"
+        content: "zk://{{master_ip_rht.stdout}}:2181/mesos"
+        dest: /etc/mesos/zk
+        mode: 0644
+      when: ansible_os_family == "RedHat"
+
     - name: start up zookeeper
       service: name=zookeeper state=started enabled=yes
 
     # Master tasks
+    # Disable mesos-slave in Debian
     - name: Stop the Mesos Slave service
       service: name=mesos-slave state=stopped
+      when: ansible_os_family == "Debian"
+
     - name: Disable the Mesos Slave service
       copy:
         content: "manual"
         dest: /etc/init/mesos-slave.override
         mode: 0644
+      when: ansible_os_family == "Debian"
+
+    # Disable mesos-slave in Redhat
+    - name: Stop the Mesos Slave service
+      command: systemctl stop mesos-slave.service
+      when: ansible_os_family == "RedHat"
+
+    - name: Disable the Mesos Slave service
+      command: systemctl disable mesos-slave.service
+      when: ansible_os_family == "RedHat"
  
     - name: Set Mesos Master hostname
       copy:
@@ -115,11 +160,21 @@ configure conf_mesos_master (
         mode: 0644
 
     # Tambien se puede configurar la ip del master con (export MESOS_IP=158.42.104.229)
-    - name: Set Mesos Master ip
+    - name: Set Mesos Master ip (debian)
       copy:
-        content: "{{master_ip.stdout}}"
+        #content: "{{IM_NODE_PUBLIC_IP}}"
+        content: "{{master_ip_deb.stdout}}"
         dest: /etc/mesos-master/ip
         mode: 0644
+      when: ansible_os_family == "Debian"
+
+    - name: Set Mesos Master ip (redhat)
+      copy:
+        #content: "{{IM_NODE_PUBLIC_IP}}"
+        content: "{{master_ip_rht.stdout}}"
+        dest: /etc/mesos-master/ip
+        mode: 0644
+      when: ansible_os_family == "RedHat"
  
     - name: Set Mesos Master quorum count
       copy:
@@ -129,27 +184,47 @@ configure conf_mesos_master (
 
     - name: start up the mesos-master
       service: name=mesos-master state=started enabled=yes
+      #service: name=mesos-master state=restarted enabled=yes
 
 @end
 )
 
 configure conf_mesos_slave (
 @begin
-    - name: Obtain slave IP
+    - name: Obtain slave IP in Debian
       shell: ifconfig eth0 | sed -n '/inet addr/s/.*addr.\([^ ]*\) .*/\1/p'
-      register: slave_ip
+      register: slave_ip_deb
+      when: ansible_os_family == "Debian"
+
+    - name: Obtain slave IP in Redhat
+      shell: ifconfig ens3 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
+      register: slave_ip_rht
+      when: ansible_os_family == "RedHat"
 
     - name: Obtain slave nodename
       shell: hostname | cut -d "." -f 1
       register: slave_hostname
 
-    - name: Stop zookeeper in wns
+    - name: Stop zookeeper in wns (debian)
       service: name=zookeeper state=stopped
-    - name: Disable the ZooKeeper service
+      when: ansible_os_family == "Debian"
+
+    - name: Disable the ZooKeeper service (debian)
       copy:
         content: "manual"
         dest: /etc/init/zookeeper.override
         mode: 0644
+      when: ansible_os_family == "Debian"
+
+    # Disable zookeeper in Redhat
+    - name: Stop zookeeper in wns (redhat)
+      command: systemctl stop zookeeper.service
+      when: ansible_os_family == "RedHat"
+
+    - name: Disable the ZooKeeper service (redhat)
+      command: systemctl disable zookeeper.service
+      when: ansible_os_family == "RedHat"
+
     - name: copy zk file from the frontend
       #copy:
         #content: "zk://{{IM_NODE_NET_0_IP}}:2181/mesos"
@@ -157,13 +232,25 @@ configure conf_mesos_slave (
         #mode: 0644
       copy: src=/etc/mesos/zk dest=/etc/mesos/zk
 
-    - name: Stop mesos master in wns
+    - name: Stop mesos master in wns (debian)
       service: name=mesos-master state=stopped
-    - name: Disable mesos master in wns
+      when: ansible_os_family == "Debian"
+
+    - name: Disable mesos master in wns (debian)
       copy:
         content: "manual"
         dest: /etc/init/mesos-master.override
         mode: 0644
+      when: ansible_os_family == "Debian"
+
+    # Disable mesos-master in Redhat
+    - name: Stop mesos master in wns (redhat)
+      command: systemctl stop mesos-master.service
+      when: ansible_os_family == "RedHat"
+
+    - name: Disable mesos master in wns (redhat)
+      command: systemctl disable mesos-master.service
+      when: ansible_os_family == "RedHat"
 
     - name: Set Mesos Slave hostname
       copy:
@@ -171,11 +258,19 @@ configure conf_mesos_slave (
         dest: /etc/mesos-slave/hostname
         mode: 0644
 
-    - name: Set Mesos Slave ip
+    - name: Set Mesos Slave ip (debian)
       copy:
-        content: "{{slave_ip.stdout}}"
+        content: "{{slave_ip_deb.stdout}}"
         dest: /etc/mesos-slave/ip
         mode: 0644
+      when: ansible_os_family == "Debian"
+
+    - name: Set Mesos Slave ip (redhat)
+      copy:
+        content: "{{slave_ip_rht.stdout}}"
+        dest: /etc/mesos-slave/ip
+        mode: 0644
+      when: ansible_os_family == "RedHat"
 
     #- name: Set Mesos Slave isolation
     #  copy:
@@ -185,13 +280,19 @@ configure conf_mesos_slave (
 
     - name: start up the mesos-slave
       service: name=mesos-slave state=started
+      #service: name=mesos-slave state=restarted enabled=yes
 @end
 )
 
 configure install_chronos (
 @begin
-    - name: Install chronos package
+    - name: Install chronos package in Debian systems
       apt: pkg=chronos state=present update_cache=yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install chronos package in RedHat systems
+      yum: name=chronos state=present update_cache=yes
+      when: ansible_os_family == "RedHat"
 
     - name: start chronos
       service: name=chronos state=started enabled=yes
@@ -200,29 +301,53 @@ configure install_chronos (
 
 configure install_marathon (
 @begin
-    #Install java 8 dependency for marathon
+    #Install java 8 dependency for marathon in debian
     - name: Add webupd8 ppa repository
       apt_repository: repo='ppa:webupd8team/java'
+      when: ansible_os_family == "Debian"
 
     - name: apt update
       shell: apt-get update
+      when: ansible_os_family == "Debian"
 
     - name: Auto accept oracle jdk license
       shell: echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+      when: ansible_os_family == "Debian"
  
     - name: Install java8
       shell: apt-get install -y oracle-java8-installer ca-certificates
+      when: ansible_os_family == "Debian"
 
     - name: Install oracle-java8-set-default package
       apt: pkg=oracle-java8-set-default state=present update_cache=yes
+      when: ansible_os_family == "Debian"
 
-    - name: Install marathon package
+    #Install java 8 dependency for marathon in redhat
+    - name: Download Oracle Java 8
+      command: "wget --no-cookies --no-check-certificate --header 'Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie' http://download.oracle.com/otn-pub/java/jdk/8u66-b17/jdk-8u66-linux-x64.rpm"
+      when: ansible_os_family == "RedHat"
+
+    - name: Install oracle java 8 (jdk-8u66)
+      command: rpm -ivh jdk-8u66-linux-x64.rpm creates=/usr/java/jdk1.8.0_66
+      when: ansible_os_family == "RedHat"
+ 
+    #HAProxy no se si hace falta
+    #- name: Install HAProxy (Ubuntu)
+    #  apt: pkg=haproxy state=present
+
+    - name: Install marathon package in Debian systems
       apt: pkg=marathon state=present update_cache=yes
+      when: ansible_os_family == "Debian"
+ 
+    - name: Install marathon package in RedHat systems
+      yum: name=marathon state=present update_cache=yes
+      when: ansible_os_family == "RedHat"
 
     - name: start marathon
       service: name=marathon state=started enabled=yes
 @end
 )
+
 
 include mesos_misc (
   template = 'clues2 im sudo-copy'
@@ -240,9 +365,10 @@ configure front (
       #FRONTEND:
       #  ec3_xpath: /system/front/net_interface.0.dns_name
       QUORUM: 1
-      SYSTEMS: 
+      SYSTEMS:
          ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+
 
     tasks:
     #- include: im_devel_git.yml
@@ -257,6 +383,7 @@ configure front (
         dest: /bin/is_cluster_ready
         content: "{{FILE}}"
         mode: 0755
+
     - file: path=/etc/clues2/ state=directory
     - copy:
         content: |
@@ -264,6 +391,7 @@ configure front (
            vnode{{number}}
            {% endfor %}
         dest: "/etc/clues2/mesos_vnodes.info"
+
 @end
 )
 
@@ -283,3 +411,4 @@ configure wn (
 )
 
 deploy front 1
+
