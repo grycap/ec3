@@ -30,7 +30,7 @@ next commands::
    git clone https://github.com/grycap/ec3
 
 In the created directory there is the python executable file ``ec3``, which provides the
-command-line interface described next.
+command-line interface described next.  ``sshpass`` is required to provide the user with ssh access to the cluster.
 
 Basic example with Amazon EC2
 -----------------------------
@@ -97,4 +97,4 @@ Additional information
 .. _`Authorization file`: http://servproject.i3m.upv.es/ec3/doc/ec3.html#authorization-file
 .. _`Templates`: http://ec3.readthedocs.org/en/latest/templates.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
-
+.. _`sshpass`: https://gist.github.com/arunoda/7790979
