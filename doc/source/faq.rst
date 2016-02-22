@@ -38,6 +38,10 @@ be cancelled at anytime.
 Yes, you can configure them by using the EC3 `CLI`_ interface. Thus, you will need to provide a valid Ansible recipe to 
 automatically install the dependence. You can also contact us by using the contact section, and we would try to add the software package you need.
 
+**Why am I experimenting problems with Centos 6 when trying to deploy a Mesos cluster?**
+
+Because the recipe of Mesos provided with EC3 is optimized for Centos 7 as well as Ubuntu 14.04. If you want to deploy a Mesos cluster, we encourage you to use one of each operative systems.
+
 
 EC3aaS Webpage
 --------------
