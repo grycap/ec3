@@ -15,7 +15,7 @@ However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, O
 
 **What Local Resource Management Systems (LRMS) are supported by EC3?**
 
-Currently, EC3 supports `SLURM`_, `Torque`_ and `SGE`_. Support for `Apache Mesos`_ is comming soon, stay tunned!
+Currently, EC3 supports `SLURM`_, `Torque`_, `Apache Mesos`_  and `SGE`_. Support for `HTCondor`_ is comming soon, stay tunned!
 
 **Is it necessary to indicate a LRMS recipe in the deployment?**
 
@@ -108,4 +108,5 @@ automatically install the dependence. You can also contact us by using the conta
 .. _`Apache Mesos`: http://mesos.apache.org/
 .. _`AppDB portal`: https://appdb.egi.eu
 .. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
+.. _`HTCondor`: https://research.cs.wisc.edu/htcondor/
 
