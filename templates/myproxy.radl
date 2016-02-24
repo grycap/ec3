@@ -1,0 +1,44 @@
+description myproxy (
+    kind = 'component' and
+    short = 'Tool download proxy files from MyProxy servers' and
+    content = 'Tool download proxy files from MyProxy servers.
+
+Webpage: http://ndg-security.ceda.ac.uk/wiki/MyProxyClient'
+)
+
+configure front (
+@begin
+  - vars:
+      DOWNLOAD_PROXY_FILE:
+        ec3_file: renew_proxy.py
+
+    tasks:
+    - get_url: url=http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo dest=/etc/yum.repos.d/EGI-trustanchors.repo
+      when: ansible_os_family == "RedHat"
+
+    - copy: dest=/etc/apt/sources.list.d/ca-policy-egi-core.list content="deb http://repository.egi.eu/sw/production/cas/1/current egi-igtf core"
+      when: ansible_os_family == "Debian"
+
+    - apt_key: url=https://dist.eugridpma.info/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-3 state=present
+      when: ansible_os_family == "Debian"
+
+    - name: update MyProxyClient requisites
+      apt: name=libffi-dev,libssl-dev,ca-policy-egi-core,python-dev update_cache=yes
+      when: ansible_os_family == "Debian"
+
+    - name: update MyProxyClient requisites
+      yum: name=openssl-devel,libffi-devel,ca-policy-egi-core,python-devel
+      when: ansible_os_family == "RedHat"
+
+    - name: update MyProxyClient requisites
+      pip: name=MyProxyClient
+
+    - copy:
+        dest: /usr/local/ec3/renew_proxy.py
+        content: "{{DOWNLOAD_PROXY_FILE}}"
+        mode: 0755
+
+    - cron: name="renew proxy" hour="*/6" job="[ -f /usr/local/ec3/proxy.pem ] && /usr/local/ec3/renew_proxy.py" user=root cron_file=renew_proxy state=present
+@end
+)
+

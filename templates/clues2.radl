@@ -8,6 +8,8 @@ configure front (
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
+      EXTRACT_PROXY_FILE:
+        ec3_file: extract_proxy.py
 
     tasks:
     - get_url: url=https://github.com/grycap/{{item}}/archive/master.zip dest=/tmp/{{item}}.zip
@@ -21,11 +23,11 @@ configure front (
 
     # CLUES2 requirements
     - name: Apt install CLUES2 requirements in Deb system
-      apt: pkg=python-sqlite,unzip
+      apt: pkg=python-sqlite,unzip,curl
       when: ansible_os_family == "Debian"
 
     - name: Yum install CLUES2 requirements in REL system
-      yum: pkg=python-sqlite2,unzip
+      yum: pkg=python-sqlite,unzip,curl
       when: ansible_os_family == "RedHat"
 
     - name: Install CLUES pip requirements
@@ -67,7 +69,15 @@ configure front (
     - copy:
         dest: /usr/local/ec3/auth.dat
         content: "{{AUTH}}"
-      notify: restart cluesd
+        force: no
+    - copy:
+        dest: /tmp/extract_proxy.py
+        content: "{{EXTRACT_PROXY_FILE}}"
+        mode: 0755
+        force: no
+    - command: /tmp/extract_proxy.py creates=/usr/local/ec3/proxy.pem
+      ignore_errors: yes
+      run_once: true
     - copy: src=/etc/clues2/conf.d/plugin-im.cfg-example dest=/etc/clues2/conf.d/plugin-im.cfg force=no
       notify: restart cluesd
     - ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE value=/usr/local/ec3/auth.dat
@@ -83,6 +93,12 @@ configure front (
 
     - include: clues_slurm.yml
       when: "{{ QUEUE_SYSTEM == 'slurm' }}"
+
+    - include: clues_mesos.yml
+      when: "{{ QUEUE_SYSTEM == 'mesos' }}"
+
+    - include: clues_htcondor.yml
+      when: "{{ QUEUE_SYSTEM == 'htcondor' }}"
 
     - service: name=cluesd state=started
     
@@ -143,3 +159,26 @@ configure clues_slurm (
     - command: mv /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
 @end
 )  
+
+# Mesos plugin installation
+configure clues_mesos (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.mesos
+      notify: restart cluesd
+    - copy: src=/etc/clues2/conf.d/plugin-mesos.cfg-example dest=/etc/clues2/conf.d/plugin-mesos.cfg force=no
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_SERVER value=mesosserverpublic
+      notify: restart cluesd
+@end
+) 
+
+# HTCondor plugin installation
+configure clues_htcondor (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.condor
+      notify: restart cluesd
+@end
+) 
+

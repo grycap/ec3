@@ -24,9 +24,11 @@ This development has been supported by the following research projects:
 * Ayudas para la contratación de personal investigador en formación de carcter predoctoral, 
   programa VALi+d (grant number ACIF/2013/003), Conselleria d'Educació of the Generalitat Valenciana.
 
-The following publications summarise both the development and integration in larger architecture. Please acknowledge the usage of this software by citing the first reference:
+The following publications summarise both the development and integration in larger architecture. Please acknowledge the usage of this software by citing the last reference:
 
 * Caballer, M.; de Alfonso, C.; Alvarruiz, F. and Moltó, G.; "EC3: Elastic Cloud Computing Cluster". Journal of Computer and System Sciences, Volume 78, Issue 8, December 2013, Pages 1341-1351, ISSN 0022-0000, 10.1016/j.jcss.2013.06.005.
 * Calatrava, A.; Caballer, M.; Moltó, G.; and de Alfonso, C.; "Virtual Hybrid Elastic Clusters in the Cloud". Proceedings of 8th IBERIAN GRID INFRASTRUCTURE CONFERENCE (Ibergrid), pp. 103 - 114 ,2014.
+* "Custom elastic clusters to manage Galaxy environments". In: EGI Inspired Newsletter (Issue 22), pp 2, January 2016. Available `here <http://www.egi.eu/news-and-media/newsletters/Inspired_Issue_22/Custom_elastic_clusters_to_manage_Galaxy_environments.html>`_.
+* Calatrava, A,; Romero, E.; Caballer, M.; Moltó, G.; and Alonso, J.M.; "Self-managed cost-efficient virtual elastic clusters on hybrid Cloud infrastructures". Future Generation Computer Systems, 2016. doi:10.1016/j.future.2016.01.018.
 
 Preprints are available `here <http://www.grycap.upv.es/gmolto/publications.php>`_.

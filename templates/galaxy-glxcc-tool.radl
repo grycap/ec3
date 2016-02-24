@@ -1,0 +1,68 @@
+description galaxy_glxcc_tool (
+    kind = 'component' and
+    short = 'This component is for automated installation of the INRA Declic connected components tool into Galaxy Portal.' and
+    content = 'This component is for automated installation of the INRA Declic connected components tool into Galaxy Portal.'
+)
+
+configure wn (
+@begin
+   # This step must be performed before the configuration of torque (-5 prio)
+  - ec3_prio: -7
+    tasks:
+    - name: Install python libs in Ubuntu
+      apt: name=python-pip,python-numpy,python-matplotlib,python-scipy,python-igraph,python-sklearn update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install script dependencies
+      pip: name=fastcluster state=latest
+@end
+)
+
+configure front (
+@begin
+  - vars:
+      WEB_SERVER: http://webgrycap.i3m.upv.es/declic
+
+    handlers:
+    - name: Stop Galaxy
+      shell: bash run.sh --stop-daemon chdir={{GALAXY_INSTALL_PATH}}
+      sudo: true
+      sudo_user: "{{GALAXY_USER}}"
+
+    - name: Wait Galaxy stop
+      wait_for: port=8080 delay=5 state=stopped timeout=150
+
+    - name: Start Galaxy
+      shell: bash run.sh --daemon chdir={{GALAXY_INSTALL_PATH}}
+      sudo: true
+      sudo_user: "{{GALAXY_USER}}"
+
+    - name: Wait Galaxy start
+      wait_for: port=8080 delay=5 state=started timeout=150
+
+    tasks:
+    - name: create tool directory
+      file: path={{GALAXY_INSTALL_PATH}}/tools/glx_cc state=directory recurse=yes owner={{GALAXY_USER}}
+
+    - name: Download declic files
+      get_url: url={{WEB_SERVER}}/{{item}} dest={{GALAXY_INSTALL_PATH}}/tools/glx_cc
+      with_items:
+        - glx_cc.xml
+        - glx_cc.py
+        - declic.py
+
+    - name: Create tool_conf.xml file if it does not exists
+      copy: src={{GALAXY_INSTALL_PATH}}/config/tool_conf.xml.sample dest={{GALAXY_INSTALL_PATH}}/config/tool_conf.xml force=no
+
+    - name: Add Connected components tool to panel
+      lineinfile: dest={{GALAXY_INSTALL_PATH}}/config/tool_conf.xml regexp=glx_cc insertbefore=^</toolbox> line='<section id="glx_cc" name="Connected components"><tool file="glx_cc/glx_cc.xml"/></section>'
+      notify:
+      - Stop Galaxy
+      - Wait Galaxy stop
+      - Start Galaxy
+      - Wait Galaxy start
+@end
+)
+
+
+

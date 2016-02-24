@@ -52,7 +52,7 @@ means of the following steps:
    the required software that is not already preinstalled in the VM
 
 One of the main LRMS configuration steps is to set up the names of the cluster nodes. This is done using a 
-sysadmin-specified name pattern (e.g. vnode-*) so that the LRMS considers a set of nodes such as vnode-1, 
+sysadmin-specified name pattern (e.g. vnode-`*`) so that the LRMS considers a set of nodes such as vnode-1, 
 vnode-2, ... , vnode-n, where n is the maximum cluster size. This procedure results in a fully operational 
 elastic cluster. :ref:`Fig. 2 <figure_deployment>` represents the sequence diagram and the interaction of the main components and actors during the deployment of the frontend of the cluster using EC3. 
 
@@ -100,7 +100,7 @@ applications providing the user with a fully functional infrastructure.
 RADL
 ----
 
-The main purpose of the `Resource and Application description Language (RADL) <http://www.grycap.upv.es/im/doc/radl.html>`_ 
+The main purpose of the `Resource and Application description Language (RADL) <http://imdocs.readthedocs.org/en/devel/radl.html>`_ 
 is to specify the requirements of the resources where the scientific applications will be executed. 
 It must address not only hardware (CPU number, CPU architecture, RAM size, etc.) but also software requirements (applications, libraries, data base systems, etc.).
 It should include all the configuration details needed to get a fully functional and configured VM (a Virtual 
@@ -114,3 +114,4 @@ CLUES
 The main function of the system is to power off internal cluster nodes when they are not being used, and conversely 
 to power them on when they are needed. CLUES system integrates with the cluster management middleware, such as a 
 batch-queuing system or a cloud infrastructure management system, by means of different connectors.
+

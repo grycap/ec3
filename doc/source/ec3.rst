@@ -44,8 +44,7 @@ To deploy a cluster issue this command::
 
 .. option:: --add
 
-   Add a piece of RADL. This option is useful to set some features. The following example deploys a
-  cluster with the Torque LRMS with up to four working nodes::
+   Add a piece of RADL. This option is useful to set some features. The following example deploys a cluster with the Torque LRMS with up to four working nodes: 
 
       ./ec3 launch mycluster torque ubuntu-ec2 --add "system wn ( ec3_max_instances = 4 )"
 
@@ -319,7 +318,7 @@ service to create a user with a new set of credentials. This way, you can rest a
 be cancelled at anytime. 
 
 .. _`CLUES`: http://www.grycap.upv.es/clues/
-.. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
+.. _`RADL`: http://imdocs.readthedocs.org/en/devel/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
 .. _`MAUI`: http://www.adaptivecomputing.com/products/open-source/maui/
 .. _`SLURM`: http://slurm.schedmd.com/
@@ -328,9 +327,9 @@ be cancelled at anytime.
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
-.. _`IM`: https://github.com/grycap/im
+.. _`IM`: http://www.grycap.upv.es/im
 .. _`YAML`: http://yaml.org/
-.. _`VMRC`: https://github.com/grycap/vmrc
+.. _`VMRC`: http://www.grycap.upv.es/vmrc
 .. _`IAM`: http://aws.amazon.com/iam/
-.. _`Templates`: http://servproject.i3m.upv.es/ec3/doc/templates.html
+.. _`Templates`: http://ec3.readthedocs.org/en/latest/templates.html
 

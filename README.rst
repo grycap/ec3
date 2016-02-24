@@ -115,8 +115,8 @@ Additional information
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`PLY`: http://www.dabeaz.com/ply/
-.. _`EC3 Command-line Interface`: http://servproject.i3m.upv.es/ec3/doc/ec3.html
-.. _`Command templates`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#command-templates
-.. _`Authorization file`: https://github.com/grycap/ec3/blob/devel/doc/build/md/ec3.rst#authorization-file
-.. _`Templates`: http://servproject.i3m.upv.es/ec3/doc/templates.html
-.. _`templates documentation`: http://servproject.i3m.upv.es/ec3/doc/templates.html#ec3-types-of-templates
+.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/devel/ec3.html
+.. _`Command templates`: http://ec3.readthedocs.org/en/devel/ec3.html#command-templates
+.. _`Authorization file`: http://ec3.readthedocs.org/en/devel/ec3.html#authorization-file
+.. _`Templates`: http://ec3.readthedocs.org/en/devel/templates.html
+.. _`templates documentation`: http://ec3.readthedocs.org/en/devel/templates.html#ec3-types-of-templates

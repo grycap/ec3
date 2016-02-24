@@ -55,7 +55,7 @@ configure RedHat (
 configure wn (
 @begin
 ---
-  - ec3_prio: -5
+  - ec3_prio: 5
     vars:
       USERS:
         - {name: user1, password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0}
@@ -119,6 +119,8 @@ configure front (
 ---
   - ec3_prio: -5
     vars:
+      FILE:
+        ec3_file: is_cluster_ready
       SYSTEMS:
         ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
@@ -146,6 +148,10 @@ configure front (
           password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
 
     tasks:
+    - copy:
+        dest: /bin/is_cluster_ready
+        content: "{{FILE}}"
+        mode: 0755
     - include_vars: "{{item}}"
       with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
     - command: hostname torqueserver
@@ -190,6 +196,7 @@ configure front (
            vnode{{number}}
            {% endfor %}
         dest: "{{TORQUE_PATH}}/server_priv/nodes"
+        force: no
 
     - include: munge_repo_front.yml
       when: ansible_os_family == "RedHat"

@@ -18,10 +18,10 @@ def read(fname):
 setup(
     name = "ec3",
     version = "0.0.1",
-    author = "Eloy Romero, Amanda Calatrava",
+    author = "Amanda Calatrava, Eloy Romero, Miguel Caballer",
     author_email = "",
-    description = ("Tool to deploy elastic clusters on cloud."),
-    license = "GPL",
+    description = ("Tool to deploy virtual elastic clusters on the cloud."),
+    license = "Apache 2.0",
     keywords = "cloud cluster elasticity",
     url = "http://www.grycap.upv.es/ec3/",
 	data_files=datafiles,
