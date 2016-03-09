@@ -1,0 +1,211 @@
+description swarm (
+    kind = 'main' and
+    short = 'Install and configure a Docker Swarm cluster using swarm containers.' and
+    content = 'The template installs and configures Docker engine, and starts a Docker Swarm container, configuring Consul and other requirements associated with Docker Swarm.
+    
+Webpage: https://docs.docker.com/swarm/overview/'
+)
+
+network public (
+    outbound = 'yes' and 
+    outports contains '80/tcp' and
+    outports contains '2375/tcp' and
+    outports contains '3375/tcp' and
+    outports contains '8500/tcp' and
+    outports contains '4000/tcp' and
+    outports contains '22/tcp' 
+)
+
+network private ()
+
+system front (
+    cpu.count>=1 and
+    memory.size>=512m and
+    net_interface.0.connection = 'public' and
+    net_interface.0.dns_name = 'swarmmanagerpublic' and
+    net_interface.1.connection = 'private' and
+    net_interface.1.dns_name = 'swarmmanager' and
+    queue_system = 'swarm' and
+    ec3_templates contains 'swarm'
+)
+
+system wn (
+    net_interface.0.connection='private'
+)
+
+configure install_docker_engine (
+@begin
+    - name: Install docker-py as a workaround for Ansible issue
+      pip: name=docker-py version=1.2.3 
+    - name: download docker code from repository
+      shell: curl -sSL https://get.docker.com/ | sh creates=/etc/default/docker
+      when: ansible_os_family == "Debian"
+
+    - name: Create the docker.repo file for CentOS 7
+      copy:
+        dest: "/etc/yum.repos.d/docker.repo"
+        content: |
+            [dockerrepo]
+            name=Docker Repository
+            baseurl=https://yum.dockerproject.org/repo/main/centos/7
+            enabled=1
+            gpgcheck=1
+            gpgkey=https://yum.dockerproject.org/gpg
+        mode: 0644
+        owner: root
+        group: root
+      when: ansible_os_family == "RedHat"
+
+    - name: Yum install Docker in REL system (only works with centos7)
+      yum: name=docker-engine state=latest update_cache=yes
+      when: ansible_os_family == "RedHat"
+
+    - service: name=docker state=stopped
+
+    - name: start docker daemon listening in swarm port
+      shell: docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock &
+      async: 0
+      poll: 0
+@end
+)
+
+configure iniciate_consul (
+@begin
+    - name: start consul container
+      #shell: docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap
+      docker:
+        name: consul
+        image: progrium/consul
+        ports: 8500:8500
+        detach: yes
+        command: -server -bootstrap
+        state: started
+@end
+)
+
+
+configure iniciate_swarm_front (
+@begin
+    - name: Obtain master IP in Deb systems
+      shell: ifconfig eth0 | sed -n '/inet addr/s/.*addr.\([^ ]*\) .*/\1/p'
+      register: master_ip_deb
+      when: ansible_os_family == "Debian"
+
+    - name: Obtain master IP in RedHat systems
+      shell: ifconfig ens3 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
+      register: master_ip_rht
+      when: ansible_os_family == "RedHat"
+
+    - name: start docker swarm container as master role
+      #shell: docker run -d -p 4000:4000 swarm manage -H :4000 --replication --advertise {{master_ip_deb.stdout}}:4000 consul://{{master_ip_deb.stdout}}:8500
+      docker:
+        detach: yes
+        ports: 4000:4000
+        expose: 
+        - 4000
+        name: swarm_front
+        image: swarm
+        command: manage -H :4000 --replication --advertise {{master_ip_deb.stdout}}:4000 consul://{{master_ip_deb.stdout}}:8500
+        state: started
+      when: ansible_os_family == "Debian"
+
+    - name: start docker swarm container as master role
+      #shell: docker run -d -p 4000:4000 swarm manage -H :4000 --replication --advertise {{master_ip_rht.stdout}}:4000 consul://{{master_ip_rht.stdout}}:8500
+      docker:
+        detach: yes
+        ports: 4000:4000
+        expose: 
+        - 4000
+        name: swarm_front
+        image: swarm
+        command: manage -H :4000 --replication --advertise {{master_ip_rht.stdout}}:4000 consul://{{master_ip_rht.stdout}}:8500
+        state: started
+      when: ansible_os_family == "RedHat"
+@end
+)
+
+
+configure iniciate_swarm_wn (
+@begin
+    - name: Obtain slave IP in Debian
+      shell: ifconfig eth0 | sed -n '/inet addr/s/.*addr.\([^ ]*\) .*/\1/p'
+      register: slave_ip_deb
+      when: ansible_os_family == "Debian"
+
+    - name: Obtain slave IP in Redhat
+      shell: ifconfig ens3 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
+      register: slave_ip_rht
+      when: ansible_os_family == "RedHat"
+
+    - name: start docker swarm container as node role
+      #shell: sudo docker run -d swarm join --advertise={{slave_ip_deb.stdout}}:2375 consul://{{master_ip_deb.stdout}}:8500
+      docker:
+        detach: yes
+        name: swarm_wn
+        image: swarm
+        command: join --advertise={{slave_ip_deb.stdout}}:2375 consul://{{master_ip_deb.stdout}}:8500
+        state: started
+      when: ansible_os_family == "Debian"
+
+    - name: start docker swarm container as node role
+      #shell: sudo docker run -d swarm join --advertise={{slave_ip_rht.stdout}}:2375 consul://{{master_ip_rht.stdout}}:8500
+      docker:
+        detach: yes
+        name: swarm_wn
+        image: swarm
+        command: join --advertise={{slave_ip_rht.stdout}}:2375 consul://{{master_ip_rht.stdout}}:8500
+        state: started
+      when: ansible_os_family == "RedHat"
+@end
+)
+
+include swarm_misc (
+  template = 'clues2 im sudo-copy'
+)
+
+configure front (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      FILE:
+        ec3_file: is_cluster_ready
+      #SYSTEMS:
+      #   ec3_jpath: /system/*
+      #NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+
+
+    tasks:
+    - include: im_devel_git.yml
+    #- include: im_devel_pip.yml
+    - include: install_docker_engine.yml
+    - include: iniciate_consul.yml
+    - include: iniciate_swarm_front.yml
+
+    - copy:
+        dest: /bin/is_cluster_ready
+        content: "{{FILE}}"
+        mode: 0755
+
+    - file: path=/etc/clues2/ state=directory
+    - copy:
+        content: |
+           {% for number in range(1, NNODES|int + 1) %}
+           vnode{{number}}
+           {% endfor %}
+        dest: "/etc/clues2/swarm_vnodes.info"
+
+@end
+)
+
+configure wn (
+@begin
+---
+  - ec3_prio: -5
+    tasks:
+    - include: install_docker_engine.yml
+    - include: iniciate_swarm_wn.yml
+@end
+)
+
+deploy front 1
