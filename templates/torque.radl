@@ -201,6 +201,10 @@ configure front (
     - include: munge_repo_front.yml
       when: ansible_os_family == "RedHat"
 
+    - service: name=trqauthd state=started
+      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
+      
     - service: name={{TORQUE_SERVICE}} state=restarted pattern=/usr/sbin/pbs_server
     - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
     - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
