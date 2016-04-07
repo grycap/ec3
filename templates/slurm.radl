@@ -38,7 +38,7 @@ configure slurm_source (
       when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
-      action: yum pkg=readline-devel,openssl-devel,munge-devel pam-devel perl-ExtUtils-MakeMaker,gcc,make
+      yum: name=readline-devel,openssl-devel,munge-devel,pam-devel,perl-ExtUtils-MakeMaker,gcc,make
       when: ansible_os_family == "RedHat"
 
     - name: download SLURM package
