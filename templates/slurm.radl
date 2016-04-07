@@ -38,7 +38,8 @@ configure slurm_source (
       when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
-      yum: name=readline-devel,openssl-devel,munge-devel,pam-devel,perl-ExtUtils-MakeMaker,gcc,make
+      yum: name=readline-devel,openssl,openssl-devel,munge-devel,pam-devel,perl-ExtUtils-MakeMaker,gcc,make,rpm-build,perl-DBI,perl-Switch
+      #numactl,numactl-devel,hwloc,hwloc-devel,lua,lua-devel,readline-devel,rrdtool-devel,ncurses-devel,man2html,libibmad,libibumad
       when: ansible_os_family == "RedHat"
 
     - name: download SLURM package
@@ -100,6 +101,7 @@ configure slurm_common (
          - /var/spool/slurm
          - /var/log/slurm
          - /var/slurm/checkpoint
+         - /etc/slurm
 @end
 )
 
@@ -117,13 +119,27 @@ configure wn (
 
     - name: copy slurm.conf file from the frontend
       copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
+      when: ansible_os_family == "Debian"
 
-    - name: start slurmd daemon
+    - name: copy slurm.conf file from the frontend
+      copy: src=/usr/local/etc/slurm.conf dest=/etc/slurm/slurm.conf
+      when: ansible_os_family == "RedHat" 
+
+    - name: start slurmd daemon in Deb systems
       shell: pgrep slurmd || slurmd
-      #command: slurmd
+      when: ansible_os_family == "Debian"
+
+    - name: start slurmd daemon in RedHat systems
+      command: systemctl enable slurmd.service
+      when: ansible_os_family == "RedHat"
+    - command: systemctl start slurmd.service
+      when: ansible_os_family == "RedHat"
+
     - shell: scontrol reconfig
     - local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
       ignore_errors: yes
+
+
 @end
 )
 
@@ -181,9 +197,24 @@ configure front (
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] MaxTime=INFINITE State=UP' state=present
       with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
 
+    #- file: path=/etc/slurm state=directory owner=root group=root
+    #  when: ansible_os_family == "RedHat"
+    - name: copy slurm.conf file to /etc/slurm in RedHat systems
+      local_action: copy src=/usr/local/etc/slurm.conf dest=/etc/slurm/slurm.conf
+      when: ansible_os_family == "RedHat"
+
     # start SLURM slurmctld daemon
     #- command: slurmctld
-    - shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
+    - name: start SLURM slurmctld daemon in Deb systems
+      shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
+      when: ansible_os_family == "Debian"
+
+    - name: start SLURM slurmctld daemon in RedHat systems
+      command: systemctl enable slurm
+      when: ansible_os_family == "RedHat"
+    - command: systemctl start slurm 
+      when: ansible_os_family == "RedHat"
+
     - shell: scontrol reconfig
 @end
 )
