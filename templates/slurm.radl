@@ -71,7 +71,7 @@ configure slurm_source (
       when: ansible_os_family == "RedHat"
 
     - name: install rpm slurm package
-      command: rpm -Uvh ~/rpmbuild/RPMS/x86_64/*.rpm chdir=/tmp creates=/root/rpmbuild/
+      command: rpm -Uvh ~/rpmbuild/RPMS/x86_64/*.rpm chdir=/tmp
       when: ansible_os_family == "RedHat"
 @end
 )
@@ -210,10 +210,10 @@ configure front (
       when: ansible_os_family == "Debian"
 
     - name: start SLURM slurmctld daemon in RedHat systems
-      command: systemctl enable slurm
+      command: systemctl start slurm 
       when: ansible_os_family == "RedHat"
-    - command: systemctl start slurm 
-      when: ansible_os_family == "RedHat"
+    #- command: systemctl enable slurm
+    #  when: ansible_os_family == "RedHat"
 
     - shell: scontrol reconfig
 @end
