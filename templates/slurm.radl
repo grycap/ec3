@@ -43,18 +43,35 @@ configure slurm_source (
 
     - name: download SLURM package
       get_url: url=http://www.schedmd.com/download/archive/slurm-14.11.3.tar.bz2 dest=/tmp/slurm.tar.bz2
+      when: ansible_os_family == "Debian"
+
+    - name: download SLURM package
+      get_url: url=http://www.schedmd.com/download/archive/slurm-14.11.3.tar.bz2 dest=/tmp/slurm-14.11.3.tar.bz2
+      when: ansible_os_family == "RedHat"
 
     - name: decompress SLURM package
       command: tar xjf slurm.tar.bz2 chdir=/tmp creates=/tmp/slurm-14.11.3
+      when: ansible_os_family == "Debian"
 
     - name: configure SLURM
       command: ./configure {{ "--with-blcr=/usr/local/bin" if "blcr" in TEMPLATES else "" }} chdir=/tmp/slurm-14.11.3 creates=/tmp/slurm-14.11.3/config.log
+      when: ansible_os_family == "Debian"
 
     - name: compile (make) SLURM
       command: make chdir=/tmp/slurm-14.11.3 creates=/tmp/slurm-14.11.3/src/slurmctld
+      when: ansible_os_family == "Debian"
 
     - name: install SLURM
       command: make install chdir=/tmp/slurm-14.11.3 creates=/usr/local/bin/srun
+      when: ansible_os_family == "Debian"
+
+    - name: build rpm slurm package
+      command: rpmbuild -ta slurm-14.11.3.tar.bz2 chdir=/tmp creates=/root/rpmbuild/
+      when: ansible_os_family == "RedHat"
+
+    - name: install rpm slurm package
+      command: rpm -Uvh ~/rpmbuild/RPMS/x86_64/*.rpm chdir=/tmp creates=/root/rpmbuild/
+      when: ansible_os_family == "RedHat"
 @end
 )
 
