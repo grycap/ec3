@@ -142,7 +142,7 @@ configure front (
         set server job_stat_rate = 30
         set server mom_job_sync = True
         set server poll_jobs = True
-        set tcp_timeout = 600
+        set server tcp_timeout = 600
       USERS:
         - name: user1
           password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
@@ -190,13 +190,6 @@ configure front (
       when: ansible_os_family == "RedHat"
     
     - copy: dest=/etc/torque/server_name content=torqueserver
-    - copy:
-        content: |
-           {% for number in range(1, NNODES|int + 1) %}
-           vnode{{number}}
-           {% endfor %}
-        dest: "{{TORQUE_PATH}}/server_priv/nodes"
-        force: no
 
     - include: munge_repo_front.yml
       when: ansible_os_family == "RedHat"
@@ -204,6 +197,19 @@ configure front (
     - service: name=trqauthd state=started
       when: ansible_os_family == "RedHat"
       ignore_errors: yes
+
+    - shell: yes | pbs_server -t create
+      when: ansible_os_family == "RedHat"
+    - command: qterm
+      when: ansible_os_family == "RedHat"
+
+    - copy:
+        content: |
+           {% for number in range(1, NNODES|int + 1) %}
+           vnode{{number}}
+           {% endfor %}
+        dest: "{{TORQUE_PATH}}/server_priv/nodes"
+        force: yes
       
     - service: name={{TORQUE_SERVICE}} state=restarted pattern=/usr/sbin/pbs_server
     - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
