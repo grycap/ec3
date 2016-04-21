@@ -395,8 +395,9 @@ class argparse_configyaml:
             try:
                 self._defaults = yaml.load(open(configfilename, "r").read())
             except Exception as e:
-                CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)),
-                            level=logging.ERROR, exception=True)
+                #CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)), level=logging.ERROR, exception=True)
+                sys.stderr.write("ERROR: Error reading configuration file " + configfilename+ ". Delete it and try again.\n")
+                sys.exit(-1)
             self._configfile = None
         else:
             self._defaults = None
