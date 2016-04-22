@@ -30,6 +30,10 @@ configure front (
       yum: pkg=python-sqlite,unzip,curl
       when: ansible_os_family == "RedHat"
 
+    - name: Yum install CLUES2 requirements in REL 6 system
+      yum: pkg=python-importlib
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+
     - name: Install CLUES pip requirements
       pip: name={{item}}
       with_items:
@@ -155,8 +159,15 @@ configure clues_slurm (
     - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option=SLURM_SERVER value=slurmserverpublic
       notify: restart cluesd
 
-    - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o                                                                         
+    - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o
+      when: ansible_os_family == "Debian"
     - command: mv /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
+      when: ansible_os_family == "Debian"
+
+    - command: mv /usr/bin/sbatch /usr/bin/sbatch.o creates=/usr/bin/sbatch.o
+      when: ansible_os_family == "RedHat"
+    - command: mv /usr/bin/clues-slurm-wrapper /usr/bin/sbatch creates=/usr/bin/sbatch
+      when: ansible_os_family == "RedHat"
 @end
 )  
 

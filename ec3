@@ -395,8 +395,9 @@ class argparse_configyaml:
             try:
                 self._defaults = yaml.load(open(configfilename, "r").read())
             except Exception as e:
-                CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)),
-                            level=logging.ERROR, exception=True)
+                #CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)), level=logging.ERROR, exception=True)
+                sys.stderr.write("ERROR: Error reading configuration file " + configfilename+ ". Delete it and try again.\n")
+                sys.exit(-1)
             self._configfile = None
         else:
             self._defaults = None
@@ -837,9 +838,9 @@ class CmdDestroy:
         parser.add_argument("clustername", help="name of the cluster to destroy")
         parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about deleting the cluster")
-        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""	# auth_file: |
-	#   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
-	#   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
+    #   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
+    #   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
         parser.set_defaults(func=CmdDestroy.run)
 
     @staticmethod

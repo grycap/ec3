@@ -1,3 +1,5 @@
+# http://www.server-world.info/en/note?os=CentOS_6&p=nfs&f=1
+# http://www.server-world.info/en/note?os=CentOS_7&p=nfs
 description nfs (
     kind = 'component' and
     short = 'Tool to configure shared directories inside a network.' and
@@ -28,12 +30,22 @@ configure front (
       service: name=idmapd state=restarted
 
     tasks:
-    - name: update repositories cache and install NFS
+    - name: update repositories cache and install NFS in Deb systems
       apt: name=nfs-kernel-server update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
 
-    - name: set the domain in idmapd.conf
-      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain=localdomain" state=present
+    - name: update repositories cache and install NFS in RedHat systems
+      yum: name=nfs-utils
+      when: ansible_os_family == "RedHat"
+
+    - name: set the domain in idmapd.conf in Deb systems
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = ' line="Domain=localdomain" state=present
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
+      
+    - name: set the domain in idmapd.conf in RedHat systems
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = ' line="Domain=localdomain" state=present
+      when: ansible_os_family == "RedHat"
 
     #- name: set nobody in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
@@ -47,28 +59,75 @@ configure front (
     #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
     #  notify: restart idmapd
 
-    - name: set translation in idmapd.conf
+    - name: set translation in idmapd.conf in Deb systems
       lineinfile: dest=/etc/idmapd.conf line="[Translation]"
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
+      
+    - name: set translation in idmapd.conf in RedHat systems
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"
+      when: ansible_os_family == "RedHat"
+
     - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
 
-    - name: specify the use of idmapd.conf
+    - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+      when: ansible_os_family == "RedHat"
+
+    - name: specify the use of idmapd.conf in Deb systems
       lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
 
-    - name: start idmapd service
+    #- name: specify the use of idmapd.conf in RedHat systems
+    #  lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+    #  notify: restart idmapd redhat
+    #  when: ansible_os_family == "RedHat"
+
+    - name: start idmapd service in Deb systems
       service: name=idmapd state=started
+      when: ansible_os_family == "Debian"
+
+    #- name: start idmapd service in RedHat systems
+    #  command: systemctl start idmapd
+    #  when: ansible_os_family == "RedHat"
 
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-kernel-server regexp=^RPCMOUNTDOPTS line='RPCMOUNTDOPTS="--manage-gids --port 2048"'
+      when: ansible_os_family == "Debian"
+      #TODO: no encuentro este fichero en RedHat
 
     - name: export the directories editing the file /etc/exports
       lineinfile: dest=/etc/exports line="/home *(rw,async,no_root_squash,no_subtree_check,insecure)"
 
-    - service: name=nfs-kernel-server state=started
+    - name: start NFS server service in Deb systems 
+      service: name=nfs-kernel-server state=started
+      when: ansible_os_family == "Debian"
+
+    - name: start NFS server service in RedHat systems 
+      command: /etc/rc.d/init.d/rpcbind start  
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: /etc/rc.d/init.d/nfslock start
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: /etc/rc.d/init.d/nfs start 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig rpcbind on
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig nfslock on
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig nfs on
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+
+    - name: start NFS server service in RedHat systems (centos 7)
+      command: systemctl start rpcbind nfs-server 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "7"
+    - command: systemctl enable rpcbind nfs-server 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "7"
+    
     - name: export exports file
       command: exportfs -ra
+      #when: ansible_os_family == "Debian"
 @end
 )
 
@@ -77,18 +136,29 @@ configure wn (
 @begin
   - vars:
       FRONTEND:
-        # ec3_xpath: /system/front/net_interface.1.dns_name
-        ec3_xpath: /system/front/net_interface.0.dns_name
+        ec3_xpath: /system/front/net_interface.1.dns_name
+       # ec3_xpath: /system/front/net_interface.0.dns_name
     handlers:
     - name: restart idmapd
       service: name=idmapd state=restarted
+
     tasks:
     - name: update repositories cache and install NFS
       apt: name=nfs-common update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
 
-    - name: set the domain in idmapd.conf
-      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = localdomain' line="Domain = localdomain" state=present
+    - name: update repositories cache and install NFS
+      yum: name=nfs-utils
+      when: ansible_os_family == "RedHat"
+
+    - name: set the domain in idmapd.conf in Deb systems
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = ' line="Domain = localdomain" state=present
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
+
+    - name: set the domain in idmapd.conf in RedHat systems
+      lineinfile: dest=/etc/idmapd.conf regexp='# Domain = ' line="Domain=localdomain" state=present
+      when: ansible_os_family == "RedHat"
 
     #- name: set nobody in idmapd.conf
     #  lineinfile: dest=/etc/idmapd.conf regexp='Nobody-User = nobody' line="Nobody-User = ubuntu" state=present
@@ -102,28 +172,73 @@ configure wn (
     #  lineinfile: dest=/etc/idmapd.conf regexp='Verbosity = 0'  line="Verbosity=7" state=present
     #  notify: restart idmapd
 
-    - name: set translation in idmapd.conf
+    - name: set translation in idmapd.conf in Deb systems
       lineinfile: dest=/etc/idmapd.conf line="[Translation]"     
-      notify: restart idmapd                               
+      notify: restart idmapd
+      when: ansible_os_family == "Debian"     
     - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
+      
+    - name: set translation in idmapd.conf in RedHat systems
+      lineinfile: dest=/etc/idmapd.conf line="[Translation]"     
+      when: ansible_os_family == "RedHat"     
+    - lineinfile: dest=/etc/idmapd.conf line="Method=nsswitch"
+      when: ansible_os_family == "RedHat"
 
-    - name: specify the use of idmapd.conf
+    - name: specify the use of idmapd.conf in Deb systems
       lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
       notify: restart idmapd
+      when: ansible_os_family == "Debian"
+      
+    - name: specify the use of idmapd.conf in RedHat systems
+      lineinfile: dest=/etc/default/nfs-common line="NEED_IDMAPD=YES"
+      when: ansible_os_family == "RedHat"
 
     #- name: modify nsswitch
     #  lineinfile: "dest=/etc/nsswitch.conf regexp='hosts' line='hosts:          files dns' state=present"
     #  notify: restart idmapd
 
-    - name: start idmapd service
+    - name: start idmapd service in Deb systems
       service: name=idmapd state=started
+      when: ansible_os_family == "Debian"
+
+    #- name: start idmapd service in RedHat systems
+    #  command: systemctl start idmapd
+    #  when: ansible_os_family == "RedHat"
+
+    - name: start NFS service in RedHat systems 
+      command: /etc/rc.d/init.d/rpcbind start   
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: /etc/rc.d/init.d/rpcidmapd start 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: /etc/rc.d/init.d/nfslock start  
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: /etc/rc.d/init.d/netfs start 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig rpcbind on 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig rpcidmapd on
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig nfslock on
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+    - command: chkconfig netfs on
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+
+    - name: start NFS service in RedHat systems (centos 7)
+      command: systemctl start rpcbind 
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "7"
+    - command: systemctl enable rpcbind
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "7"
 
     - name: specify the NFS port
       lineinfile: dest=/etc/default/nfs-common regexp=^STATDOPTS line='STATDOPTS="--port 2046 --outgoing-port 2047"'
+      when: ansible_os_family == "Debian"
+      #TODO: no encuentro este fichero en RedHat
 
     - name: mount the shared directories
       # shell: mountpoint /home || mount -t nfs {{FRONTEND}}:/home /home
       mount: name=/home src='{{FRONTEND}}:/home' fstype=nfs state=mounted
 @end
 )
+

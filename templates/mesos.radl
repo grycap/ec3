@@ -1,7 +1,7 @@
 description mesos (
     kind = 'main' and
     short = 'Install and configure a Mesos cluster from mesosphere repo.' and
-    content = 'The template installs Mesos 0.22.1 and Chronos 2.3.4 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
+    content = 'The template installs Mesos 0.27.1, Marathon 0.15.3 and Chronos 2.4.0 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
     
 Webpage: http://mesos.apache.org/'
 )
