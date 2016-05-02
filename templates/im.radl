@@ -8,6 +8,8 @@ configure im_prolog (
       when: ansible_os_family == "Debian"
     - yum: name=SOAPpy
       when: ansible_os_family == "RedHat"
+    - name: Install last version of setuptools with Pip
+      pip: name=setuptools extra_args="--upgrade -I"
 @end
 )
 
@@ -28,7 +30,6 @@ configure im_devel_git (
       when: ansible_os_family == "Debian"
     - yum: name=git
       when: ansible_os_family == "RedHat"
-    #- git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=ec3-devel
     - git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=devel
     # This fixes a really strange behaviour in Ubuntu 12.04
     #- shell: python setup.py install; rm -rf /opt/tmp/im/build; python setup.py install chdir=/opt/tmp/im
