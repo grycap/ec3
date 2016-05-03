@@ -9,7 +9,7 @@ configure im_prolog (
     - yum: name=SOAPpy
       when: ansible_os_family == "RedHat"
     - name: Install last version of setuptools with Pip
-      pip: name=setuptools extra_args="--upgrade -I"
+      pip: name=setuptools extra_args="-I" state=latest
 @end
 )
 
