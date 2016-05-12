@@ -4,9 +4,9 @@ network public (
 
 configure im_prolog (
 @begin
-    - apt: name=python-soappy update_cache=yes cache_valid_time=3600
+    - apt: name=python-soappy,libffi-dev,libssl-dev update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
-    - yum: name=SOAPpy
+    - yum: name=SOAPpy,libffi-devel,openssl-devel
       when: ansible_os_family == "RedHat"
     - name: Install last version of setuptools with Pip
       pip: name=setuptools extra_args="-I" state=latest
