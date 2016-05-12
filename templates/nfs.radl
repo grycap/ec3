@@ -99,7 +99,7 @@ configure front (
       #TODO: no encuentro este fichero en RedHat
 
     - name: export the directories editing the file /etc/exports
-      lineinfile: dest=/etc/exports line="/home *(rw,async,no_root_squash,no_subtree_check,insecure)"
+      lineinfile: dest=/etc/exports line="/home vnode*(rw,async,no_root_squash,no_subtree_check,insecure)"
 
     - name: start NFS server service in Deb systems 
       service: name=nfs-kernel-server state=started
