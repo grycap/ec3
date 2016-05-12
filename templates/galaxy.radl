@@ -18,8 +18,14 @@ system front (
       net_interface.0.dns_name = 'galaxyserver'
 )
 
+system wn (
+      cpu.count>=1 and
+      memory.size>=8g 
+)
+
 configure galaxy_vars (
 @begin
+GALAXY_VERSION: 16.01
 GALAXY_ADMIN_API_KEY: not_very_secret_api_key
 GALAXY_ADMIN_MAIL: admin@admin.com
 GALAXY_USER_ID: 4001
@@ -62,12 +68,15 @@ configure front (
       notify: restart cluesd
 
     # Install requisites
-    - apt: name=git,python-virtualenv update_cache=yes cache_valid_time=3600
+    - apt: name=python-virtualenv update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
-    - yum: name=git
+    - yum: name=python-virtualenv
       when: ansible_os_family == "RedHat"
     # Download Galaxy
-    - git: repo=https://github.com/galaxyproject/galaxy/ dest={{GALAXY_INSTALL_PATH}} version=master
+    - file: path={{GALAXY_INSTALL_PATH | dirname}} state=directory recurse=yes
+    - get_url: url=https://github.com/galaxyproject/galaxy/archive/v{{GALAXY_VERSION}}.tar.gz dest=/tmp/v{{GALAXY_VERSION}}.tar.gz force=no
+    - unarchive: src=/tmp/v{{GALAXY_VERSION}}.tar.gz dest={{GALAXY_INSTALL_PATH | dirname}} copy=no
+    - file: src={{GALAXY_INSTALL_PATH | dirname}}/galaxy-{{GALAXY_VERSION}} dest={{GALAXY_INSTALL_PATH}} state=link
 
     # General configuration
     - copy: src={{GALAXY_INSTALL_PATH}}/config/galaxy.ini.sample dest={{GALAXY_INSTALL_PATH}}/config/galaxy.ini force=no
@@ -89,26 +98,32 @@ configure front (
     - name: Add the authorized_key to the user {{GALAXY_USER}}
       authorized_key: user={{GALAXY_USER}} key="{{ lookup('file', '/tmp/' + GALAXY_USER + '_id_rsa.pub') }}"
 
-    - file: path=/home/{{GALAXY_USER}} state=directory owner={{GALAXY_USER}} group={{GALAXY_USER}}
-    - file: path={{GALAXY_INSTALL_PATH}} state=directory recurse=yes owner={{GALAXY_USER}}
+    - file: path=/home/{{GALAXY_USER}} state=directory owner={{GALAXY_USER}} group={{GALAXY_USER}} recurse=yes
 
     - copy: dest="{{GALAXY_INSTALL_PATH}}/config/local_env.sh" content="PYTHON_EGG_CACHE={{GALAXY_INSTALL_PATH}}/egg\nGALAXY_RUN_ALL=1\nexport PYTHON_EGG_CACHE GALAXY_RUN_ALL"
 
+    # Install python depencies
+    - shell: bash scripts/common_startup.sh chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/.venv/lib/python2.7/site-packages/yaml
+      become: true
+      become_user: "{{GALAXY_USER}}"
+
     # Launch the server
     - shell: bash run.sh --daemon chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/main.pid
-      sudo: true
-      sudo_user: "{{GALAXY_USER}}"
+      become: true
+      become_user: "{{GALAXY_USER}}"
 
 @end
 )
 
 configure galaxy_pbs (
 @begin
-    # Install pbs_python egg
-    - file: path={{GALAXY_INSTALL_PATH}}/eggs state=directory
-    - shell:  python scripts/scramble.py -e pbs_python chdir={{GALAXY_INSTALL_PATH}}
-      environment:
-         LIBTORQUE_DIR: /usr/lib
+    # Install pbs_python
+    - apt: name=libtorque2-dev
+    - get_url: url=http://ftp.surfsara.nl/pub/outgoing/pbs_python-4.6.0.tar.gz dest=/tmp
+    - unarchive: src=/tmp/pbs_python-4.6.0.tar.gz dest=/tmp copy=no
+    - command: ./configure chdir=/tmp/pbs_python-4.6.0 creates=/tmp/pbs_python-4.6.0/Makefile
+    - command: make chdir=/tmp/pbs_python-4.6.0 creates=/tmp/pbs_python-4.6.0/build
+    - pip: name=/tmp/pbs_python-4.6.0 virtualenv={{GALAXY_INSTALL_PATH}}/.venv editable=false
 
     # Configure job_conf.xml
     - copy:
