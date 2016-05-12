@@ -33,7 +33,7 @@ configure im_devel_git (
     - git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=devel
     # This fixes a really strange behaviour in Ubuntu 12.04
     #- shell: python setup.py install; rm -rf /opt/tmp/im/build; python setup.py install chdir=/opt/tmp/im
-    - shell: python setup.py install chdir=/opt/tmp/im
+    - pip: name=/opt/tmp/im
     - include: im_epilog.yml
 @end
 )
