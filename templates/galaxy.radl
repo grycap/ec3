@@ -119,6 +119,9 @@ configure galaxy_pbs (
 @begin
     # Install pbs_python
     - apt: name=libtorque2-dev
+      when: ansible_os_family == "Debian"
+    - yum: name=torque-devel
+      when: ansible_os_family == "RedHat"
     - get_url: url=http://ftp.surfsara.nl/pub/outgoing/pbs_python-4.6.0.tar.gz dest=/tmp
     - unarchive: src=/tmp/pbs_python-4.6.0.tar.gz dest=/tmp copy=no
     - command: ./configure chdir=/tmp/pbs_python-4.6.0 creates=/tmp/pbs_python-4.6.0/Makefile
