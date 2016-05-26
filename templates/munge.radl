@@ -22,12 +22,7 @@ configure munge_repo_wn (
       when: ansible_os_family == "Debian"
     - yum: name=munge
       when: ansible_os_family == "RedHat"
-    - include: sudo_copy.yml
-      src: /etc/munge/munge.key
-      dest: /etc/munge/munge.key
-      owner: munge
-      group: munge
-      mode: "0400"
+    - include: sudo_copy.yml src=/etc/munge/munge.key dest=/etc/munge/munge.key owner=munge group=munge mode="0400"
     - file: path=/var/log/munge state=directory mode=0700
     - file: path=/var/log state=directory mode=0755
     - service: name=munge state=restarted
