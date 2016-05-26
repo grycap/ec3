@@ -49,7 +49,7 @@ configure mrbayes (
     - name: Install MrBayes
       command: make chdir=/tmp/mrbayes-3.2.6/src creates=/tmp/mrbayes-3.2.6/src/mb
     - name: Change permissions of MrBayes
-      command: chmod +x mb chdir=/tmp/mrbayes-3.2.6/src 
+      file: path=/tmp/mrbayes-3.2.6/src/mb state=file mode=0755 
     - name: configure environment variables
       copy:
         dest: /etc/profile.d/mrbayes.sh
