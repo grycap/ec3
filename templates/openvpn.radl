@@ -193,24 +193,15 @@ configure openvpn_wn (
     # Copy of the certificates
     #- name: copy the CA certificate
     #  copy: src=/tmp/ca.crt dest=/etc/openvpn/
-    - include: sudo_copy.yml
-      src: /etc/openvpn/easy-rsa/2.0/keys/ca.crt
-      dest: /etc/openvpn/ca.crt
-      mode: "0644"
+    - include: sudo_copy.yml src=/etc/openvpn/easy-rsa/2.0/keys/ca.crt dest=/etc/openvpn/ca.crt mode="0644"
 
     #- name: copy the client certificate
     #  copy: src=/tmp/client.crt dest=/etc/openvpn/
-    - include: sudo_copy.yml
-      src: /etc/openvpn/easy-rsa/2.0/keys/client.crt
-      dest: /etc/openvpn/client.crt
-      mode: "0644"
+    - include: sudo_copy.yml src=/etc/openvpn/easy-rsa/2.0/keys/client.crt dest=/etc/openvpn/client.crt mode="0644"
 
     #- name: copy the client key
     #  copy: src=/tmp/client.key dest=/etc/openvpn/
-    - include: sudo_copy.yml
-      src: /etc/openvpn/easy-rsa/2.0/keys/client.key
-      dest: /etc/openvpn/client.key
-      mode: "0600"
+    - include: sudo_copy.yml src=/etc/openvpn/easy-rsa/2.0/keys/client.key dest=/etc/openvpn/client.key mode="0600"
 
     - name: execute the vpn client
       command: openvpn --config client.conf --daemon --log openvpn_client.log  chdir=/etc/openvpn/ creates=/etc/openvpn/openvpn_client.log
