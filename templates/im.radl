@@ -4,9 +4,9 @@ network public (
 
 configure im_prolog (
 @begin
-    - apt: name=python-soappy,libffi-dev,libssl-dev update_cache=yes cache_valid_time=3600
+    - apt: name=gcc,python-soappy,python-dev,libffi-dev,libssl-dev update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
-    - yum: name=SOAPpy,libffi-devel,openssl-devel
+    - yum: name=gcc,SOAPpy,python-devel,libffi-devel,openssl-devel
       when: ansible_os_family == "RedHat"
     - command: rpm -e python-crypto --nodeps
       when: ansible_os_family == "RedHat"
