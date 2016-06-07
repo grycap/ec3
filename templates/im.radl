@@ -4,10 +4,15 @@ network public (
 
 configure im_prolog (
 @begin
-    - apt: name=python-soappy update_cache=yes cache_valid_time=3600
+    - apt: name=gcc,python-soappy,python-dev,libffi-dev,libssl-dev update_cache=yes cache_valid_time=3600
       when: ansible_os_family == "Debian"
-    - yum: name=SOAPpy
+    - yum: name=gcc,SOAPpy,python-devel,libffi-devel,openssl-devel
       when: ansible_os_family == "RedHat"
+    - command: rpm -e python-crypto --nodeps
+      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
+    - name: Install last version of setuptools with Pip
+      pip: name=setuptools extra_args="-I" state=latest
 @end
 )
 
@@ -28,11 +33,10 @@ configure im_devel_git (
       when: ansible_os_family == "Debian"
     - yum: name=git
       when: ansible_os_family == "RedHat"
-    #- git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=ec3-devel
     - git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=devel
     # This fixes a really strange behaviour in Ubuntu 12.04
     #- shell: python setup.py install; rm -rf /opt/tmp/im/build; python setup.py install chdir=/opt/tmp/im
-    - shell: python setup.py install chdir=/opt/tmp/im
+    - pip: name=/opt/tmp/im
     - include: im_epilog.yml
 @end
 )

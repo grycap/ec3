@@ -6,4 +6,4 @@ then
         echo "Cluster is still configuring."
 else
         echo "Cluster configured!"
-fi 
+fi
