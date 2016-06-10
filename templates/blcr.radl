@@ -57,8 +57,9 @@ system front ( ec3_templates contains 'blcr' )
 
 configure front (
 @begin
-  - ec3_prio: -7
-  - tasks:
+---
+  - ec3_prio: -10
+    tasks:
     - file: path=/opt/tmp state=directory
     - include: blcr.yml
 @end
@@ -68,7 +69,8 @@ system wn ( ec3_templates contains 'blcr' )
 
 configure wn (
 @begin
-  - ec3_prio: -7
+---
+  - ec3_prio: -10
     tasks:
     - file: path=/opt/tmp state=directory
     - include: blcr.yml
