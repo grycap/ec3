@@ -39,7 +39,7 @@ configure htcondorcommon (
       when: ansible_os_family == "RedHat"
 
     - name: Yum install condor in REL system
-      yum: name=condor
+      yum: name=condor,condor-python
       when: ansible_os_family == "RedHat"
 
     - lineinfile: dest=/etc/condor/condor_config regexp=REQUIRE_LOCAL_CONFIG_FILE line="REQUIRE_LOCAL_CONFIG_FILE=TRUE"
