@@ -1,0 +1,33 @@
+description spark (
+    kind = 'component' and
+    short = 'Lightning-fast cluster computing.' and
+    content = 'Apache Spark is a fast and general engine for large-scale data processing.
+
+Webpage: http://spark.apache.org/'
+)
+
+configure sparkinst (
+@begin
+---
+    - unarchive: src=http://apache.rediris.es/spark/spark-1.6.1/spark-1.6.1-bin-hadoop2.6.tgz dest=/opt/ copy=no creates=/opt/spark-1.6.1-bin-hadoop2.6 copy=no
+    - file: src=/opt/spark-1.6.1-bin-hadoop2.6 dest=/opt/spark state=link
+    - copy: dest=/etc/profile.d/spark.sh content="export PATH=$PATH:/opt/spark/bin\nexport SPARK_HOME=/opt/spark"
+@end
+)
+
+configure front (
+@begin
+---
+  - tasks:
+    - include: sparkinst.yml
+@end
+)
+
+configure wn (
+@begin
+---
+  - tasks:
+    - include: sparkinst.yml
+
+@end
+)
