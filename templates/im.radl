@@ -13,6 +13,8 @@ configure im_prolog (
       ignore_errors: yes
     - name: Install last version of setuptools with Pip
       pip: name=setuptools extra_args="-I" state=latest
+    - name: Install backports.ssl_match_hostname
+      pip: name=backports.ssl_match_hostname state=latest
 @end
 )
 
