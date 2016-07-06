@@ -971,6 +971,12 @@ class CmdClone:
     # TODO: De momento clonar la infraestructura y luego ver que pasa con las aplicaciones
     @staticmethod
     def run(options):
+        # If the user indicates an IM URL, we use it, if not we use the default value
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL  
+
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
