@@ -1037,12 +1037,6 @@ class CmdClone:
         # Clone infrastructure
         CLI.display("Cloning infrastructure")
 
-        # Si el usuario indica una URL de IM, usamos este, sino, el de por defecto
-        if options.xmlrpc:
-            im_server_url = options.xmlrpc[0]
-        else:
-            im_server_url = IM_URL
-
         try:
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             #print auth_data
