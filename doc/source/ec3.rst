@@ -222,7 +222,7 @@ The command clones an infrastructure front-end previously deployed from one prov
 Command ``migrate``
 -----------------
 
-The command migrates an infrastructure and its running tasks previously deployed from one provider to another. It is mandatory that the original cluster to migrate has been deployed with SLURM and BLCR, if not, the migration process can't be performed.::
+The command migrates a previously deployed cluster and its running tasks from one provider to another. It is mandatory that the original cluster to migrate has been deployed with SLURM and BLCR, if not, the migration process can't be performed.
 
    ec3 migrate <clustername> [-b/--bucket <bucket_name>] [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>] [-e]
 
