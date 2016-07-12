@@ -966,6 +966,7 @@ class CmdClone:
         parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its clonation")
         parser.set_defaults(func=CmdClone.run)
 
     # TODO: De momento clonar la infraestructura y luego ver que pasa con las aplicaciones
@@ -980,7 +981,7 @@ class CmdClone:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId_old, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1010,7 +1011,7 @@ class CmdClone:
         radl = ""
         try:
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            success, radl = im_server.GetInfrastructureRADL(infrId, auth_data)
+            success, radl = im_server.GetInfrastructureRADL(infrId_old, auth_data)
         except Exception as e:
             CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1053,7 +1054,17 @@ class CmdClone:
         CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
         CLI.display("Infrastructure successfully cloned with ID: " + str(infrId) + ". The cluster name now is: " + new_clustername)
 
-        # Apagar el cluster original?
+        # Destroy the old cluster if the user has requested it
+        if options.eliminate:
+            CLI.display("Finally, let's delete the old cluster")
+            success, info = im_server.DestroyInfrastructure(infrId_old, auth_data)
+            ClusterStore.remove(options.clustername)
+            if not success:
+                raise Exception(info)
+                sys.exit(1)
+            CLI.display("Success deleting the old cluster!")
+        
+        CLI.display("Clone process completed")
         sys.exit(0)
 
 
