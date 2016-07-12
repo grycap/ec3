@@ -1067,9 +1067,293 @@ class CmdClone:
         CLI.display("Clone process completed")
         sys.exit(0)
 
+class CmdMigrate:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("migrate", help="migrate a launched cluster together with its workload to another Cloud provider")
+        parser.add_argument("clustername", help="name of the cluster you want to clone")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.add_argument("-b", "--bucket", dest="bucket", nargs=1, help="Name of the already created bucket where to upload ckpt files")
+        parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its migration")
+        parser.set_defaults(func=CmdMigrate.run)
+
+    @staticmethod
+    def run(options):
+        # If the user indicates an IM URL, we use it, if not we use the default value
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL  
+
+        # Check if the user has given a bucket name
+        if options.bucket:
+            CLI.display("The S3 bucket used to copy ckpt files is: " + str(options.bucket[0]))
+        else:
+            CLI.display("Error getting S3 bucket: please indicate an already created S3 bucket to perform the migration operation", level=logging.ERROR)
+            sys.exit(1)  
+
+        # Check cluster name, authentication and IM server
+        try:
+            r = ClusterStore.load(options.clustername)
+            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+        except Exception as e:
+            CLI.display(str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Para decirle al IM en que cloud lanzar el cluster, se usa la primera linea del auth file (a no ser que se indique lo contrario en el deploy).
+        # Si el usuario no nos da un nuevo auth file ya ordenado, reordenar el auth_data
+        access_key = ""
+        secret_key = ""
+        try:
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+                if not any([ a.get("type", None) == "EC2" for a in auth_data ]):
+                    CLI.display("Error obtaining AWS credentials. Impossible to connect with S3 to upload ckpt files. Check your auth file", level=logging.ERROR)
+                    sys.exit(1)
+                else:
+                    for a in auth_data:
+                        if a.has_key('id'):
+                            if a['id'] == "ec2" or a['id'] == "s3":
+                                access_key = a['username']
+                                secret_key = a['password']
+                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+                auth_data = Authentication.read_auth_data(auth_content)
+            elif options.destination:
+                for auth in auth_data:
+                    if auth.has_key('id') and auth['id'] == options.destination[0]:
+                        dest = auth_data.pop(auth_data.index(auth))
+                        auth_data.insert(0, dest)
+            else:
+                auth_data.reverse()
+        except Exception as e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Recover RADL
+        radl = ""
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            success, radl = im_server.GetInfrastructureRADL(infrId, auth_data)
+        except Exception as e:
+            CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Comprobar que el cluster ha sido lanzado con blcr y slurm, en otro caso emitir un error y acabar ejecucion
+        radl_obj = parse_radl(radl)
+        for s in radl_obj.gets(system):
+            id = s.getId()
+            if id == "front":            
+                if "blcr" not in s.getValue("ec3_templates_cmd") or "slurm" not in s.getValue("ec3_templates_cmd"):
+                    CLI.display("Error migrating the cluster: Cluster %s is not a SLURM cluster with BLCR installed, so the migration process can't be performed." % str(options.clustername), level=logging.ERROR)
+                    sys.exit(1)
+
+        # Modificamos el deploy del RADL para no indique en que infraestructura lanzar (y lance en la primera del auth file)
+        radl_obj = parse_radl(radl)
+        for d in radl_obj.gets(deploy):
+                radl_obj.delete(d)
+        new_deploy = deploy('front', 1)
+        radl_obj.add(new_deploy)
+
+        # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
+        # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
+        for s in radl_obj.gets(system):
+            id = s.getId()
+            if s.getValue("ec3_class") is not None:
+                radl_obj.delete(s)
+                for c in radl_obj.gets(configure):
+                    if c.getId() == id:
+                        radl_obj.delete(c)
+
+        radl = dump_radl(radl_obj)
+
+        # Clone infrastructure
+        CLI.display("Cloning infrastructure")
+
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            success, infrId2 = im_server.CreateInfrastructure(radl, auth_data)
+            if not success: raise Exception(infrId2)
+            CLI.display("Success creating infrastructure " + str(infrId2))
+            success, vm_ids = im_server.GetInfrastructureInfo(infrId2, auth_data)
+            if not success: raise Exception(vm_ids)
+        except Exception as e:
+            CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+        new_clustername = options.clustername + "_cloned"
+
+        CmdLaunch.wait_transfer_save(infrId2, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        CLI.display("Infrastructure successfully cloned with ID: " + str(infrId2) + ". The cluster name now is: " + new_clustername)
+
+        # Obtain the job list running in the cluster
+        front_system = ClusterStore.load(options.clustername).get(system("front"))
+        ip = getPublicIP(front_system)
+        user = front_system.getValue("disk.0.os.credentials.username")
+        key_pem = ""
+        if front_system.getValue("disk.0.os.credentials.private_key"):
+            f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+            f.write(front_system.getValue("disk.0.os.credentials.private_key"))
+            f.close()
+            key_pem = f.name
+        else:
+            passwd = front_system.getValue("disk.0.os.credentials.password")
+        
+        job_list = CmdMigrate.get_job_info(ip, user, passwd, key_pem)
+        
+        if len(job_list) > 0:
+            # Checkpoint all the jobs running in the cluster
+            for key, value in job_list.iteritems():
+                try:
+                    CLI.display("Performing a checkpoint to the job "+ key)
+                    if key_pem == "":
+                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol checkpoint create " + key)
+                    else:
+                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol checkpoint create " + key)
+                    CLI.display("Checkpointing performed successfully.")
+                except: 
+                    CLI.display("Error checkpointing the job: %s" % str(key), level=logging.ERROR)
+            
+            # Create the credentials file with the credentials of the user to connect with S3
+            try:
+                if key_pem == "":
+                    run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
+                else:
+                    run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
+            except: 
+                CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
+
+            # Copy the checkpoint files to a bucket in Amazon S3
+            for key, value in job_list.iteritems():
+                try:
+                    CLI.display("Uploading checkpoint files to S3")
+                    if key_pem == "":
+                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'sudo aws s3 cp /var/slurm/checkpoint/" + key + ".ckpt s3://" + str(options.bucket[0]) + "/" + key + ".ckpt'")
+                    else:
+                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " sudo aws s3 cp /var/slurm/checkpoint/" + key + ".ckpt s3://" + str(options.bucket[0]) + "/" + key + ".ckpt")
+                    CLI.display("Upload performed succesfully")
+                except:
+                    CLI.display("Error while uploading checkpoint files to S3", level=logging.ERROR)
+
+            # Obtain the IP of the front-end of the cloned cluster
+            front_system_cloned = ClusterStore.load(new_clustername).get(system("front"))
+            ip_cloned = getPublicIP(front_system_cloned)
+            
+            # Create the credentials file with the credentials of the user to connect with S3
+            try:
+                if key_pem == "":
+                    run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
+                else:
+                    run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
+            except: 
+                CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
+            
+            # Download checkpoint files from the bucket in Amazon S3 to the cloned cluster
+            for key, value in job_list.iteritems():
+                try:
+                    CLI.display("Downloading checkpoint files to S3")
+                    if key_pem == "":
+                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'sudo aws s3 cp s3://" + str(options.bucket[0]) + "/" + key + ".ckpt /var/slurm/checkpoint/" + key + ".ckpt'")
+                    else:
+                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'sudo aws s3 cp s3://" + str(options.bucket[0]) + "/" + key + ".ckpt /var/slurm/checkpoint/" + key + ".ckpt'")
+                    CLI.display("Download performed succesfully")
+                except:
+                    CLI.display("Error while downloading checkpoint files to S3", level=logging.ERROR)
+                
+            # Restart the jobs in the cloned cluster
+            for key, value in job_list.iteritems():
+                try:
+                    CLI.display("Restarting the job "+ key)
+                    if key_pem == "":
+                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " scontrol checkpoint restart " + key)
+                    else:
+                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " scontrol checkpoint restart " + key)
+                    CLI.display("Restart performed successfully.")
+                except DownNodeError: 
+                    CLI.display("Success restarting the job %s from the checkpointing file" % str(key))
+                except CommandError: 
+                    CLI.display("Error restarting the job: %s" % str(key), level=logging.ERROR)
+        else:
+            CLI.display("There are no jobs running in the cluster.")
+    
+        # Destroy the old cluster if the user has requested it
+        if options.eliminate:
+            CLI.display("Finally, let's delete the old cluster")
+            success, info = im_server.DestroyInfrastructure(infrId, auth_data)
+            ClusterStore.remove(options.clustername)
+            if not success:
+                raise Exception(info)
+                sys.exit(1)
+            CLI.display("Success deleting the old cluster!")
+        
+        CLI.display("Migration process completed")
+        sys.exit(0)
+        
+
+    # Parse the exit of the scontrol SLURM command
+    @staticmethod
+    def parse_scontrol(out):
+    #and exit != "No jobs in the system"
+        if out.find("=") < 0: return []
+        r = []
+        for line in out.split("\n"):
+            line = line.strip()
+            if not line: continue
+            d = {}; r.append(d); s = False
+            for k in [ j for i in line.split("=") for j in i.rsplit(" ", 1) ]:
+                if s: d[f] = k
+                else: f = k
+                s = not s
+        return r
+
+    # Obtains the list of jobs that are in execution in SLURM
+    @staticmethod
+    def get_job_info(ip, user, passwd, key_pem):
+        if key_pem == "":
+            exit = CmdMigrate.parse_scontrol(run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
+        else:
+            exit = CmdMigrate.parse_scontrol(run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
+        job_list = {}
+        if exit:
+            for key in exit:
+                if key["JobState"] == "RUNNING": 
+                    job_list [str(key["JobId"])] = str(key["BatchHost"])
+        return job_list
+                  
+
+# TODO: muy probablemente no haga falta esto del run_command y se pueda hacer como hace eloy con os.execlp
+class CommandError(Exception):pass
+
+class DownNodeError(Exception):pass
+
+def run_command(command, shell=False):
+    string = " "
+    try:
+        #CLI.display("executing: %s" % command)
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    except:
+        if type(command)==list: command = string.join(command)
+        CLI.display('Could not execute command "%s"' %command, level=logging.ERROR)
+        raise
+    
+    (output, err) = p.communicate()
+    if p.returncode != 0:
+        if err == "scontrol_checkpoint error: Required node not available (down, drained or reserved)\n":
+            raise DownNodeError()
+        else:
+            if type(command)==list: command = string.join(command)
+            CLI.display(' Error in command "%s"' % command, level=logging.ERROR)
+            CLI.display(' Return code was: %s' % p.returncode, level=logging.ERROR)
+            CLI.display(' Error output was:\n%s' % err, level=logging.ERROR)
+            raise CommandError()
+    else:
+        return output
 
 if __name__ == "__main__":
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
