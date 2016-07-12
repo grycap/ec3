@@ -199,7 +199,7 @@ Command ``clone``
 
 The command clones an infrastructure front-end previously deployed from one provider to another::
 
-   ec3 clone <clustername> [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>]
+   ec3 clone <clustername> [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>] [-e]
 
 .. program:: ec3 clone
 
@@ -214,6 +214,10 @@ The command clones an infrastructure front-end previously deployed from one prov
 .. option:: -u <url>, --xmlrpc-url <url>
 
    URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+
+.. option:: -e, --eliminate
+
+   Indicate to destroy the original cluster at the end of the clone process. If not indicated, EC3 leaves running the original cluster.
 
 Configuration file
 ------------------
