@@ -219,6 +219,35 @@ The command clones an infrastructure front-end previously deployed from one prov
 
    Indicate to destroy the original cluster at the end of the clone process. If not indicated, EC3 leaves running the original cluster.
 
+Command ``migrate``
+-----------------
+
+The command migrates an infrastructure and its runnign tasks previously deployed from one provider to another. It is mandatory that the original cluster to migrate had been deployed with SLURM and BLCR, if not, the migration process can't be performed.::
+
+   ec3 migrate <clustername> [-b/--bucket <bucket_name>] [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>] [-e]
+
+.. program:: ec3 migrate
+
+.. option:: -b <bucket_name>, --bucket <bucket_name>
+
+   Bucket name of an already created bucket in the S3 account displayed in the auth file.
+   
+.. option:: -a <file>, --auth-file <file>
+
+   New authorization file to use to deploy the cloned cluster. It is mandatory to have valid AWS credentials in this file to perform the migration operation, since it uses Amazon S3 to store checkpoint files from jobs running in the cluster. See :ref:`auth-file`.
+
+.. option:: -d <provider>, --destination <provider>
+
+   Provider ID, it must match with the id provided in the auth file. See :ref:`auth-file`.
+
+.. option:: -u <url>, --xmlrpc-url <url>
+
+   URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+
+.. option:: -e, --eliminate
+
+   Indicate to destroy the original cluster at the end of the migration process. If not indicated, EC3 leaves running the original cluster.
+
 Configuration file
 ------------------
 
