@@ -53,6 +53,32 @@ configure blcr (
 @end
 )
 
+configure awscli (
+@begin
+    - name: pip install awscli
+      pip: name=awscli
+      
+    - file: path=/home/ubuntu/.aws state=directory
+    - copy:
+        content: |
+           [default]
+           region=us-west-2
+           output=json
+        dest: "/home/ubuntu/.aws/config"
+        owner: ubuntu
+        group: ubuntu
+
+    - copy:
+        content: |
+           [default]
+           aws_access_key_id=
+           aws_secret_access_key=
+        dest: "/home/ubuntu/.aws/credentials"
+        owner: ubuntu
+        group: ubuntu
+@end
+)
+
 system front ( ec3_templates contains 'blcr' )
 
 configure front (
@@ -62,6 +88,7 @@ configure front (
     tasks:
     - file: path=/opt/tmp state=directory
     - include: blcr.yml
+    - include: awscli.yml
 @end
 )
 
