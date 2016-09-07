@@ -6,6 +6,7 @@ description centos_ec2 (
 )
 
 system front (
+    instance_type='t1.micro' and
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'aws://us-east-1/ami-8997afe0' and
     disk.0.os.credentials.username = 'root' and
@@ -14,6 +15,7 @@ system front (
 
 system wn (
     ec3_max_instances = 10 and # maximum number of working nodes in the cluster
+    instance_type='t1.micro' and
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'aws://us-east-1/ami-8997afe0' and
     disk.0.os.credentials.username = 'root' and
