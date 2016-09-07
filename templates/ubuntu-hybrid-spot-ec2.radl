@@ -6,12 +6,14 @@ description ubuntu_hybrid_spot_ec2 (
 
 
 system front (
+    instance_type='t1.micro' and
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
     disk.0.os.credentials.username = 'ubuntu'
 )
 
 system wn (
+    instance_type='t1.micro' and
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
     disk.0.os.credentials.username = 'ubuntu' and
