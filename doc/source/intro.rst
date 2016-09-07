@@ -45,7 +45,7 @@ of an IAM user created within your AWS account.
 
 This file is the authorization file (see `Authorization file`_), and can have more than one set of credentials.
 
-The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
+Now we are going to deploy a cluster in Amazon EC2 with a limit number of nodes = 10. This parameter to indicate the maximum size of the cluster is called ``ec3_max_instances`` and it has to be indicated in the RADL file that describes the infrastructure to deploy. In our case, we are going to use the ``ubuntu-ec2`` recipe, available in our github repo. The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
    $ ec3 launch mycluster torque ubuntu-ec2 -a auth.txt -y
    WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
