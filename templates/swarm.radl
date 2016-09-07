@@ -21,8 +21,6 @@ network public (
 network private ()
 
 system front (
-    cpu.count>=1 and
-    memory.size>=512m and
     net_interface.0.connection = 'public' and
     net_interface.0.dns_name = 'swarmmanagerpublic' and
     net_interface.1.connection = 'private' and
