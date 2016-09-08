@@ -110,10 +110,24 @@ configure wn (
     vars:
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
+      USERS:
+        - {name: ubuntu}
     tasks:
     - include: munge_repo_wn.yml
     - include: slurm_source.yml
     - include: slurm_common.yml
+
+    # Configure SSH without password to the nodes of the cluster
+    - user: name={{item.name}} generate_ssh_key=yes
+      with_items: USERS
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: USERS
+    - name: Copy the id_rsa.pub file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
+    - name: Copy the id_rsa file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
     - name: copy slurm.conf file from the frontend
       copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
@@ -158,6 +172,8 @@ configure front (
         ec3_file: slurm.conf
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
+      USERS:
+        - {name: ubuntu}
 
     tasks:
     - copy:
@@ -181,6 +197,16 @@ configure front (
     - include: munge_repo_front.yml
     - include: slurm_source.yml
     - include: slurm_common.yml
+
+    # Configure SSH without password to the nodes of the cluster
+    - user: name={{item.name}} generate_ssh_key=yes
+      with_items: USERS
+    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
+      with_items: USERS
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: USERS
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
     - copy:
         dest: /usr/local/etc/slurm.conf
