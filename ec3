@@ -163,7 +163,8 @@ def apply_ec3_expressions(r):
     for conf in recipes_prio:
         conf.recipe = map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ]))
     def sanitize(cad):
-        return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
+        return cad.replace("{", "\\x7b").replace("}", "\\x7d")
+        #return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
     recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
                      for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
     def isrecursive(p):
