@@ -6,7 +6,7 @@ Overview
 --------
 
 EC3 as a Service (EC3aaS), is a web service offered to the community to facilitate
-the usage of EC3 to non-experienced users. Anyone can access the website [37] and
+the usage of EC3 to non-experienced users. Anyone can access the website and
 try the tool by using the user-friendly wizard to easily configure and deploy Virtual
 Elastic Clusters on multiple Clouds. The service does not require any account to
 use it. The user only needs to choose the Cloud provider and provide its credentials
