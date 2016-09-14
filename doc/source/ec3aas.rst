@@ -126,7 +126,10 @@ of the website) and indicate in the wizard (:ref:`Fig. 5 <figure_delete>`) the c
 to the user in the deployment phase. The cluster name is a string composed by
 the word cluster followed by a random string of five characters (including numbers
 and letters). This cluster name is unique and allows EC3 to identify the cluster of
-the user without using an user account.
+the user without using an user account. Moreover, in case the user has developed
+the cluster in the EGI FedCloud, a valid proxy will be required in order to destroy
+the cluster.
+
 When the process finishes successfully, the front-end of the cluster and all the
 working nodes had been destroyed and a message is shown to the user informing
 the success of the operation. If an error occurs during the deleting process (for
