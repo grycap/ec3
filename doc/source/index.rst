@@ -14,6 +14,7 @@ Contents:
    intro
    arch
    ec3
+   ec3aas
    templates
    faq
    about
