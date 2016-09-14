@@ -76,7 +76,8 @@ Specifically, the general wizard steps are:
    and added to EC3 by using the CLI interface.
 #. **Cluster's size**: the user can introduce the maximum number of nodes of
    the cluster, without including the front-end node. This value indicates the
-   maximum number of working nodes that the cluster can scale.
+   maximum number of working nodes that the cluster can scale. Remember that, initially
+   the cluster only is created with the front-end, and the nodes are powered on on-demand.
 #. **Resume and Launch**: a summary of the chosen configuration of the cluster
    is showed to the user at the last step of the wizard, and the deployment
    process can start by clicking the Submit button.
