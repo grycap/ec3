@@ -52,32 +52,32 @@ packages.
 
 Specifically, the general wizard steps are:
 
-#. `` Provider account ``: Valid user credentials are required to access to the
+#. **Provider account**: Valid user credentials are required to access to the
    resources of the Cloud provider chosen. Additionally, in the OpenNebula,
    OpenStack and EGI FedCloud wizards, the endpoint of the server is also
    required. The use of temporary credentials is recommended.
-#. `` Operating System ``: the user can choose the OS of the cluster, by using a
+#. **Operating System**: the user can choose the OS of the cluster, by using a
    select box where the most common OS are available or by indicating a valid
    AMI/VMI identifier for the Cloud selected.
-#. `` Instance details ``: the user must indicate the instance details, like the number
+#. **Instance details**: the user must indicate the instance details, like the number
    of CPUs or the RAM memory, for the front-end and also the working
    nodes of the cluster. In case of using Amazon EC2, a select box is provided
    with the instance types offered by this provider. In case of using EGI
    FedCloud, the user must indicate the instance type desired from the ones
    available in the endpoint selected.
-#. `` LRMS Selection ``: the user can choose the Local Resource Management
+#. **LRMS Selection**: the user can choose the Local Resource Management
    System preferred to be automatically installed and configured by EC3. Currently,
    SLURM, Torque, Grid Engine and Mesos are supported.
-#. `` Software Packages ``: a set of common software packages is available to be
+#. **Software Packages**: a set of common software packages is available to be
    installed in the cluster, such as Docker Engine, Spark, Galaxy, OpenVPN,
    BLCR, GNUPlot, Tomcat or Octave. EC3 can install and configure them
    automatically in the contextualization process. If the user needs another
    software to be installed in his cluster, a new Ansible recipe can be developed
    and added to EC3 by using the CLI interface.
-#. `` Cluster's size ``: the user can introduce the maximum number of nodes of
+#. **Cluster's size**: the user can introduce the maximum number of nodes of
    the cluster, without including the front-end node. This value indicates the
    maximum number of working nodes that the cluster can scale.
-#. `` Resume and Launch ``: a summary of the chosen configuration of the cluster
+#. **Resume and Launch**: a summary of the chosen configuration of the cluster
    is showed to the user at the last step of the wizard, and the deployment
    process can start by clicking the Submit button.
 
