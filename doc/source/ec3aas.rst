@@ -139,4 +139,4 @@ to the user.
    Fig 5. Wizard to delete a cluster.
 
 
-
+.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/latest/ec3.html
