@@ -159,6 +159,13 @@ configure clues_slurm (
       notify: restart cluesd
     - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option=SLURM_SERVER value=slurmserver
       notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option={{ item.option }} value="{{ item.value }}"
+      notify: restart cluesd
+      with_items:
+        - { option: 'SLURM_PARTITION_COMMAND', value: '/usr/bin/scontrol -o show partitions' }
+        - { option: 'SLURM_NODES_COMMAND', value: '/usr/bin/scontrol -o show nodes' }
+        - { option: 'SLURM_JOBS_COMMAND', value: '/usr/bin/scontrol -o show jobs' }
+      when: ansible_os_family == "RedHat"
 
     - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o
       when: ansible_os_family == "Debian"
