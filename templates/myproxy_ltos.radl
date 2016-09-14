@@ -1,4 +1,4 @@
-description myproxy (
+description myproxyltos (
     kind = 'component' and
     short = 'Tool download proxy files from MyProxy servers' and
     content = 'Tool download proxy files from MyProxy servers.
@@ -32,8 +32,12 @@ configure front (
       apt_key: url=http://repository.egi.eu/sw/production/umd/UMD-DEB-PGP-KEY state=present
       when: ansible_os_family == "Debian"
     
-    - name: Install EGI UMD Repo  
-      apt: deb=http://repository.egi.eu/sw/production/umd/3/debian/dists/squeeze/main/binary-amd64/umd-release-3.0.0_all.deb
+    - name: Install EGI UMD Base Repo
+      copy: dest=/etc/apt/sources.list.d/UMD-3-base.list content="deb [arch=amd64] http://repository.egi.eu/sw/production/umd/3/debian/ squeeze main"
+      when: ansible_os_family == "Debian"
+
+    - name: Install EGI UMD Updates Repo
+      copy: dest=/etc/apt/sources.list.d/UMD-3-updates.list content="deb [arch=amd64] http://repository.egi.eu/sw/production/umd/3/debian/ squeeze-updates main"
       when: ansible_os_family == "Debian"
 
     - name: Install myproxy requisites
@@ -49,20 +53,23 @@ configure front (
       
     - name: Create dir /etc/vomses/
       file: path=/etc/vomses state=directory
-      
-    - copy:
+
+    - name: Configure fedcloud.egi.eu vomses
+      copy:
         dest: /etc/vomses/fedcloud.egi.eu
         content: |
            "fedcloud.egi.eu" "voms2.grid.cesnet.cz" "15002" "/DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms2.grid.cesnet.cz" "fedcloud.egi.eu"
            "fedcloud.egi.eu" "voms1.grid.cesnet.cz" "15002" "/DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms1.grid.cesnet.cz" "fedcloud.egi.eu"
 
-    - copy:
+    - name: Configure fedcloud.egi.eu lsc files
+      copy:
         dest: /etc/grid-security/vomsdir/fedcloud.egi.eu/voms1.grid.cesnet.cz.lsc
         content: |
            /DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms1.grid.cesnet.cz
            /C=NL/ST=Noord-Holland/L=Amsterdam/O=TERENA/CN=TERENA eScience SSL CA 3
 
-    - copy:
+    - name: Configure fedcloud.egi.eu lsc files
+      copy:
         dest: /etc/grid-security/vomsdir/fedcloud.egi.eu/voms2.grid.cesnet.cz.lsc
         content: |
            /DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms2.grid.cesnet.cz
