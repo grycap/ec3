@@ -115,7 +115,7 @@ be used. It will check if the configuration process of cluster has finished.
 
 Notice that EC3aaS does not offer all the capabilities of EC3, like hybrid clusters
 or the usage of spot instances. Those capabilities are considered advanced aspects
-of the tool and are only available via the CLI.
+of the tool and are only available via the `EC3 Command-line Interface`_..
 
 Termination of a Cluster
 ------------------------
