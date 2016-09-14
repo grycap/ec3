@@ -163,7 +163,8 @@ def apply_ec3_expressions(r):
     for conf in recipes_prio:
         conf.recipe = map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ]))
     def sanitize(cad):
-        return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
+        return cad.replace("{", "\\x7b").replace("}", "\\x7d")
+        #return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
     recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
                      for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
     def isrecursive(p):
@@ -333,6 +334,21 @@ class ClusterStore:
         f = open(os.path.join(ClusterStore.DIR, clustername), "w")
         f.write(dump_radl(r))
         f.close()
+     
+    @staticmethod
+    def write(clustername, r):
+        ClusterStore._check_dir()
+        f = open(os.path.join(ClusterStore.DIR, clustername), "w")
+        f.write(r)
+        f.close()
+
+    @staticmethod
+    def read(clustername, refresh=False):
+        ClusterStore._check_dir()
+        f = open(os.path.join(ClusterStore.DIR, clustername), "r")
+        r = f.read()
+        f.close()
+        return r
 
     @staticmethod
     def load(clustername, refresh=False):
@@ -374,6 +390,7 @@ class ClusterStore:
         if clustername not in ClusterStore.list():
             raise Exception("There is no cluster with name '%s'!" % clustername)
         os.unlink(os.path.join(ClusterStore.DIR, clustername))
+        os.unlink(os.path.join(ClusterStore.DIR, clustername + "_ids"))
 
     @staticmethod
     def get_im_server_infrId_and_auth(r):
@@ -965,7 +982,7 @@ class CmdClone:
         parser.add_argument("clustername", help="name of the cluster you want to clone")
         parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
-        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its clonation")
         parser.set_defaults(func=CmdClone.run)
 
@@ -1074,7 +1091,7 @@ class CmdMigrate:
         parser.add_argument("clustername", help="name of the cluster you want to clone")
         parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
-        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-b", "--bucket", dest="bucket", nargs=1, help="Name of the already created bucket where to upload ckpt files")
         parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its migration")
         parser.set_defaults(func=CmdMigrate.run)
@@ -1322,7 +1339,101 @@ class CmdMigrate:
                 if key["JobState"] == "RUNNING": 
                     job_list [str(key["JobId"])] = str(key["BatchHost"])
         return job_list
-                  
+
+class CmdStop:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("stop", help="stop a launched cluster")
+        parser.add_argument("clustername", help="name of the cluster to stop")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
+        parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about stopping the cluster")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service that is outside the cluster")
+        parser.set_defaults(func=CmdStop.run)
+
+    @staticmethod
+    def run(options):
+        # If the user indicates an IM URL, we use it, if not we use the default IM
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL
+
+        try:
+            r = ClusterStore.load(options.clustername)
+            CLI.display("WARNING: you are going to stop the infrastructure (including frontend and nodes).")
+            if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
+                sys.exit(1)
+            cluster_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            cluster_im_server = xmlrpclib.ServerProxy(cluster_im_server_url, allow_none=True)
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth = Authentication.read_auth_data(auth_content)
+
+            #Import the infrastructure for the restart operation
+            try:
+                success, strInf = cluster_im_server.ExportInfrastructure(infrId, False, auth)
+                if not success: raise Exception(strInf)
+                success, newInfrId = im_server.ImportInfrastructure(strInf, auth)
+                if not success: raise Exception(newInfrId)
+                ids = infrId + "#" + newInfrId
+                ClusterStore.write(options.clustername + "_ids", ids)
+            except Exception as e:
+                CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
+
+            #Stop the infrastructure
+            #success, info = cluster_im_server.StopInfrastructure(infrId, auth)
+            success, info = im_server.StopInfrastructure(newInfrId, auth)
+            if not success:
+                raise Exception(info)
+            CLI.display("Success stopping the cluster!")
+            sys.exit(0)
+        except Exception as e:
+            CLI.display("Error stopping cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+            sys.exit(1)
+
+
+class CmdRestart:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("restart", help="restart a previously stopped cluster")
+        parser.add_argument("clustername", help="name of the cluster to restart")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service that is outside the cluster")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
+        parser.set_defaults(func=CmdRestart.run)
+
+    @staticmethod
+    def run(options):
+        # If the user indicates an IM URL, we use it, if not we use the default IM
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL
+
+        try:
+            r = ClusterStore.load(options.clustername)
+            cluster_im_server_url, cluster_infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+
+            # obtengo infrId del im externo
+            ids = ClusterStore.read(options.clustername + "_ids")
+
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth = Authentication.read_auth_data(auth_content)
+
+            success, info = im_server.StartInfrastructure(ids[ids.index('#')+1:], auth)
+            success, info = im_server.ExportInfrastructure(ids[ids.index('#')+1:], True, auth)
+            if not success:
+                raise Exception(info)
+            CLI.display("Success restarting the cluster!")
+            sys.exit(0)
+        except Exception as e:
+            CLI.display("Error restarting cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+            sys.exit(1)
 
 # TODO: muy probablemente no haga falta esto del run_command y se pueda hacer como hace eloy con os.execlp
 class CommandError(Exception):pass
@@ -1353,7 +1464,7 @@ def run_command(command, shell=False):
         return output
 
 if __name__ == "__main__":
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
