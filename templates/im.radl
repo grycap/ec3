@@ -67,7 +67,7 @@ configure im_devel_git_virtualenv (
 configure im_epilog (
 @begin
     - file: path=/etc/init.d/im mode=0755
-    - service: name=IM state=started
+    - service: name=im state=started
     
     - ini_file: dest=/etc/im/im.cfg section=im option=MAX_SIMULTANEOUS_LAUNCHES value=1
       when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 6 
