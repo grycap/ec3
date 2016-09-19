@@ -390,7 +390,10 @@ class ClusterStore:
         if clustername not in ClusterStore.list():
             raise Exception("There is no cluster with name '%s'!" % clustername)
         os.unlink(os.path.join(ClusterStore.DIR, clustername))
-        os.unlink(os.path.join(ClusterStore.DIR, clustername + "_ids"))
+        try:
+            os.unlink(os.path.join(ClusterStore.DIR, clustername + "_ids"))
+        except Exception:
+            pass
 
     @staticmethod
     def get_im_server_infrId_and_auth(r):
