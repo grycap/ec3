@@ -589,7 +589,7 @@ class CmdLaunch:
         try:
             radl = CmdLaunch.generate_radl(options.templates, options.add if options.add else [], auth_content)
         except Exception as e:
-            CLI.display("Error generating RADL: %s Check the templates used." % str(e), level=logging.ERROR)
+            CLI.display("Error generating RADL: %s Check the templates used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
             sys.exit(1)
 
         # Finish if dry run
