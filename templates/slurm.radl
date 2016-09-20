@@ -32,7 +32,7 @@ configure slurm_source (
 @begin
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
-      apt: name=libmunge2,libpq5,openssl-blacklist,munge,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
+      apt: name=libmunge2,libpq5,openssl-blacklist,munge,libmunge-dev,gcc,make  update_cache=yes
       when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
