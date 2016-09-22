@@ -148,8 +148,8 @@ configure wn (
       when: ansible_os_family == "RedHat"
 
     - shell: scontrol reconfig
-    - local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
-      ignore_errors: yes
+    #- local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
+    #  ignore_errors: yes
 
 
 @end
