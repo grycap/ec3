@@ -137,8 +137,8 @@ configure wn (
 @begin
   - vars:
       FRONTEND:
-        ec3_xpath: /system/front/net_interface.1.dns_name
-       # ec3_xpath: /system/front/net_interface.0.dns_name
+       # ec3_xpath: /system/front/net_interface.1.dns_name
+        ec3_xpath: /system/front/net_interface.0.dns_name
     handlers:
     - name: restart idmapd
       service: name=idmapd state=restarted
