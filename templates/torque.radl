@@ -22,9 +22,9 @@ network public (
 network private ()
 
 system front (
-      net_interface.0.connection='public' and
-      net_interface.1.connection='private' and
-      net_interface.1.dns_name = 'torqueserver' and
+      net_interface.1.connection='public' and
+      net_interface.0.connection='private' and
+      net_interface.0.dns_name = 'torqueserver' and
       queue_system = 'torque'
 )
 
