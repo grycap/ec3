@@ -87,6 +87,6 @@ configure front (
            mv /usr/local/ec3/newproxy.pem /usr/local/ec3/proxy.pem
         mode: 0755
 
-    - cron: name="renew proxy" hour="*/6" job="[ -f /usr/local/ec3/proxy.pem ] && /usr/local/ec3/renew_proxy.sh" user=root cron_file=renew_proxy state=present
+    - cron: name="renew proxy" minute="0" hour="*/6" job="[ -f /usr/local/ec3/proxy.pem ] && /usr/local/ec3/renew_proxy.sh" user=root cron_file=renew_proxy state=present
 @end
 )
