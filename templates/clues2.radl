@@ -176,7 +176,7 @@ configure clues_slurm (
       when: ansible_os_family == "RedHat"
     - command: mv /usr/bin/clues-slurm-wrapper /usr/bin/sbatch creates=/usr/bin/sbatch
       when: ansible_os_family == "RedHat"
-    - file: src=/usr/bin/sbatch.o dest=/usr/local/bin/sbatch.o state=link creates=/usr/local/bin/sbatch
+    - file: src=/usr/bin/sbatch.o dest=/usr/local/bin/sbatch.o state=link
       when: ansible_os_family == "RedHat"
 @end
 )  
