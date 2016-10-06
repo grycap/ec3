@@ -14,8 +14,7 @@ network public (
 system front (
       cpu.count>=1 and
       memory.size>=3g and
-      net_interface.0.connection='public' and
-      net_interface.0.dns_name = 'galaxyserver'
+      net_interface.0.connection='public' 
 )
 
 system wn (
