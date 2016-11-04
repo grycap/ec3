@@ -1,246 +1,73 @@
 
 description slurm (
     kind = 'main' and
-    short = 'Install and configure a cluster SLURM 14.11 from source code.' and
-    content = 'The template installs SLURM 14.11 from source code. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
+    short = 'Install and configure a cluster using the grycap.slurm ansible role.' and
+    content = 'The template installs the grycap.slurm ansible role. Initially the template creates as many working node hostnames as the sum of the values of feature "ec3_max_instances_max" in every system.
 
 Webpage: http://slurm.schedmd.com/'
 )
 
 network public (
-   outbound = 'yes' and 
-   outports contains '6818/tcp' and
-   outports contains '6817/tcp'
+  # SLURM ports
+  outbound = 'yes' and
+  outports contains '6818/tcp' and
+  outports contains '6817/tcp' and
+  # Im XMLRPC port
+  outports contains '8899/tcp'
 )
 
 network private ()
 
 system front (
-   net_interface.1.connection = 'public' and
-   net_interface.1.dns_name = 'slurmserverpublic' and
-   net_interface.0.connection = 'private' and
-   net_interface.0.dns_name = 'slurmserver' and
-   queue_system = 'slurm' and
-   ec3_templates contains 'slurm'
+  # Net interfaces definition. Order matters !
+  net_interface.0.connection = 'private' and
+  net_interface.0.dns_name = 'slurmserver' and
+  net_interface.1.connection = 'public' and
+  net_interface.1.dns_name = 'slurmserverpublic' and
+  # Info needed for the slurm recipe
+  queue_system = 'slurm' and
+  ec3_templates contains 'slurm' and
+  # Install ansible roles needed
+  disk.0.applications contains (name = 'ansible.modules.grycap.slurm') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.im')
+)
+
+configure front (
+@begin
+---
+  - vars:
+    # Variables needed for CLUES
+      AUTH:
+        ec3_xpath: /system/front/auth
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
+      EXTRACT_PROXY_FILE:
+        ec3_file: extract_proxy.py
+    roles:
+    # The install order matters !
+    # If the order is altered the installation won't work
+    - { role: 'grycap.im' }
+    - { role: 'grycap.slurm', slurm_type_of_node: 'front', slurm_server_ip: '{{ansible_default_ipv4}}', slurm_wn_ips: '{{ groups["wn"]|map("extract", hostvars, "ansible_default_ipv4")|list if "wn" in groups else []}}', user: 'ubuntu' }
+    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}', auth: '{{AUTH}}', extract_proxy_file: '{{EXTRACT_PROXY_FILE}}', ec3_max_instances: '5', vnode_prefix: 'wn' }
+
+@end
 )
 
 system wn (
   net_interface.0.connection='private'
 )
 
-configure slurm_source (
-@begin
-    #SLURM dependences 
-    - name: update repositories cache and apt install slurm dependences in Deb systems
-      apt: name=libmunge2,libpq5,openssl-blacklist,munge,libmunge-dev,gcc,make  update_cache=yes
-      when: ansible_os_family == "Debian"
-
-    - name: update repositories cache and yum install slurm dependences in REL systems
-      yum: name=readline-devel,openssl,openssl-devel,munge-devel,pam-devel,perl-ExtUtils-MakeMaker,gcc,make,rpm-build,perl-DBI,perl-Switch
-      #numactl,numactl-devel,hwloc,hwloc-devel,lua,lua-devel,readline-devel,rrdtool-devel,ncurses-devel,man2html,libibmad,libibumad
-      when: ansible_os_family == "RedHat"
-
-    - name: download SLURM package
-      get_url: url=http://www.schedmd.com/download/archive/slurm-14.11.3.tar.bz2 dest=/tmp/slurm.tar.bz2
-      when: ansible_os_family == "Debian"
-
-    - name: download SLURM package
-      get_url: url=http://www.schedmd.com/download/archive/slurm-14.11.3.tar.bz2 dest=/tmp/slurm-14.11.3.tar.bz2
-      when: ansible_os_family == "RedHat"
-
-    - name: decompress SLURM package
-      command: tar xjf slurm.tar.bz2 chdir=/tmp creates=/tmp/slurm-14.11.3
-      when: ansible_os_family == "Debian"
-
-    - name: configure SLURM
-      command: ./configure {{ "--with-blcr=/usr/local/bin" if "blcr" in TEMPLATES else "" }} chdir=/tmp/slurm-14.11.3 creates=/tmp/slurm-14.11.3/config.log
-      when: ansible_os_family == "Debian"
-
-    - name: compile (make) SLURM
-      command: make chdir=/tmp/slurm-14.11.3 creates=/tmp/slurm-14.11.3/src/slurmctld
-      when: ansible_os_family == "Debian"
-
-    - name: install SLURM
-      command: make install chdir=/tmp/slurm-14.11.3 creates=/usr/local/bin/srun
-      when: ansible_os_family == "Debian"
-
-    - name: build rpm slurm package
-      command: rpmbuild -ta slurm-14.11.3.tar.bz2 chdir=/tmp creates=/root/rpmbuild/
-      when: ansible_os_family == "RedHat"
-
-    - name: install rpm slurm package
-      command: rpm -Uvh ~/rpmbuild/RPMS/x86_64/*.rpm chdir=/tmp
-      when: ansible_os_family == "RedHat"
-@end
-)
-
-configure slurm_source_wn (
-@begin
-    - file: path=/usr/local/{{item}} state=directory owner=root group=root
-      with_items: [ "bin", "sbin", "lib", "include", "libexec" ]
-    - name: install SLURM
-      copy: src=/usr/local/{{item}} dest=/usr/local/{{item}} mode=0755
-      with_items: [ "bin/srun", "sbin/slurmd", "sbin/slurmstepd" ]
-    - copy: src=/usr/local/bin/srun_cr dest=/usr/local/bin/srun_cr mode=0755
-      ignore_errors: yes
-    - copy: src=/usr/local/{{item}} dest=/usr/local/{{item}}
-      with_items: [ "include/slurm/", "lib/libpmi.so", "lib/libslurm.so", "lib/slurm/", "libexec/slurm/" ]
-@end
-)
-
-configure slurm_common (
-@begin
-    - name: create slurm user and group
-      user: name=slurm shell=/bin/bash system=yes
-
-    - name: create folders used by SLURM and set slurm owner
-      file: path={{item}} state=directory owner=slurm group=slurm
-      with_items:
-         - /var/spool/slurm
-         - /var/log/slurm
-         - /var/slurm/checkpoint
-         - /etc/slurm
-@end
-)
-
 configure wn (
 @begin
----
-  - ec3_prio: -5
-    vars:
-      TEMPLATES:
-        ec3_jpath: /system/front/ec3_templates
-      USERS:
-        - {name: ubuntu}
-    tasks:
-    - include: munge_repo_wn.yml
-    - include: slurm_source.yml
-    - include: slurm_common.yml
-
-    # Configure SSH without password to the nodes of the cluster
-    - user: name={{item.name}} generate_ssh_key=yes
-      with_items: USERS
-    - name: Add the authorized_key to the user {{item.name}}
-      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
-      with_items: USERS
-    - name: Copy the id_rsa.pub file to the user
-      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
-    - name: Copy the id_rsa file to the user
-      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
-    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
-
-    - name: copy slurm.conf file from the frontend
-      copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
-      when: ansible_os_family == "Debian"
-
-    - name: copy slurm.conf file from the frontend
-      copy: src=/usr/local/etc/slurm.conf dest=/etc/slurm/slurm.conf
-      when: ansible_os_family == "RedHat" 
-
-    - name: start slurmd daemon in Deb systems
-      shell: pgrep slurmd || slurmd
-      when: ansible_os_family == "Debian"
-
-    - name: start slurmd daemon in RedHat systems
-      command: systemctl enable slurmd.service
-      when: ansible_os_family == "RedHat"
-    - command: systemctl start slurmd.service
-      when: ansible_os_family == "RedHat"
-
-    - shell: scontrol reconfig
-    #- local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
-    #  ignore_errors: yes
-
-
+  - roles:
+    - { role: 'grycap.slurm', slurm_type_of_node: 'wn', slurm_server_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}', user: 'ubuntu' }
 @end
 )
 
 include slurm_misc (
-  template = 'clues2 im munge'
-)
-
-configure front (
-@begin
----
-  - ec3_prio: -5
-    vars:
-      FILE:
-        ec3_file: is_cluster_ready
-      SYSTEMS:
-        ec3_jpath: /system/*
-      SLURM_CONF_FILE:
-        ec3_file: slurm.conf
-      TEMPLATES:
-        ec3_jpath: /system/front/ec3_templates
-      USERS:
-        - {name: ubuntu}
-
-    tasks:
-    - copy:
-        dest: /bin/is_cluster_ready
-        content: "{{FILE}}"
-        mode: 0755
-    - name: create epel.repo
-      action: template src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: ansible_os_family == "RedHat"
-
-    # Manage the /etc/hosts file
-    - shell: |
-        for i in `seq 0 {{item.ec3_max_instances_max|int - 1}}`; do
-          item="{{item.id|replace('_','x')}}${i}";
-          grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item} ${item}.localdomain" >> /etc/hosts;
-        done
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
-
-    #- include: im_devel_git.yml
-    - include: im_devel_pip.yml
-    - include: munge_repo_front.yml
-    - include: slurm_source.yml
-    - include: slurm_common.yml
-
-    # Configure SSH without password to the nodes of the cluster
-    - user: name={{item.name}} generate_ssh_key=yes
-      with_items: USERS
-    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
-      with_items: USERS
-    - name: Add the authorized_key to the user {{item.name}}
-      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
-      with_items: USERS
-    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
-
-    - copy:
-        dest: /usr/local/etc/slurm.conf
-        content: "{{SLURM_CONF_FILE}}"
-
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#CheckpointType=' line='CheckpointType=checkpoint/blcr' state=present
-      when: "'blcr' in TEMPLATES"
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='ControlMachine=' line='ControlMachine=slurmserver' state=present
-    - name: configure compute nodes section of slurm.conf
-      lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName={{item.id|replace('_','x')}}\[' line='NodeName={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] MaxTime=INFINITE State=UP' state=present
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
-
-    #- file: path=/etc/slurm state=directory owner=root group=root
-    #  when: ansible_os_family == "RedHat"
-    - name: copy slurm.conf file to /etc/slurm in RedHat systems
-      local_action: copy src=/usr/local/etc/slurm.conf dest=/etc/slurm/slurm.conf
-      when: ansible_os_family == "RedHat"
-
-    # start SLURM slurmctld daemon
-    #- command: slurmctld
-    - name: start SLURM slurmctld daemon in Deb systems
-      shell: pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
-      when: ansible_os_family == "Debian"
-
-    - name: start SLURM slurmctld daemon in RedHat systems
-      command: systemctl start slurm 
-      when: ansible_os_family == "RedHat"
-    #- command: systemctl enable slurm
-    #  when: ansible_os_family == "RedHat"
-
-    - shell: scontrol reconfig
-@end
+  # Template needed in the wn
+  template = 'sudo-copy'
 )
 
 deploy front 1

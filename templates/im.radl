@@ -2,81 +2,14 @@ network public (
     outports contains '8899/tcp'
 )
 
-configure im_prolog (
-@begin
-    - apt: name=gcc,python-soappy,python-dev,libffi-dev,libssl-dev update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-    - yum: name=gcc,SOAPpy,python-devel,libffi-devel,openssl-devel
-      when: ansible_os_family == "RedHat"
-    - command: rpm -e python-crypto --nodeps
-      when: ansible_os_family == "RedHat"
-      ignore_errors: yes
-    - name: Install last version of setuptools with Pip
-      pip: name=setuptools extra_args="-I" state=latest
-    - name: Install backports.ssl_match_hostname
-      pip: name=backports.ssl_match_hostname state=latest
-@end
+system front (
+  ec3_templates contains 'im' and
+  disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
-
-configure im_devel_pip (
+configure front (
 @begin
-    - include: im_prolog.yml
-    - pip: name=IM
-    - include: im_epilog.yml
-@end
-)
-
-configure im_devel_git (
-@begin
-    - include: im_prolog.yml
-    - file: path=/opt/tmp state=directory
-    - apt: name=git update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-    - yum: name=git
-      when: ansible_os_family == "RedHat"
-    - git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=devel
-    # This fixes a really strange behaviour in Ubuntu 12.04
-    #- shell: python setup.py install; rm -rf /opt/tmp/im/build; python setup.py install chdir=/opt/tmp/im
-    - pip: name=/opt/tmp/im
-    - include: im_epilog.yml
-@end
-)
-
-configure im_devel_git_virtualenv (
-@begin
-    - pip: name=virtualenv
-    - command: virtualenv /opt/tmp/ec3env creates=/tmp/ec3env
-    - apt: name=git update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-    - yum: name=git
-      when: ansible_os_family == "RedHat"
-    - git: repo=https://github.com/ansible/ansible.git dest=/tmp/ansible version=release1.7.2
-    - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
-    - shell: source /opt/tmp/ec3env/bin/activate; python setup.py install
-      args:
-         chdir: /opt/tmp/ansible
-    - shell: source /opt/tmp/ec3env/bin/activate; python setup.py install
-      args:
-         chdir: /opt/tmp/im
-    - file: src=/tmp/ec3env/bin/im_service.py dest=/usr/local/bin/im_service.py
-    - include: im_epilog.yml
-@end
-)
-
-configure im_epilog (
-@begin
-    - file: path=/etc/init.d/im mode=0755
-    - service: name=im state=started
-
-    # This fixes a problem with the IM service in Centos 7
-    - shell: pgrep im | xargs kill && service im restart
-      when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
-
-    - ini_file: dest=/etc/im/im.cfg section=im option=MAX_SIMULTANEOUS_LAUNCHES value=1
-      when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int <= 6
-
-    - iptables: chain=INPUT jump=ACCEPT protocol=tcp destination_port=8899
-      ignore_errors: yes
+  - roles:
+    - { role: 'grycap.im' }
 @end
 )
