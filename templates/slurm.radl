@@ -49,7 +49,7 @@ configure front (
     # The install order matters !
     # If the role order is altered the installation won't work
     - { role: 'grycap.im' }
-    - { role: 'grycap.ssh', ssh_type_of_node: 'front', user: 'ubuntu' }
+    - { role: 'grycap.ssh', ssh_type_of_node: 'front', user: 'user1' }
     - { role: 'grycap.slurm', slurm_type_of_node: 'front', slurm_server_ip: '{{ansible_default_ipv4}}', slurm_wn_ips: '{{ groups["wn"]|map("extract", hostvars, "ansible_default_ipv4")|list if "wn" in groups else []}}' }
     - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}', auth: '{{AUTH}}', extract_proxy_file: '{{EXTRACT_PROXY_FILE}}', ec3_max_instances: '5', vnode_prefix: 'wn' }
 
@@ -62,8 +62,9 @@ system wn (
 
 configure wn (
 @begin
+---
   - roles:
-    - { role: 'grycap.ssh', ssh_type_of_node: 'wn', user: 'ubuntu' }
+    - { role: 'grycap.ssh', ssh_type_of_node: 'wn', user: 'user1' }
     - { role: 'grycap.slurm', slurm_type_of_node: 'wn', slurm_server_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'}
 @end
 )
