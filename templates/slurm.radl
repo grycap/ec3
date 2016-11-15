@@ -119,10 +119,10 @@ configure wn (
 
     # Configure SSH without password to the nodes of the cluster
     - user: name={{item.name}} generate_ssh_key=yes
-      with_items: USERS
+      with_items: '{{USERS}}'
     - name: Add the authorized_key to the user {{item.name}}
       authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
-      with_items: USERS
+      with_items: '{{USERS}}'
     - name: Copy the id_rsa.pub file to the user
       include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
     - name: Copy the id_rsa file to the user
@@ -190,7 +190,7 @@ configure front (
           item="{{item.id|replace('_','x')}}${i}";
           grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item} ${item}.localdomain" >> /etc/hosts;
         done
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+      with_items: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list }}'
 
     #- include: im_devel_git.yml
     - include: im_devel_pip.yml
@@ -200,12 +200,12 @@ configure front (
 
     # Configure SSH without password to the nodes of the cluster
     - user: name={{item.name}} generate_ssh_key=yes
-      with_items: USERS
+      with_items: '{{USERS}}'
     - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
-      with_items: USERS
+      with_items: '{{USERS}}'
     - name: Add the authorized_key to the user {{item.name}}
       authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
-      with_items: USERS
+      with_items: '{{USERS}}'
     - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
     - copy:
@@ -217,9 +217,9 @@ configure front (
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='ControlMachine=' line='ControlMachine=slurmserver' state=present
     - name: configure compute nodes section of slurm.conf
       lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName={{item.id|replace('_','x')}}\[' line='NodeName={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+      with_items: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list }}'
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] MaxTime=INFINITE State=UP' state=present
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+      with_items: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list }}'
 
     #- file: path=/etc/slurm state=directory owner=root group=root
     #  when: ansible_os_family == "RedHat"
