@@ -1,7 +1,7 @@
 
 configure sudo_copy (
 @begin
-    - local_action: command sudo cp {{src}} /tmp/._sudo_cp_{{ src | basename }}
+    - local_action: command sudo cp -f {{src}} /tmp/._sudo_cp_{{ src | basename }}
       with_items: "{{ loop|default([0]) }}"
 
     - local_action: command sudo chmod +r /tmp/._sudo_cp_{{ src | basename }}
