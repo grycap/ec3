@@ -1,19 +1,205 @@
-system front (
-  ec3_templates contains 'clues2' and
-  disk.0.applications contains (name = 'ansible.modules.grycap.clues')
-)
-
 configure front (
 @begin
 ---
-  - vars:
+  - ec3_prio: -1
+    vars:
+      CLUES_SECRET_TOKEN: not_very_secret_token
       AUTH:
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
       EXTRACT_PROXY_FILE:
         ec3_file: extract_proxy.py
-    roles:
-    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}', auth: '{{AUTH}}', extract_proxy_file: '{{EXTRACT_PROXY_FILE}}', ec3_max_instances: '5', vnode_prefix: 'wn' }
+
+    tasks:
+    - get_url: url=https://github.com/grycap/{{item}}/archive/master.zip dest=/tmp/{{item}}.zip
+      register: result
+      until: result|success
+      retries: 5
+      delay: 1
+      with_items:
+      - clues
+      - cpyutils
+
+    # CLUES2 requirements
+    - name: Apt install CLUES2 requirements in Deb system
+      apt: pkg=python-sqlite,unzip,curl
+      when: ansible_os_family == "Debian"
+
+    - name: Yum install CLUES2 requirements in REL system
+      yum: pkg=python-sqlite,unzip,curl
+      when: ansible_os_family == "RedHat"
+
+    - name: Yum install CLUES2 requirements in REL 6 system
+      yum: pkg=python-importlib
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+
+    - name: Install CLUES pip requirements
+      pip: name={{item}}
+      with_items:
+      - web.py
+      - ply
+
+    # CLUES2 installation
+    - unarchive: src=/tmp/{{item}}.zip dest=/tmp copy=no
+      with_items:
+      - clues
+      - cpyutils
+
+    - command: python setup.py install chdir=/tmp/clues-master creates=/usr/local/bin/cluesserver
+    - command: python setup.py install chdir=/tmp/cpyutils-master
+
+    - file: path=/etc/clues2 state=directory mode=755
+
+    # CLUES2 Config file
+    - copy: src=/etc/clues2/clues2.cfg-full-example dest=/etc/clues2/clues2.cfg force=no
+      notify: restart cluesd
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
+      with_items:
+        - { section: 'general', option: 'POWERMANAGER_CLASS', value: 'cluesplugins.im' }
+        - { section: 'scheduling', option: 'IDLE_TIME', value: '1800' }
+        - { section: 'scheduling', option: 'RECONSIDER_JOB_TIME', value: '120' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '3000' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
+        - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
+        - { section: 'monitoring', option: 'PERIOD_MONITORING_NODES', value: '2' }
+        - { section: 'general', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
+        - { section: 'client', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
+        - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '3000' }
+      notify: restart cluesd
+
+    # CLUES2 IM plugin Config file
+    - file: path=/usr/local/ec3 state=directory
+    - copy:
+        dest: /usr/local/ec3/auth.dat
+        content: "{{AUTH}}"
+        force: no
+    - copy:
+        dest: /tmp/extract_proxy.py
+        content: "{{EXTRACT_PROXY_FILE}}"
+        mode: 0755
+        force: no
+    - command: /tmp/extract_proxy.py creates=/usr/local/ec3/proxy.pem
+      ignore_errors: yes
+      run_once: true
+    - copy: src=/etc/clues2/conf.d/plugin-im.cfg-example dest=/etc/clues2/conf.d/plugin-im.cfg force=no
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_AUTH_DATA_FILE value=/usr/local/ec3/auth.dat
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_DROP_FAILING_VMS value=300
+      notify: restart cluesd
+
+    - include: clues_pbs.yml
+      when: "{{ QUEUE_SYSTEM == 'torque' }}"
+
+    - include: clues_sge.yml
+      when: "{{ QUEUE_SYSTEM == 'sge' }}"
+
+    - include: clues_slurm.yml
+      when: "{{ QUEUE_SYSTEM == 'slurm' }}"
+
+    - include: clues_mesos.yml
+      when: "{{ QUEUE_SYSTEM == 'mesos' }}"
+
+    - include: clues_htcondor.yml
+      when: "{{ QUEUE_SYSTEM == 'htcondor' }}"
+
+    - service: name=cluesd state=started
+    
+    handlers:
+    - name: restart cluesd
+      service: name=cluesd state=restarted
 @end
 )
+
+
+# PBS plugin installation
+configure clues_pbs (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.pbs
+      notify: restart cluesd
+
+    - copy: src=/etc/clues2/conf.d/plugin-pbs.cfg-example dest=/etc/clues2/conf.d/plugin-pbs.cfg force=no
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-pbs.cfg section=PBS option=PBS_SERVER value=torqueserver
+      notify: restart cluesd
+
+    - lineinfile: dest={{TORQUE_PATH}}/torque.cfg regexp=^SUBMITFILTER line='SUBMITFILTER /usr/local/bin/clues-pbs-wrapper' create=yes mode=644
+@end
+)
+
+
+# SGE plugin installation
+configure clues_sge (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.sge
+      notify: restart cluesd
+    - copy: src=/etc/clues2/conf.d/plugin-sge.cfg-example dest=/etc/clues2/conf.d/plugin-sge.cfg force=no
+      notify: restart cluesd
+    - copy: src=/etc/clues2/conf.d/wrapper-sge.cfg-example dest=/etc/clues2/conf.d/wrapper-sge.cfg force=no
+      notify: restart cluesd
+
+    - lineinfile: dest={{SGE_ROOT}}/default/common/sge_request regexp='^-jsv' line="-jsv /usr/local/bin/clues-sge-wrapper" create=yes mode=644
+    - lineinfile: dest=/etc/profile.d/sge_vars.sh regexp='SGE_JSV_TIMEOUT' line="export SGE_JSV_TIMEOUT=600" create=yes mode=755
+
+@end
+)
+
+
+# SLURM plugin installation
+configure clues_slurm (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.slurm
+      notify: restart cluesd
+    - copy: src=/etc/clues2/conf.d/plugin-slurm.cfg-example dest=/etc/clues2/conf.d/plugin-slurm.cfg force=no
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option=SLURM_SERVER value=slurmserver
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option={{ item.option }} value="{{ item.value }}"
+      notify: restart cluesd
+      with_items:
+        - { option: 'SLURM_PARTITION_COMMAND', value: '/usr/bin/scontrol -o show partitions' }
+        - { option: 'SLURM_NODES_COMMAND', value: '/usr/bin/scontrol -o show nodes' }
+        - { option: 'SLURM_JOBS_COMMAND', value: '/usr/bin/scontrol -o show jobs' }
+      when: ansible_os_family == "RedHat"
+
+    - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o
+      when: ansible_os_family == "Debian"
+    - command: mv /usr/local/bin/clues-slurm-wrapper /usr/local/bin/sbatch creates=/usr/local/bin/sbatch
+      when: ansible_os_family == "Debian"
+
+    - command: mv /usr/bin/sbatch /usr/bin/sbatch.o creates=/usr/bin/sbatch.o
+      when: ansible_os_family == "RedHat"
+    - command: mv /usr/bin/clues-slurm-wrapper /usr/bin/sbatch creates=/usr/bin/sbatch
+      when: ansible_os_family == "RedHat"
+    - file: src=/usr/bin/sbatch.o dest=/usr/local/bin/sbatch.o state=link
+      when: ansible_os_family == "RedHat"
+@end
+)  
+
+# Mesos plugin installation
+configure clues_mesos (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.mesos
+      notify: restart cluesd
+    - copy: src=/etc/clues2/conf.d/plugin-mesos.cfg-example dest=/etc/clues2/conf.d/plugin-mesos.cfg force=no
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_SERVER value=mesosserverpublic
+      notify: restart cluesd
+@end
+) 
+
+# HTCondor plugin installation
+configure clues_htcondor (
+@begin
+
+    - ini_file: dest=/etc/clues2/clues2.cfg section=general option=LRMS_CLASS value=cluesplugins.condor
+      notify: restart cluesd
+@end
+) 
+
