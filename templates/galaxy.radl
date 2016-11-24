@@ -14,8 +14,7 @@ network public (
 system front (
       cpu.count>=1 and
       memory.size>=3g and
-      net_interface.0.connection='public' and
-      net_interface.0.dns_name = 'galaxyserver'
+      net_interface.0.connection='public' 
 )
 
 system wn (
@@ -104,6 +103,11 @@ configure front (
 
     # Install python depencies
     - shell: bash scripts/common_startup.sh chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/.venv/lib/python2.7/site-packages/yaml
+      become: true
+      become_user: "{{GALAXY_USER}}"
+
+    # Create DB
+    - shell: bash ./create_db.sh chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/database/universe.sqlite
       become: true
       become_user: "{{GALAXY_USER}}"
 

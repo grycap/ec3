@@ -13,8 +13,6 @@ network public (
 network private ()
 
 system front (
-      cpu.count>=1 and
-      memory.size>=512m and
       net_interface.0.connection='public' and
       net_interface.1.connection='private' and
       net_interface.1.dns_name = 'htcondoreserver' and
@@ -62,7 +60,21 @@ configure wn (
       SYSTEMS:
         ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      USERS:
+        - {name: ubuntu}
     tasks:
+    # Configure SSH without password to the nodes of the cluster
+    - user: name={{item.name}} generate_ssh_key=yes
+      with_items: '{{USERS}}'
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: '{{USERS}}'
+    - name: Copy the id_rsa.pub file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
+    - name: Copy the id_rsa file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
+
     # Installation of htcondor
     - include: htcondorcommon.yml
 
@@ -87,7 +99,20 @@ configure front (
       SYSTEMS:
         ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      USERS:
+        - {name: ubuntu}
+
     tasks:
+    # Configure SSH without password to the nodes of the cluster
+    - user: name={{item.name}} generate_ssh_key=yes
+      with_items: '{{USERS}}'
+    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
+      with_items: '{{USERS}}'
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: '{{USERS}}'
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
+
     # Installation of htcondor
     - command: hostname htcondoreserver
 

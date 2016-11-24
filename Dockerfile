@@ -1,4 +1,4 @@
-# Dockerfile to create a container with the IM service
+# Dockerfile to create a container with EC3 
 FROM ubuntu:14.04
 MAINTAINER Germán Moltó <gmolto@dsic.upv.es>
 LABEL version="1.0"

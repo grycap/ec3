@@ -58,14 +58,15 @@ configure front (
     - ini_file: dest=/etc/clues2/clues2.cfg section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
       with_items:
         - { section: 'general', option: 'POWERMANAGER_CLASS', value: 'cluesplugins.im' }
-        - { section: 'scheduler_power_off_idle', option: 'IDLE_TIME', value: '300' }
-        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '2000' }
+        - { section: 'scheduling', option: 'IDLE_TIME', value: '1800' }
+        - { section: 'scheduling', option: 'RECONSIDER_JOB_TIME', value: '120' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '3000' }
         - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
         - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
-#        - { section: 'monitoring', option: 'PERIOD_MONITORING_JOBS', value: '5' }
+        - { section: 'monitoring', option: 'PERIOD_MONITORING_NODES', value: '2' }
         - { section: 'general', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
         - { section: 'client', option: 'CLUES_SECRET_TOKEN', value: '{{CLUES_SECRET_TOKEN}}' }
-        - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '0' }
+        - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '3000' }
       notify: restart cluesd
 
     # CLUES2 IM plugin Config file
@@ -156,8 +157,15 @@ configure clues_slurm (
       notify: restart cluesd
     - copy: src=/etc/clues2/conf.d/plugin-slurm.cfg-example dest=/etc/clues2/conf.d/plugin-slurm.cfg force=no
       notify: restart cluesd
-    - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option=SLURM_SERVER value=slurmserverpublic
+    - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option=SLURM_SERVER value=slurmserver
       notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-slurm.cfg section=SLURM option={{ item.option }} value="{{ item.value }}"
+      notify: restart cluesd
+      with_items:
+        - { option: 'SLURM_PARTITION_COMMAND', value: '/usr/bin/scontrol -o show partitions' }
+        - { option: 'SLURM_NODES_COMMAND', value: '/usr/bin/scontrol -o show nodes' }
+        - { option: 'SLURM_JOBS_COMMAND', value: '/usr/bin/scontrol -o show jobs' }
+      when: ansible_os_family == "RedHat"
 
     - command: mv /usr/local/bin/sbatch /usr/local/bin/sbatch.o creates=/usr/local/bin/sbatch.o
       when: ansible_os_family == "Debian"
@@ -167,6 +175,8 @@ configure clues_slurm (
     - command: mv /usr/bin/sbatch /usr/bin/sbatch.o creates=/usr/bin/sbatch.o
       when: ansible_os_family == "RedHat"
     - command: mv /usr/bin/clues-slurm-wrapper /usr/bin/sbatch creates=/usr/bin/sbatch
+      when: ansible_os_family == "RedHat"
+    - file: src=/usr/bin/sbatch.o dest=/usr/local/bin/sbatch.o state=link
       when: ansible_os_family == "RedHat"
 @end
 )  

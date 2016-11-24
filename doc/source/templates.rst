@@ -193,7 +193,7 @@ the behaviour of EC3:
 
 ``ec3_max_instances = <integer value>``
    Set maximum number of nodes with this system configuration; a negative value means no constrain.
-   The default value is -1.
+   The default value is -1. This parameter is used to set the maximum size of the cluster.
 
 ``ec3_destroy_interval = <positive integer value>``
    Some cloud providers require paying in advance by the hour, like AWS. Therefore, the node will be destroyed

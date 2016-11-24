@@ -1,0 +1,92 @@
+description myproxyltos (
+    kind = 'component' and
+    short = 'Tool download proxy files from MyProxy servers' and
+    content = 'Tool download proxy files from MyProxy servers.
+
+Webpage: http://ndg-security.ceda.ac.uk/wiki/MyProxyClient'
+)
+
+configure front (
+@begin
+  - tasks:
+    - get_url: url=http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo dest=/etc/yum.repos.d/EGI-trustanchors.repo
+      when: ansible_os_family == "RedHat"
+      
+    - name: Install UMD SL6 Repos
+      yum: name=http://repository.egi.eu/sw/production/umd/3/sl6/x86_64/updates/umd-release-3.0.1-1.el6.noarch.rpm
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+      
+    - name: Install UMD SL5 Repos
+      yum: name=http://repository.egi.eu/sw/production/umd/3/sl5/x86_64/updates/umd-release-3.0.1-1.el5.noarch.rpm
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "5"
+
+    - name: Install EGI CAs Repo
+      copy: dest=/etc/apt/sources.list.d/ca-policy-egi-core.list content="deb http://repository.egi.eu/sw/production/cas/1/current egi-igtf core"
+      when: ansible_os_family == "Debian"
+
+    - name: Install EGI CAs Repo
+      apt_key: url=https://dist.eugridpma.info/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-3 state=present
+      when: ansible_os_family == "Debian"
+
+    - name: Install EGI UMD key
+      apt_key: url=http://repository.egi.eu/sw/production/umd/UMD-DEB-PGP-KEY state=present
+      when: ansible_os_family == "Debian"
+    
+    - name: Install EGI UMD Base Repo
+      copy: dest=/etc/apt/sources.list.d/UMD-3-base.list content="deb [arch=amd64] http://repository.egi.eu/sw/production/umd/3/debian/ squeeze main"
+      when: ansible_os_family == "Debian"
+
+    - name: Install EGI UMD Updates Repo
+      copy: dest=/etc/apt/sources.list.d/UMD-3-updates.list content="deb [arch=amd64] http://repository.egi.eu/sw/production/umd/3/debian/ squeeze-updates main"
+      when: ansible_os_family == "Debian"
+
+    - name: Install myproxy requisites
+      apt: name=libffi-dev,libssl-dev,ca-policy-egi-core,python-dev,voms-clients,myproxy update_cache=yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install myproxy requisites
+      yum: name=openssl-devel,libffi-devel,ca-policy-egi-core,python-devel,voms-clients,myproxy
+      when: ansible_os_family == "RedHat"
+
+    - name: Create dir /etc/grid-security/vomsdir/vo.access.egi.eu
+      file: path=/etc/grid-security/vomsdir/vo.access.egi.eu state=directory recurse=yes
+      
+    - name: Create dir /etc/vomses/
+      file: path=/etc/vomses state=directory
+
+    - name: Configure vo.access.egi.eu vomses
+      copy:
+        dest: /etc/vomses/vo.access.egi.eu
+        content: |
+           "vo.access.egi.eu" "voms2.grid.cesnet.cz" "15031" "/DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms2.grid.cesnet.cz" "vo.access.egi.eu"
+           "vo.access.egi.eu" "voms1.grid.cesnet.cz" "15031" "/DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms1.grid.cesnet.cz" "vo.access.egi.eu"
+
+    - name: Configure vo.access.egi.eu lsc files
+      copy:
+        dest: /etc/grid-security/vomsdir/vo.access.egi.eu/voms1.grid.cesnet.cz.lsc
+        content: |
+           /DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms1.grid.cesnet.cz
+           /C=NL/ST=Noord-Holland/L=Amsterdam/O=TERENA/CN=TERENA eScience SSL CA 3
+
+    - name: Configure vo.access.egi.eu lsc files
+      copy:
+        dest: /etc/grid-security/vomsdir/vo.access.egi.eu/voms2.grid.cesnet.cz.lsc
+        content: |
+           /DC=org/DC=terena/DC=tcs/C=CZ/ST=Hlavni mesto Praha/L=Praha 6/O=CESNET/CN=voms2.grid.cesnet.cz
+           /C=NL/ST=Noord-Holland/L=Amsterdam/O=TERENA/CN=TERENA eScience SSL CA 3
+
+    - name: Create dir /usr/local/ec3/
+      file: path=/usr/local/ec3/ state=directory
+      
+    - copy:
+        dest: /usr/local/ec3/renew_proxy.sh
+        content: |
+           #!/bin/bash
+           myproxy-logon --out /usr/local/ec3/newproxy.pem -d -n -a /usr/local/ec3/proxy.pem -s myproxy.ct.infn.it --voms vo.access.egi.eu
+           mv /usr/local/ec3/proxy.pem /usr/local/ec3/proxy.pem.old
+           mv /usr/local/ec3/newproxy.pem /usr/local/ec3/proxy.pem
+        mode: 0755
+
+    - cron: name="renew proxy" minute="0" hour="*/6" job="[ -f /usr/local/ec3/proxy.pem ] && /usr/local/ec3/renew_proxy.sh" user=root cron_file=renew_proxy state=present
+@end
+)

@@ -44,7 +44,7 @@ configure front (
         - requests
 
     - name: Place the tool management script
-      get_url: url=https://raw.githubusercontent.com/galaxyproject/ansible-galaxy-tools/master/files/install_tool_shed_tools.py dest={{GALAXY_INSTALL_PATH}}/install_tool_shed_tools.py
+      get_url: url=https://raw.githubusercontent.com/galaxyproject/ansible-galaxy-tools/v0.2.1/files/install_tool_shed_tools.py dest={{GALAXY_INSTALL_PATH}}/install_tool_shed_tools.py
 
     - name: Copy tool list files
       copy: src=my_tool_list.yml dest={{GALAXY_INSTALL_PATH}}/my_tool_list.yml

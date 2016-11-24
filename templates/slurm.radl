@@ -16,12 +16,10 @@ network public (
 network private ()
 
 system front (
-   cpu.count>=1 and
-   memory.size>=512m and
-   net_interface.0.connection = 'public' and
-   net_interface.0.dns_name = 'slurmserverpublic' and
-   net_interface.1.connection = 'private' and
-   net_interface.1.dns_name = 'slurmserver' and
+   net_interface.1.connection = 'public' and
+   net_interface.1.dns_name = 'slurmserverpublic' and
+   net_interface.0.connection = 'private' and
+   net_interface.0.dns_name = 'slurmserver' and
    queue_system = 'slurm' and
    ec3_templates contains 'slurm'
 )
@@ -34,7 +32,7 @@ configure slurm_source (
 @begin
     #SLURM dependences 
     - name: update repositories cache and apt install slurm dependences in Deb systems
-      apt: name=libmunge2,libpq5,openssl-blacklist,munge,libmunge-dev,gcc,make  update_cache=yes cache_valid_time=3600
+      apt: name=libmunge2,libpq5,openssl-blacklist,munge,libmunge-dev,gcc,make  update_cache=yes
       when: ansible_os_family == "Debian"
 
     - name: update repositories cache and yum install slurm dependences in REL systems
@@ -112,10 +110,24 @@ configure wn (
     vars:
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
+      USERS:
+        - {name: ubuntu}
     tasks:
     - include: munge_repo_wn.yml
     - include: slurm_source.yml
     - include: slurm_common.yml
+
+    # Configure SSH without password to the nodes of the cluster
+    - user: name={{item.name}} generate_ssh_key=yes
+      with_items: '{{USERS}}'
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: '{{USERS}}'
+    - name: Copy the id_rsa.pub file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
+    - name: Copy the id_rsa file to the user
+      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
 
     - name: copy slurm.conf file from the frontend
       copy: src=/usr/local/etc/slurm.conf dest=/usr/local/etc/slurm.conf
@@ -136,8 +148,8 @@ configure wn (
       when: ansible_os_family == "RedHat"
 
     - shell: scontrol reconfig
-    - local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
-      ignore_errors: yes
+    #- local_action: shell scontrol update NodeName={{IM_NODE_HOSTNAME}} State=RESUME
+    #  ignore_errors: yes
 
 
 @end
@@ -160,6 +172,8 @@ configure front (
         ec3_file: slurm.conf
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
+      USERS:
+        - {name: ubuntu}
 
     tasks:
     - copy:
@@ -176,7 +190,7 @@ configure front (
           item="{{item.id|replace('_','x')}}${i}";
           grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item} ${item}.localdomain" >> /etc/hosts;
         done
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+      with_items: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list }}'
 
     #- include: im_devel_git.yml
     - include: im_devel_pip.yml
@@ -184,18 +198,28 @@ configure front (
     - include: slurm_source.yml
     - include: slurm_common.yml
 
+    # Configure SSH without password to the nodes of the cluster
+    - user: name={{item.name}} generate_ssh_key=yes
+      with_items: '{{USERS}}'
+    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
+      with_items: '{{USERS}}'
+    - name: Add the authorized_key to the user {{item.name}}
+      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
+      with_items: '{{USERS}}'
+    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
+
     - copy:
         dest: /usr/local/etc/slurm.conf
         content: "{{SLURM_CONF_FILE}}"
 
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='#CheckpointType=' line='CheckpointType=checkpoint/blcr' state=present
       when: "'blcr' in TEMPLATES"
-    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='ControlMachine=' line='ControlMachine={{IM_NODE_HOSTNAME}}' state=present
+    - lineinfile: dest=/usr/local/etc/slurm.conf regexp='ControlMachine=' line='ControlMachine=slurmserver' state=present
     - name: configure compute nodes section of slurm.conf
       lineinfile: dest=/usr/local/etc/slurm.conf regexp='NodeName={{item.id|replace('_','x')}}\[' line='NodeName={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] CPUs=1 State=UNKNOWN' state=present
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+      with_items: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list }}'
     - lineinfile: dest=/usr/local/etc/slurm.conf regexp='PartitionName={{item.id}} ' line='PartitionName={{item.id}} Nodes={{item.id|replace('_','x')}}[0-{{item.ec3_max_instances_max|int - 1}}] MaxTime=INFINITE State=UP' state=present
-      with_items: SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list
+      with_items: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | list }}'
 
     #- file: path=/etc/slurm state=directory owner=root group=root
     #  when: ansible_os_family == "RedHat"

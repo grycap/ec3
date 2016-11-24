@@ -151,7 +151,7 @@ The command prints the RADL description of the cluster stored in the local datab
 Command ``list``
 ----------------
 
-The command print a table with information about the clusters that have been launched::
+The command prints a table with information about the clusters that have been launched::
 
    ec3 list [-r] [--json]
 
@@ -199,7 +199,7 @@ Command ``clone``
 
 The command clones an infrastructure front-end previously deployed from one provider to another::
 
-   ec3 clone <clustername> [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>]
+   ec3 clone <clustername> [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>] [-e]
 
 .. program:: ec3 clone
 
@@ -214,6 +214,84 @@ The command clones an infrastructure front-end previously deployed from one prov
 .. option:: -u <url>, --xmlrpc-url <url>
 
    URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+
+.. option:: -e, --eliminate
+
+   Indicate to destroy the original cluster at the end of the clone process. If not indicated, EC3 leaves running the original cluster.
+
+Command ``migrate``
+-----------------
+
+The command migrates a previously deployed cluster and its running tasks from one provider to another. It is mandatory that the original cluster to migrate has been deployed with SLURM and BLCR, if not, the migration process can't be performed. Also, this operation only works with clusters which images are selected by the VMRC, it does not work if the URL of the VMI/AMI is explicitly written in the system RADL::
+
+   ec3 migrate <clustername> [-b/--bucket <bucket_name>] [-a/--auth-file <file>] [-u <url>] [-d/--destination <provider>] [-e]
+
+.. program:: ec3 migrate
+
+.. option:: -b <bucket_name>, --bucket <bucket_name>
+
+   Bucket name of an already created bucket in the S3 account displayed in the auth file.
+   
+.. option:: -a <file>, --auth-file <file>
+
+   New authorization file to use to deploy the cloned cluster. It is mandatory to have valid AWS credentials in this file to perform the migration operation, since it uses Amazon S3 to store checkpoint files from jobs running in the cluster. See :ref:`auth-file`.
+
+.. option:: -d <provider>, --destination <provider>
+
+   Provider ID, it must match with the id provided in the auth file. See :ref:`auth-file`.
+
+.. option:: -u <url>, --xmlrpc-url <url>
+
+   URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+
+.. option:: -e, --eliminate
+
+   Indicate to destroy the original cluster at the end of the migration process. If not indicated, EC3 leaves running the original cluster.
+   
+Command ``stop``
+------------------
+
+To stop a cluster to later continue using it, issue this command::
+
+   ec3 stop <clustername> [-a <file>] [-u <url>] [-y]
+
+.. program:: ec3 stop
+.. option:: clustername
+
+   Name of the new cluster to stop.
+
+.. option:: -a <file>, --auth-file <file>
+
+   Path to the authorization file, see :ref:`auth-file`. 
+
+.. option:: -u <url>, --xmlrpc-url <url>
+
+   URL to the IM XML-RPC external service.
+
+.. option:: -y, --yes
+
+   Do not ask for confirmation to stop the cluster. Proceed anyway.
+
+Command ``restart``
+------------------
+
+To restart an already stopped cluster, use this command::
+
+   ec3 restart <clustername> [-a <file>] [-u <url>]
+
+.. program:: ec3 stop
+.. option:: clustername
+
+   Name of the new cluster to restart.
+
+.. option:: -a <file>, --auth-file <file>
+
+   Path to the authorization file, see :ref:`auth-file`. 
+
+.. option:: -u <url>, --xmlrpc-url <url>
+
+   URL to the IM XML-RPC external service.
+
 
 Configuration file
 ------------------
