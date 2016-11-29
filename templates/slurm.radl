@@ -49,6 +49,7 @@ configure front (
     roles:
     # The install order matters !
     # If the role order is altered the installation won't work
+    - { role: 'grycap.im' }
     - { role: 'grycap.slurm', max_number_of_nodes: '{{NNODES}}',
                               slurm_server_ip: '{{ansible_default_ipv4}}',
                               slurm_type_of_node: 'front',
