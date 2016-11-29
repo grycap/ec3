@@ -87,6 +87,7 @@ configure wn (
 ---
   - roles:
     - { role: 'grycap.ssh', ssh_type_of_node: 'wn', user: 'user1' }
+    - { role: 'grycap.docker' }
     - { role: 'grycap.mesos', mesos_install_node: 'slave'}
 @end
 )
