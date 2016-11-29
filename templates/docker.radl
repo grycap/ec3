@@ -6,7 +6,10 @@ description docker (
 Webpage: https://www.docker.com/'
 )
 
-system front ( ec3_templates contains 'docker' )
+system front (
+    ec3_templates contains 'docker' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.docker')
+)
 
 configure front (
 @begin
