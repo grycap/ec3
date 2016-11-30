@@ -53,10 +53,10 @@ configure front (
     # If the role order is altered the installation won't work
     - { role: 'grycap.im' }
     - { role: 'grycap.torque', torque_type_of_node: 'front',
-                               number_of_nodes: '{{ NNODES }}' }
+                               max_number_of_nodes: '{{ NNODES }}' }
     - { role: 'grycap.clues', auth: '{{AUTH}}',
                               clues_queue_system: 'torque',
-                              max_number_of_nodes: '5',
+                              max_number_of_nodes: '{{ NNODES }}',
                               vnode_prefix: 'wn' }
 @end
 )
