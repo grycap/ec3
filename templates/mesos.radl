@@ -71,7 +71,7 @@ configure front (
     - { role: 'grycap.im' }
     - { role: 'grycap.ssh', ssh_type_of_node: 'front', user: 'user1' }
     - { role: 'grycap.docker' }
-    - { role: 'grycap.mesos', mesos_install_mode: "master" }
+    - { role: 'grycap.mesos', mesos_install_mode: "front" }
     - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}', auth: '{{AUTH}}', extract_proxy_file: '{{EXTRACT_PROXY_FILE}}', ec3_max_instances: '5', vnode_prefix: 'wn' }
 
    # - copy:
@@ -88,7 +88,7 @@ configure wn (
   - roles:
     - { role: 'grycap.ssh', ssh_type_of_node: 'wn', user: 'user1' }
     - { role: 'grycap.docker' }
-    - { role: 'grycap.mesos', mesos_install_node: 'slave'}
+    - { role: 'grycap.mesos', mesos_install_node: 'wn'}
 @end
 )
 
