@@ -1,7 +1,7 @@
 description marathon (
     kind = 'component' and
     short = 'An open-source tool to orchestrate job execution in a Mesos cluster' and
-    content = 'Marathon is a production-grade container orchestration platform for Mesosphere's Datacenter Operating System (DC/OS) and Apache Mesos.                                        
+    content = 'Marathon is a production-grade container orchestration platform for Mesospheres Datacenter Operating System (DC/OS) and Apache Mesos.                                        
 
 Webpage: https://mesosphere.github.io/marathon/'
 )
