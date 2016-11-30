@@ -34,8 +34,7 @@ system front (
   # Install ansible roles needed
   disk.0.applications contains (name = 'ansible.modules.grycap.torque') and
   disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.im') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.ssh')
+  disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
 configure front (
