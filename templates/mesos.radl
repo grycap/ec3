@@ -3,13 +3,13 @@ description mesos (
     kind = 'main' and
     short = 'Install and configure a Mesos cluster from mesosphere repo.' and
     content = 'The template installs Mesos 0.22.1. If you want to use Chronos or Marathon, please, include their recipes in the EC3 command line.
-    
+
 Webpage: http://mesos.apache.org/'
 )
 
 
 network public (
-    outbound = 'yes' and 
+    outbound = 'yes' and
     outports contains '5050/tcp' and
     outports contains '2181/tcp' and
     outports contains '2888/tcp' and
@@ -32,18 +32,11 @@ system front (
     # Install ansible roles needed
     disk.0.applications contains (name = 'ansible.modules.grycap.mesos') and
     disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.im') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.docker') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.ssh')
+    disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
 system wn (
     net_interface.0.connection='private'
-)
-
-include mesos_misc (
-    template = 'sudo-copy'
-    #template = 'clues2 im sudo-copy'
 )
 
 configure front (
@@ -55,7 +48,7 @@ configure front (
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
       QUORUM: 1
-      SYSTEMS: 
+      SYSTEMS:
          ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
     # Variables needed for CLUES
@@ -69,15 +62,12 @@ configure front (
     # The install order matters !
     # If the role order is altered the installation won't work
     - { role: 'grycap.im' }
-    - { role: 'grycap.ssh', ssh_type_of_node: 'front', user: 'user1' }
-    - { role: 'grycap.docker' }
     - { role: 'grycap.mesos', mesos_install_mode: 'front' }
-    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}', auth: '{{AUTH}}', extract_proxy_file: '{{EXTRACT_PROXY_FILE}}', ec3_max_instances: '5', vnode_prefix: 'wn' }
-
-   # - copy:
-   #     dest: /bin/is_cluster_ready
-   #     content: "{{FILE}}"
-   #     mode: 0755
+    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
+                              auth: '{{AUTH}}',
+                              extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
+                              ec3_max_instances: '{{NNODES}}',
+                              vnode_prefix: 'wn' }
 
 @end
 )
@@ -86,8 +76,6 @@ configure wn (
 @begin
 ---
   - roles:
-    - { role: 'grycap.ssh', ssh_type_of_node: 'wn', user: 'user1' }
-    - { role: 'grycap.docker' }
     - { role: 'grycap.mesos', mesos_install_node: 'wn'}
 @end
 )
