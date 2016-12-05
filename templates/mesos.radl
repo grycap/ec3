@@ -62,7 +62,7 @@ configure front (
     # The install order matters !
     # If the role order is altered the installation won't work
     - { role: 'grycap.im' }
-    - { role: 'grycap.mesos', mesos_install_mode: 'front' }
+    - { role: 'grycap.mesos', mesos_type_of_node: 'front', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn' }
     - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
                               auth: '{{AUTH}}',
                               extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
@@ -76,7 +76,7 @@ configure wn (
 @begin
 ---
   - roles:
-    - { role: 'grycap.mesos', mesos_install_node: 'wn'}
+    - { role: 'grycap.mesos', mesos_type_of_node: 'wn', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn'}
 @end
 )
 
