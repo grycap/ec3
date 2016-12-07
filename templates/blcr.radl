@@ -6,100 +6,28 @@ description blcr (
 Webpage: http://crd.lbl.gov/departments/computer-science/CLaSS/research/BLCR/'
 )
 
-configure blcr (
-@begin
-    - command: uname -r
-      register: KERNEL_RELEASE
 
-    - name: obtain the BLCR code
-      get_url: url=http://crd.lbl.gov/assets/Uploads/FTG/Projects/CheckpointRestart/downloads/blcr-0.8.5.tar.gz dest=/opt/tmp/blcr-0.8.5.tar.gz
-      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '<=')
-    - shell: tar zxf blcr-0.8.5.tar.gz; mv /opt/tmp/blcr-0.8.5 /opt/tmp/blcr chdir=/opt/tmp creates=/opt/tmp/blcr
-      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '<=')
-    - get_url: url=https://upc-bugs.lbl.gov/blcr-dist/blcr-0.8.6_b4.tar.gz dest=/opt/tmp/blcr-0.8.6_b4.tar.gz
-      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '>')
-    - shell: tar zxf blcr-0.8.6_b4.tar.gz; mv /opt/tmp/blcr-0.8.6_b4 /opt/tmp/blcr chdir=/opt/tmp creates=/opt/tmp/blcr
-      when: KERNEL_RELEASE.stdout | version_compare('3.7.1', '>')
-
-    - name: create a folder where compile the code of BLCR
-      file: path=/opt/tmp/blcr/builddir state=directory
-
-    - name: install all dependences of BLCR
-      apt: name=make,gcc,linux-headers-{{KERNEL_RELEASE.stdout}} update_cache=yes cache_valid_time=3600
-
-    - name: configure blcr
-      shell: ../configure chdir=/opt/tmp/blcr/builddir creates=/opt/tmp/blcr/builddir/config.log
-
-    - name: compile (make) BLCR
-      command: make chdir=/opt/tmp/blcr/builddir creates=/opt/tmp/blcr/builddir/bin
-
-    - name: install BLCR
-      command: make install chdir=/opt/tmp/blcr/builddir creates=/usr/local/lib/blcr/{{KERNEL_RELEASE.stdout}}/blcr.ko
-
-    - name: load kernel modules
-      shell: grep -q "\<blcr\>" /proc/modules || make insmod chdir=/opt/tmp/blcr/builddir
-
-    - name: updating ld.so.cache
-      command: ldconfig
-
-    - name: configure environment variables
-      copy:
-        dest: /etc/profile.d/blcr.sh
-        content: |
-            export PATH="$PATH:/usr/local/bin"
-            export MANPATH="$MANPATH:/usr/local/man"
-            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64"
-
-@end
+system front ( 
+    ec3_templates contains 'blcr' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.blcr')
 )
 
-configure awscli (
-@begin
-    - name: pip install awscli
-      pip: name=awscli
-      
-    - file: path=/home/ubuntu/.aws state=directory
-    - copy:
-        content: |
-           [default]
-           region=us-west-2
-           output=json
-        dest: "/home/ubuntu/.aws/config"
-        owner: ubuntu
-        group: ubuntu
-
-    - copy:
-        content: |
-           [default]
-           aws_access_key_id=
-           aws_secret_access_key=
-        dest: "/home/ubuntu/.aws/credentials"
-        owner: ubuntu
-        group: ubuntu
-@end
-)
-
-system front ( ec3_templates contains 'blcr' )
+system wn ( ec3_templates contains 'blcr' )
 
 configure front (
 @begin
 ---
   - ec3_prio: -10
-    tasks:
-    - file: path=/opt/tmp state=directory
-    - include: blcr.yml
-    - include: awscli.yml
+    roles:
+    - { role: 'grycap.blcr', blcr_type_of_node: "front", blcr_install_awscli: "yes" }
 @end
 )
-
-system wn ( ec3_templates contains 'blcr' )
 
 configure wn (
 @begin
 ---
   - ec3_prio: -10
-    tasks:
-    - file: path=/opt/tmp state=directory
-    - include: blcr.yml
+    roles:
+    - { role: 'grycap.blcr', blcr_type_of_node: "wn" }
 @end
 )
