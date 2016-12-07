@@ -13,13 +13,13 @@ system front (
 configure front (
 @begin
   - roles:
-    - { role: 'grycap.octave' }
+    - { role: 'grycap.tomcat' }
 @end
 )
 
 configure wn (
 @begin
   - roles:
-    - { role: 'grycap.octave' }
+    - { role: 'grycap.tomcat' }
 @end
 )
