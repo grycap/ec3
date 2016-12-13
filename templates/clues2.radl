@@ -11,9 +11,10 @@ configure front (
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
-      EXTRACT_PROXY_FILE:
-        ec3_file: extract_proxy.py
     roles:
-    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}', auth: '{{AUTH}}', extract_proxy_file: '{{EXTRACT_PROXY_FILE}}', ec3_max_instances: '5', vnode_prefix: 'wn' }
+      - { role: 'grycap.clues', auth: '{{AUTH}}',
+                                clues_queue_system: '{{QUEUE_SYSTEM}}',
+                                max_number_of_nodes: '{{ NNODES }}',
+                                vnode_prefix: 'wn' }
 @end
 )
