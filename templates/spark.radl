@@ -6,28 +6,21 @@ description spark (
 Webpage: http://spark.apache.org/'
 )
 
-configure sparkinst (
-@begin
----
-    - unarchive: src=http://apache.rediris.es/spark/spark-1.6.1/spark-1.6.1-bin-hadoop2.6.tgz dest=/opt/ copy=no creates=/opt/spark-1.6.1-bin-hadoop2.6 copy=no
-    - file: src=/opt/spark-1.6.1-bin-hadoop2.6 dest=/opt/spark state=link
-    - copy: dest=/etc/profile.d/spark.sh content="export PATH=$PATH:/opt/spark/bin\nexport SPARK_HOME=/opt/spark"
-@end
+system front (
+    ec3_templates contains 'spark' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.spark')
 )
 
 configure front (
 @begin
----
-  - tasks:
-    - include: sparkinst.yml
+  - roles:
+    - { role: 'grycap.spark' }
 @end
 )
 
 configure wn (
 @begin
----
-  - tasks:
-    - include: sparkinst.yml
-
+  - roles:
+    - { role: 'grycap.spark' }
 @end
 )

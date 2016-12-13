@@ -19,7 +19,7 @@ configure front (
 ---
   - ec3_prio: -10
     roles:
-    - { role: 'grycap.blcr', blcr_type_of_node: "front", blcr_install_awscli: "yes" }
+    - { role: 'grycap.blcr', blcr_type_of_node: "front", blcr_install_awscli: "yes", blcr_install_ckptman: "yes" }
 @end
 )
 
