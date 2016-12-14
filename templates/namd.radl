@@ -1,0 +1,176 @@
+description namd (
+    kind = 'component' and
+    short = 'A parallel, object-oriented molecular dynamics code designed for high-performance simulation of large biomolecular systems.' and
+    content = 'NAMD is a written usign Charm++ parallel programming model. NAMD is available as precompiled binaries and as source code, as freeware for non-commercial use by individuals, academic institutions, and corporations for in-house business uses.
+
+Webpage: http://www.ks.uiuc.edu/Research/namd/'
+)
+
+configure namd (
+@begin
+  - name: Install missing dependences in Debian system
+    apt: pkg={{ item }} state=installed
+    with_items: 
+     - build-essential
+     - libcr-dev
+     - mpich2
+     - mpich2-doc
+     - gcc 
+     - g++
+     - csh
+     - tcsh
+     - tcl8.6-dev
+    become: yes
+    when: ansible_os_family == "Debian"
+
+  - name: Install missing dependences in RedHat system
+    apt: pkg={{ item }} state=installed
+    with_items: 
+     - '"@Development Tools"' 
+     - csh
+     - tcsh
+     - tcl-devel
+    when: ansible_os_family == "RedHat"
+
+  - name: Download and untar MPICH(v3.2) source code
+    unarchive:
+      src: http://www.mpich.org/static/downloads/3.2/mpich-3.2.tar.gz
+      dest: /tmp
+      creates: /tmp/mpich-3.2
+      remote_src: yes
+      mode: 0755
+    when: ansible_os_family == "RedHat"
+
+  - name: Configure the building directory for MPICH
+    command: ./configure
+    args:
+      chdir: /tmp/mpich-3.2/
+      creates: configure.log
+    when: ansible_os_family == "RedHat"
+
+  - name: Building MPICH
+    make:
+      chdir: /tmp/mpich-3.2/
+      target: install
+      creates: build.log
+    become: yes
+    when: ansible_os_family == "RedHat"
+
+  - name: Download and untar the NAMD_2.11 source code
+    unarchive:
+      src: http://grid.ct.infn.it/cron_files/NAMD_2.11_Source.tar.gz
+      dest: /tmp
+      creates: /tmp/NAMD_2.11_Source/
+      remote_src: yes
+      mode: 0755
+
+  - name: Untar charm-6.7.0 source code
+    unarchive:
+      dest: /tmp/NAMD_2.11_Source/
+      src: /tmp/NAMD_2.11_Source/charm-6.7.0.tar
+      creates: /tmp/NAMD_2.11_Source/charm-6.7.0/
+      mode: 0755
+
+  - name: Compile charm-6.7.0 libraries with MPI support
+    shell:
+      env MPICXX=mpicxx ./build charm++ mpi-linux-x86_64 --with-production
+    args:
+      chdir: /tmp/NAMD_2.11_Source/charm-6.7.0/
+      creates: /tmp/NAMD_2.11_Source/charm-6.7.0/bin
+
+  - name: Building
+    make:
+      chdir: /tmp/NAMD_2.11_Source/charm-6.7.0/mpi-linux-x86_64/tests/charm++/megatest
+      target: pgm
+
+  - name: Download and untar FFTW source code
+    unarchive:
+      src: http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
+      dest: /tmp/NAMD_2.11_Source
+      remote_src: yes
+      mode: 0755
+
+  - name: Rename the linux-x86_64 directory
+    command: mv linux-x86_64 fftw
+    args:
+      chdir: /tmp/NAMD_2.11_Source/
+
+  - name: Download and untar tcl8.5.9-linux-x86_64.tar.gz
+    unarchive:
+      src: http://www.ks.uiuc.edu/Research/namd/libraries/tcl8.5.9-linux-x86_64.tar.gz
+      dest: /tmp/NAMD_2.11_Source
+      remote_src: yes
+      mode: 0755
+
+  - name: Rename the tcl directory
+    command: mv tcl8.5.9-linux-x86_64/ tcl
+    args:
+      chdir: /tmp/NAMD_2.11_Source/
+
+  - name: Download and untar tcl8.5.9-linux-x86_64-threaded.tar.gz
+    unarchive:
+      src: http://www.ks.uiuc.edu/Research/namd/libraries/tcl8.5.9-linux-x86_64-threaded.tar.gz
+      dest: /tmp/NAMD_2.11_Source
+      remote_src: yes
+      mode: 0755
+
+  - name: Rename the tcl-threaded directory
+    command: mv tcl8.5.9-linux-x86_64-threaded tcl-threaded
+    args:
+      chdir: /tmp/NAMD_2.11_Source/
+
+  - name: Edit Make.charm
+    replace:
+      dest: /tmp/NAMD_2.11_Source/Make.charm
+      regexp: '/Projects/namd2/charm-6.7.0'
+      replace: '/tmp/NAMD_2.11_Source'
+      backup: yes
+
+  - name: Edit arch/Linux-x86_64.fftw
+    replace:
+      dest: /tmp/NAMD_2.11_Source/arch/Linux-x86_64.fftw
+      regexp: '/Projects/namd2/fftw/linux-x86_64'
+      replace: '/tmp/NAMD_2.11_Source/fftw'
+      backup: yes
+
+  - name: Edit arch/Linux-x86_64.tcl
+    replace:
+      dest: /tmp/NAMD_2.11_Source/arch/Linux-x86_64.tcl
+      regexp: '#TCLDIR=/Projects/namd2/tcl/tcl8.5.9-linux-x86_64'
+      replace: 'TCLDIR=/tmp/NAMD_2.11_Source/tcl'
+      regexp: '/Projects/namd2/tcl/tcl8.5.9-linux-x86_64-threaded'
+      replace: '/tmp/NAMD_2.11_Source/tcl-threaded'
+
+  - name: Configure the building directory
+    command: ./config Linux-x86_64-g++ --charm-arch mpi-linux-x86_64
+    args:
+      chdir: /tmp/NAMD_2.11_Source/
+      creates: /tmp/NAMD_2.11_Source/namd_configure.txt
+
+  - name: Building NAMD_2.11
+    make:
+      chdir: /tmp/NAMD_2.11_Source/Linux-x86_64-g++/
+      target: all
+
+  - name: Testing NAMD_2.11
+    shell: ./namd2 src/alanin >> namd_log.txt
+    args:
+      chdir: /tmp/NAMD_2.11_Source/Linux-x86_64-g++/
+      creates: namd_log.txt 
+
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: namd.yml
+@end
+)
+
+configure wn (
+@begin
+  - tasks:
+    - include: namd.yml
+@end
+)

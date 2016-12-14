@@ -189,7 +189,21 @@ configure clues_mesos (
       notify: restart cluesd
     - copy: src=/etc/clues2/conf.d/plugin-mesos.cfg-example dest=/etc/clues2/conf.d/plugin-mesos.cfg force=no
       notify: restart cluesd
-    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_SERVER value=mesosserverpublic
+
+    - set_fact: mesos_servername="mesosserverpublic"
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_SERVER value={{mesos_servername}}
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_NODES_COMMAND value="/usr/bin/curl -L -X GET http://{{mesos_servername}}:5050/master/slaves"
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_JOBS_COMMAND value="/usr/bin/curl -L -X GET http://{{mesos_servername}}:5050/master/tasks.json"
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_STATE_COMMAND value="/usr/bin/curl -L -X GET http://{{mesos_servername}}:5050/master/state.json"
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_MARATHON_COMMAND value="/usr/bin/curl -L -X GET http://{{mesos_servername}}:8080/v2/apps?embed=tasks"
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_CHRONOS_COMMAND value="/usr/bin/curl -L -X GET http://{{mesos_servername}}:4400/scheduler/jobs"
+      notify: restart cluesd
+    - ini_file: dest=/etc/clues2/conf.d/plugin-mesos.cfg section=MESOS option=MESOS_CHRONOS_STATE_COMMAND value="/usr/bin/curl -L -X GET http://{{mesos_servername}}:4400/scheduler/graph/csv"
       notify: restart cluesd
 @end
 ) 
