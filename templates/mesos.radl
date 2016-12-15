@@ -23,10 +23,10 @@ network private ()
 system front (
 #    cpu.count>=1 and
 #    memory.size>=512m and
-    net_interface.1.connection = 'public' and
-    net_interface.1.dns_name = 'mesosserverpublic' and
-    net_interface.0.connection = 'private' and
-    net_interface.0.dns_name = 'mesosserver' and
+    net_interface.0.connection = 'public' and
+    net_interface.0.dns_name = 'mesosserverpublic' and
+    net_interface.1.connection = 'private' and
+    net_interface.1.dns_name = 'mesosserver' and
     queue_system = 'mesos' and
     ec3_templates contains 'mesos' and
     # Install ansible roles needed
