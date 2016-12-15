@@ -75,7 +75,9 @@ configure front (
 configure wn (
 @begin
 ---
-  - roles:
+  - vars:
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+    roles:
     - { role: 'grycap.mesos', mesos_type_of_node: 'wn', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn'}
 @end
 )
