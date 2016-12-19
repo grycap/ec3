@@ -31,7 +31,7 @@ system front (
 configure front (
 @begin
   - roles:
-    - { role: 'grycap.nfs', nfs_mode: 'server', nfs_exports: [{path: "/home", export: "wn*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"}] }
+    - { role: 'grycap.nfs', nfs_mode: 'front', nfs_exports: [{path: "/home", export: "wn*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"}] }
 
 @end
 )
@@ -40,6 +40,6 @@ system wn ( ec3_templates contains 'nfs' )
 configure wn (
 @begin
   - roles:
-    - { role: 'grycap.nfs', nfs_mode: 'client', nfs_client_imports: [{ local: "/home", remote: "/home", server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
+    - { role: 'grycap.nfs', nfs_mode: 'wn', nfs_client_imports: [{ local: "/home", remote: "/home", server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
 @end
 )
