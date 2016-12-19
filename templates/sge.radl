@@ -67,4 +67,8 @@ configure wn (
 @end
 )
 
+include sge_misc (
+  template = 'openports'
+)
+
 deploy front 1
