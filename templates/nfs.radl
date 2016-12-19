@@ -43,3 +43,7 @@ configure wn (
     - { role: 'grycap.nfs', nfs_mode: 'wn', nfs_client_imports: [{ local: "/home", remote: "/home", server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
 @end
 )
+
+include nfs_misc (
+  template = 'openports'
+)
