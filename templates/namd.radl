@@ -8,6 +8,7 @@ Webpage: http://www.ks.uiuc.edu/Research/namd/'
 
 configure namd (
 @begin
+
   - name: Install missing dependences in Debian system
     apt: pkg={{ item }} state=installed
     with_items: 
@@ -19,7 +20,6 @@ configure namd (
      - g++
      - csh
      - tcsh
-     - tcl8.6-dev
     become: yes
     when: ansible_os_family == "Debian"
 
@@ -91,9 +91,10 @@ configure namd (
       mode: 0755
 
   - name: Rename the linux-x86_64 directory
-    command: mv linux-x86_64 fftw
+    command: rsync -avh linux-x86_64 fftw
     args:
       chdir: /tmp/NAMD_2.11_Source/
+      creates: /tmp/NAMD_2.11_Source/fftw.log
 
   - name: Download and untar tcl8.5.9-linux-x86_64.tar.gz
     unarchive:
@@ -103,9 +104,10 @@ configure namd (
       mode: 0755
 
   - name: Rename the tcl directory
-    command: mv tcl8.5.9-linux-x86_64/ tcl
+    command: rsync -avh tcl8.5.9-linux-x86_64/ tcl
     args:
       chdir: /tmp/NAMD_2.11_Source/
+      creates: /tmp/NAMD_2.11_Source/tcl.log
 
   - name: Download and untar tcl8.5.9-linux-x86_64-threaded.tar.gz
     unarchive:
@@ -115,7 +117,7 @@ configure namd (
       mode: 0755
 
   - name: Rename the tcl-threaded directory
-    command: mv tcl8.5.9-linux-x86_64-threaded tcl-threaded
+    command: rsync -avh tcl8.5.9-linux-x86_64-threaded tcl-threaded
     args:
       chdir: /tmp/NAMD_2.11_Source/
 
@@ -145,7 +147,7 @@ configure namd (
     command: ./config Linux-x86_64-g++ --charm-arch mpi-linux-x86_64
     args:
       chdir: /tmp/NAMD_2.11_Source/
-      creates: /tmp/NAMD_2.11_Source/namd_configure.txt
+      creates: Linux-x86_64-g++/
 
   - name: Building NAMD_2.11
     make:
