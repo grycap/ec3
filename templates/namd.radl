@@ -24,7 +24,7 @@ configure namd (
     when: ansible_os_family == "Debian"
 
   - name: Install missing dependences in RedHat system
-    apt: pkg={{ item }} state=installed
+    yum: pkg={{ item }} state=installed
     with_items: 
      - '"@Development Tools"' 
      - csh
