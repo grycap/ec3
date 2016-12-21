@@ -19,7 +19,11 @@ network public (
     outports contains '2048/tcp' and
     outports contains '2048/udp' and
     outports contains '2049/tcp' and
-    outports contains '2049/udp'
+    outports contains '2049/udp' and
+    outports contains '892/tcp' and
+    outports contains '892/udp' and
+    outports contains '32803/tcp' and
+    outports contains '32769/udp 
 )
 
 system front (
