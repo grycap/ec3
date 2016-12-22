@@ -3,31 +3,23 @@ description tomcat (
     short = 'An open-source web server and servlet container' and
     content = 'This recipe installs tomcat and its dependences, an open-source web server and servlet container.
 
-Webpage: http://www.gnuplot.info/'
+Webpage: https://tomcat.apache.org/'
 )
 
-configure tomcat (
-@begin
-    - name: Apt install Tomcat and its dependencies in Deb system
-      apt: name=default-jdk,tomcat6 update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-
-    - name: Yum install Tomcat and its dependencies in REL system
-      yum: name=java,tomcat6 state=latest update_cache=yes
-      when: ansible_os_family == "RedHat"
-@end
+system front (
+  disk.0.applications contains (name = 'ansible.modules.grycap.tomcat')
 )
 
 configure front (
 @begin
-  - tasks:
-    - include: tomcat.yml
+  - roles:
+    - { role: 'grycap.tomcat' }
 @end
 )
 
 configure wn (
 @begin
-  - tasks:
-    - include: tomcat.yml
+  - roles:
+    - { role: 'grycap.tomcat' }
 @end
 )

@@ -1,0 +1,21 @@
+description chronos (
+    kind = 'component' and
+    short = 'An open-source tool to orchestrate job execution in a Mesos cluster' and
+    content = 'Chronos is a fault tolerant job scheduler for Mesos which handles dependencies and ISO8601 based schedules.
+
+Webpage: https://mesos.github.io/chronos/'
+)
+
+system front (
+    ec3_templates contains 'chronos' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.chronos')
+)
+
+configure front (
+@begin
+  - roles:
+    - { role: 'grycap.chronos' }
+@end
+)
+
+
