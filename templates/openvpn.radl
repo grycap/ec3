@@ -1,7 +1,7 @@
 description openvpn (
     kind = 'component' and
     short = 'Tool to create a VPN network.' and
-    content = 'OpenVPN is a tool that creates a virtual private network to interconnect the nodes of the cluster. This is of special interest when you want to deploy an hybrid cluster. The recipe downloads the code from the offcial web page, and then compiles, installs and configures the tool.
+    content = 'OpenVPN is a tool that creates a virtual private network to interconnect the nodes of the cluster. This is of special interest when you want to deploy an hybrid cluster. The recipe downloads the code from the official web page, and then compiles, installs and configures the tool.
 
 Webpage: http://openvpn.net/'
 )
@@ -10,200 +10,27 @@ network public (
    outports contains '1194/udp'
 )
 
-configure openvpn_front (
+system front ( 
+    ec3_templates contains 'openvpn' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.openvpn')
+)
+
+system wn ( ec3_templates contains 'openvpn' )
+
+configure front (
 @begin
 ---
-  - tasks:
-    - name: change hostname
-      shell: hostname {{IM_MASTER_FQDN}}-vpn
-
-    - name: create epel.repo
-      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: ansible_os_family == "RedHat"
-
-    - name: update repositories cache and install openvpn package
-      apt: pkg=openvpn update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-
-    - name: update repositories cache and install openvpn package
-      yum: name=openvpn enablerepo=epel state=latest
-      when: ansible_os_family == "RedHat"
-
-    - name: download easy-rsa
-      get_url: url=https://github.com/downloads/OpenVPN/easy-rsa/easy-rsa-2.2.0_master.tar.gz dest=/tmp/easy-rsa.tar.gz
-      when: ansible_os_family == "RedHat"
-
-    - name: decompress easy-rsa
-      command: tar -zxvf easy-rsa.tar.gz chdir=/tmp/
-      when: ansible_os_family == "RedHat"
-
-    - name: copy rsa files to the work directory
-      command: cp -R /tmp/easy-rsa-2.2.0_master/easy-rsa/ /etc/openvpn/
-      when: ansible_os_family == "RedHat"
-
-    - name: copy rsa files to the work directory
-      command: cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn/ creates=/etc/openvpn/easy-rsa
-      when: ansible_os_family == "Debian"
-
-    - name: update KEY_COUNTRY value
-      lineinfile: dest=/etc/openvpn/easy-rsa/2.0/vars regexp='export KEY_COUNTRY="US"' line='export KEY_COUNTRY="ES"' state=present
-
-    - name: update KEY_PROVINCE value
-      lineinfile: dest=/etc/openvpn/easy-rsa/2.0/vars regexp='export KEY_PROVINCE="CA"' line='export KEY_PROVINCE="VALENCIA"' state=present
-
-    - name: update KEY_CITY value
-      lineinfile: dest=/etc/openvpn/easy-rsa/2.0/vars regexp='export KEY_CITY="SanFrancisco"' line='export KEY_CITY="Valencia"' state=present
-
-    - name: update KEY_ORG value
-      lineinfile: dest=/etc/openvpn/easy-rsa/2.0/vars regexp='export KEY_ORG="Fort-Funston"' line='export KEY_ORG="UPV"' state=present
-
-    - name: update KEY_CN value
-      lineinfile: dest=/etc/openvpn/easy-rsa/2.0/vars regexp='export KEY_CN=changeme' line='export KEY_CN=server_vpn' state=present
-
-    - name: create keys directory to save generated keys
-      file: path=/etc/openvpn/easy-rsa/2.0/keys state=directory
-
-    - name: fix a bug of openvpn
-      file: src=/etc/openvpn/easy-rsa/2.0/openssl-1.0.0.cnf dest=/etc/openvpn/easy-rsa/2.0/openssl.cnf state=link
-
-    - name: update build-ca not to be interactive
-      command: sed -i".bak" -e 's/interact/batch/' build-ca chdir=/etc/openvpn/easy-rsa/2.0/
-
-    - name: update build-key not to be interactive
-      command: sed -i".bak" -e 's/interact/batch/' build-key chdir=/etc/openvpn/easy-rsa/2.0/
-
-    - name: update build-key-server not to be interactive
-      command: sed -i".bak" -e 's/interact/batch/' build-key-server chdir=/etc/openvpn/easy-rsa/2.0/
-
-    - name: create CA
-      shell: . ./vars;./clean-all;./build-ca chdir=/etc/openvpn/easy-rsa/2.0/ creates=/etc/openvpn/easy-rsa/2.0/keys/ca.crt
-
-    - name: create key files for the server
-      shell: . ./vars;./build-key-server server chdir=/etc/openvpn/easy-rsa/2.0/ creates=/etc/openvpn/easy-rsa/2.0/keys/server.crt
-
-    - name: create key files for the clients
-      shell: . ./vars;KEY_CN=client;./build-key client chdir=/etc/openvpn/easy-rsa/2.0/ creates=/etc/openvpn/easy-rsa/2.0/keys/client.crt
-
-    - name: create Diffie Hellman certificate
-      shell: . ./vars;./build-dh chdir=/etc/openvpn/easy-rsa/2.0/ creates=/etc/openvpn/easy-rsa/2.0/keys/dh1024.pem
-
-    - name: copy the sample file of server configuration
-      command: cp -R /usr/share/doc/openvpn/examples/sample-config-files/ /etc/openvpn/ creates=/etc/openvpn/server.conf
-      when: ansible_os_family == "Debian"
-
-    - name: copy the sample file of server configuration
-      command: cp -R /usr/share/doc/openvpn-2.3.2/sample/sample-config-files /etc/openvpn/ creates=/etc/openvpn/server.conf
-      when: ansible_os_family == "RedHat"
-
-    - name: decompress server.conf file
-      command: gzip -d server.conf.gz chdir=/etc/openvpn/sample-config-files/ creates=/etc/openvpn/server.conf
-      when: ansible_os_family == "Debian"
-
-    - name: copy server.conf to the work directory
-      local_action: copy src=/etc/openvpn/sample-config-files/server.conf dest=/etc/openvpn/
-
-    - name: copy client.conf to the work directory
-      local_action: copy src=/etc/openvpn/sample-config-files/client.conf dest=/etc/openvpn/
-
-    - name: indicate where is the ca.crt file in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp='ca ca.crt' line='ca /etc/openvpn/easy-rsa/2.0/keys/ca.crt' state=present
-
-    - name: indicate where is the server.crt file in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp='cert server.crt' line='cert /etc/openvpn/easy-rsa/2.0/keys/server.crt' state=present
-
-    - name: indicate where is the client.key file in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp='key server.key' line='key /etc/openvpn/easy-rsa/2.0/keys/server.key' state=present
-
-    - name: indicate where is the dh.pem file in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp='dh dh1024.pem' line='dh /etc/openvpn/easy-rsa/2.0/keys/dh1024.pem' state=present
-
-    - name: allow to use the same credentials for all clients
-      lineinfile: dest=/etc/openvpn/server.conf regexp=';duplicate-cn' line='duplicate-cn' state=present
-
-    - name: activate user nobody in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp=';user nobody' line='user nobody' state=present
-
-    - name: activate group nogroup in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp=';group nogroup' line='group nogroup' state=present
-      when: ansible_os_family == "Debian"
-
-    - name: activate group nobody in server.conf
-      lineinfile: dest=/etc/openvpn/server.conf regexp=';group nobody' line='group nobody' state=present
-      when: ansible_os_family == "RedHat"
-
-    - name: modify remote line of client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp='remote my-server-1 1194' line="remote {{IM_MASTER_FQDN}} 1194" state=present
-
-    - name: deactivate resolv-retry infinite in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp='resolv-retry infinite' line=';resolv-retry infinite' state=present
-
-    - name: deactivate nobind in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp='nobind' line=';nobind' state=present
-
-    - name: activate user nobody in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp=';user nobody' line='user nobody' state=present
-
-    - name: activate group nogroup in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp=';group nogroup' line='group nogroup' state=present
-      when: ansible_os_family == "Debian"
-
-    - name: activate group nobody in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp=';group nobody' line='group nobody' state=present
-      when: ansible_os_family == "RedHat"
-
-    - name: indicate where is the ca.crt file in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp='ca ca.crt' line='ca /etc/openvpn/ca.crt' state=present
-
-    - name: indicate where is the client.crt file in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp='cert client.crt' line='cert /etc/openvpn/client.crt' state=present
-
-    - name: indicate where is the client.key file in client.conf
-      lineinfile: dest=/etc/openvpn/client.conf regexp='key client.key' line='key /etc/openvpn/client.key' state=present
-
-    # Deleted certificates copy to the /temp directory
-
-    - name: execute the vpn server
-      command: openvpn --config server.conf --daemon chdir=/etc/openvpn/ creates=/etc/openvpn/openvpn-status.log
+  - ec3_prio: -10
+    roles:
+    - { role: 'grycap.openvpn', openvpn_type_of_node: "front" }
 @end
 )
 
-
-configure openvpn_wn (
+configure wn (
 @begin
 ---
-  - tasks:
-    - name: change hostname
-      shell: hostname $(hostname)-vpn
-
-    - name: create epel.repo
-      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: ansible_os_family == "RedHat"
-
-    - name: update repositories cache and install openvpn package
-      apt: pkg=openvpn update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-
-    - name: update repositories cache and install openvpn package
-      yum: name=openvpn enablerepo=epel state=latest
-      when: ansible_os_family == "RedHat"
-
-    - name: copy the client configuration file
-      copy: src=/etc/openvpn/client.conf dest=/etc/openvpn/
-
-    # Copy of the certificates
-    #- name: copy the CA certificate
-    #  copy: src=/tmp/ca.crt dest=/etc/openvpn/
-    - include: sudo_copy.yml src=/etc/openvpn/easy-rsa/2.0/keys/ca.crt dest=/etc/openvpn/ca.crt mode="0644"
-
-    #- name: copy the client certificate
-    #  copy: src=/tmp/client.crt dest=/etc/openvpn/
-    - include: sudo_copy.yml src=/etc/openvpn/easy-rsa/2.0/keys/client.crt dest=/etc/openvpn/client.crt mode="0644"
-
-    #- name: copy the client key
-    #  copy: src=/tmp/client.key dest=/etc/openvpn/
-    - include: sudo_copy.yml src=/etc/openvpn/easy-rsa/2.0/keys/client.key dest=/etc/openvpn/client.key mode="0600"
-
-    - name: execute the vpn client
-      command: openvpn --config client.conf --daemon --log openvpn_client.log  chdir=/etc/openvpn/ creates=/etc/openvpn/openvpn_client.log
+  - ec3_prio: -10
+    roles:
+    - { role: 'grycap.blcr', openvpn_type_of_node: "wn" }
 @end
 )

@@ -6,28 +6,20 @@ description octave (
 Webpage: http://www.gnu.org/software/octave/'
 )
 
-configure octave (
-@begin
-    - name: Apt install Octave in Deb system
-      apt: name=octave update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-
-    - name: Yum install Octave in REL system
-      yum: name=epel-release,octave state=latest update_cache=yes
-      when: ansible_os_family == "RedHat"
-@end
+system front (
+  disk.0.applications contains (name = 'ansible.modules.grycap.octave')
 )
 
 configure front (
 @begin
-  - tasks:
-    - include: octave.yml
+  - roles:
+    - { role: 'grycap.octave' }
 @end
 )
 
 configure wn (
 @begin
-  - tasks:
-    - include: octave.yml
+  - roles:
+    - { role: 'grycap.octave' }
 @end
 )

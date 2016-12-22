@@ -7,219 +7,74 @@ Webpage: http://www.adaptivecomputing.com/products/open-source/torque'
 )
 
 network public (
-      outbound = 'yes' and
-      outports contains '15001/tcp' and
-      outports contains '15001/udp' and
-      outports contains '15002/tcp' and
-      outports contains '15002/udp' and
-      outports contains '15003/tcp' and
-      outports contains '15003/udp' and
-      outports contains '15004/tcp' and
-      outports contains '15004/udp' and
-      outports contains '1023/tcp' and
-      outports contains '1023/udp'
+  outbound = 'yes' and
+  outports contains '15001/tcp' and
+  outports contains '15001/udp' and
+  outports contains '15002/tcp' and
+  outports contains '15002/udp' and
+  outports contains '15003/tcp' and
+  outports contains '15003/udp' and
+  outports contains '15004/tcp' and
+  outports contains '15004/udp' and
+  outports contains '1023/tcp' and
+  outports contains '1023/udp' and
+  # Im XMLRPC port
+  outports contains '8899/tcp'
 )
 network private ()
 
 system front (
-      net_interface.1.connection='public' and
-      net_interface.0.connection='private' and
-      net_interface.0.dns_name = 'torqueserver' and
-      queue_system = 'torque'
+  # Net interfaces definition. Order matters !
+  net_interface.0.connection = 'private' and
+  net_interface.0.dns_name = 'torqueserver' and
+  net_interface.1.connection = 'public' and
+  net_interface.1.dns_name = 'torqueserverpublic' and
+  queue_system = 'torque' and
+  ec3_templates contains 'torque' and
+  # Install ansible roles needed
+  disk.0.applications contains (name = 'ansible.modules.grycap.torque') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.im')
+)
+
+configure front (
+@begin
+---
+  - vars:
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      # Variables needed for CLUES
+      AUTH:
+        ec3_xpath: /system/front/auth
+
+    roles:
+    # The install order matters !
+    # If the role order is altered the installation won't work
+    - { role: 'grycap.im' }
+    - { role: 'grycap.torque', torque_type_of_node: 'front',
+                               max_number_of_nodes: '{{ NNODES }}' }
+    - { role: 'grycap.clues', auth: '{{AUTH}}',
+                              clues_queue_system: 'torque',
+                              max_number_of_nodes: '{{ NNODES }}',
+                              vnode_prefix: 'wn' }
+@end
 )
 
 system wn (
       net_interface.0.connection='private'
 )
 
-configure Debian (
-@begin
-      TORQUE_PATH: /var/spool/torque
-      TORQUE_SERVICE: torque-server
-      SCHED_SERVICE: torque-scheduler
-      MOM_SERVICE: torque-mom
-@end
-)
-
-configure RedHat (
-@begin
-      TORQUE_PATH: /var/lib/torque
-      TORQUE_SERVICE: pbs_server
-      SCHED_SERVICE: pbs_sched
-      MOM_SERVICE: pbs_mom
-@end
-)
-
 configure wn (
 @begin
 ---
-  - ec3_prio: 5
-    vars:
-      USERS:
-        - {name: user1, password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0}
-
-    tasks:
-    - include_vars: "{{item}}"
-      with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
-    # Create users
-    - name: Create User {{item.name}}
-      user: name={{item.name}} password={{item.password}} shell=/bin/bash
-      with_items: '{{USERS}}'
-    - name: Add the authorized_key to the user {{item.name}}
-      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
-      with_items: '{{USERS}}'
-    - name: Copy the id_rsa.pub file to the user
-      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa.pub dest=/home/{{item.name}}/.ssh/id_rsa.pub owner={{item.name}} group={{item.name}} mode=0644 loop={{USERS}}
-    - name: Copy the id_rsa file to the user
-      include: sudo_copy.yml src=/home/{{item.name}}/.ssh/id_rsa dest=/home/{{item.name}}/.ssh/id_rsa owner={{item.name}} group={{item.name}} mode=0600 loop={{USERS}}
-    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
-
-    # Installation of torque
-    - name: Apt install torque mom
-      apt: name=torque-mom,torque-client update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-      
-    - name: create epel.repo
-      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: ansible_os_family == "RedHat"
-    - name: Yum install Torque in REL system
-      yum: name=torque-mom,torque-client,openssh-clients
-      when: ansible_os_family == "RedHat"
-
-    - include: munge_repo_wn.yml
-      when: ansible_os_family == "RedHat"
-
-    - name: Set the Torque server name
-      copy: content=torqueserver dest=/etc/torque/server_name
-    - name: Create the mom_priv/config file
-      copy:
-        dest: "{{TORQUE_PATH}}/mom_priv/config"
-        content: |
-            $clienthost torqueserver
-            $max_conn_timeout_micro_sec 10000
-            $mom_host {{IM_NODE_HOSTNAME}}
-        mode: 0644
-        owner: root
-        group: root
-    - service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
-    # Many times MOM_SERVICE does not start properly. Wait and test it again
-    - command: sleep 5
-    - service: name={{MOM_SERVICE}} state=started pattern=/usr/sbin/pbs_mom
+  - roles:
+    - { role: 'grycap.torque', torque_type_of_node: 'wn' }
 @end
 )
 
 include torque_misc (
-  template = 'im clues2 munge openports sudo-copy'
-)
-
-configure front (
-@begin
----
-  - ec3_prio: -5
-    vars:
-      FILE:
-        ec3_file: is_cluster_ready
-      SYSTEMS:
-        ec3_jpath: /system/*
-      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
-      PBS_SERVER_CONF: |
-        create queue batch
-        set queue batch queue_type = Execution
-        set queue batch resources_default.nodes = 1
-        set queue batch enabled = True
-        set queue batch started = True
-        set server default_queue = batch
-        set server scheduling = True
-        set server scheduler_iteration = 20
-        set server node_check_rate = 40
-        set server resources_default.neednodes = 1
-        set server resources_default.nodect = 1
-        set server resources_default.nodes = 1
-        set server query_other_jobs = True
-        set server node_pack = False
-        set server job_stat_rate = 30
-        set server mom_job_sync = True
-        set server poll_jobs = True
-        set server tcp_timeout = 600
-      USERS:
-        - name: user1
-          password: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
-
-    tasks:
-    - copy:
-        dest: /bin/is_cluster_ready
-        content: "{{FILE}}"
-        mode: 0755
-    - include_vars: "{{item}}"
-      with_first_found: [ "{{ ansible_os_family }}.yml", "RedHat.yml" ]
-    - command: hostname torqueserver
-
-    - name: create epel.repo
-      template: src=utils/templates/epel-es.repo dest=/etc/yum.repos.d/epel.repo
-      when: ansible_os_family == "RedHat"
-
-    - include: im_devel_pip.yml
-#    - include: im_devel_git.yml
-
-    # Users creation
-    - user: name={{item.name}} password={{item.password}} generate_ssh_key=yes shell=/bin/bash
-      with_items: '{{USERS}}'
-    - local_action: command cp /home/{{item.name}}/.ssh/id_rsa.pub /tmp/{{item.name}}_id_rsa.pub creates=/tmp/{{item.name}}_id_rsa.pub
-      with_items: '{{USERS}}'
-    - name: Add the authorized_key to the user {{item.name}}
-      authorized_key: user={{item.name}} key="{{ lookup('file', '/tmp/' + item.name + '_id_rsa.pub') }}"
-      with_items: '{{USERS}}'
-    - template: src=utils/templates/ssh_known_hosts.conf dest=/etc/ssh/ssh_known_hosts
-
-    # Manage the /etc/hosts file
-    - shell: |
-        for i in `seq 1 {{NNODES}}`; do
-          item="vnode${i}";
-          grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
-        done
-
-    # Torque configuration Specific tasks
-    - name: Apt install Torque in Deb system
-      apt: name=torque-server,torque-client,g++,libtorque2-dev,make update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-      
-    - name: Yum install Torque in REL system
-      yum: name=torque-server,torque-scheduler,torque-client,openssh-clients,gcc-c++,torque-devel,make
-      when: ansible_os_family == "RedHat"
-    
-    - copy: dest=/etc/torque/server_name content=torqueserver
-
-    - include: munge_repo_front.yml
-      when: ansible_os_family == "RedHat"
-
-    - service: name=trqauthd state=started
-      when: ansible_os_family == "RedHat"
-      ignore_errors: yes
-
-    - shell: yes | pbs_server -t create
-      when: ansible_os_family == "RedHat"
-    - command: qterm
-      when: ansible_os_family == "RedHat"
-
-    - copy:
-        content: |
-           {% for number in range(1, NNODES|int + 1) %}
-           vnode{{number}}
-           {% endfor %}
-        dest: "{{TORQUE_PATH}}/server_priv/nodes"
-        force: yes
-      
-    - service: name={{TORQUE_SERVICE}} state=restarted pattern=/usr/sbin/pbs_server
-    - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
-    - shell: echo "{{PBS_SERVER_CONF}}" | qmgr creates={{TORQUE_PATH}}/server_priv/queues/batch
-
-    - service: name={{SCHED_SERVICE}} state=started pattern=/usr/sbin/pbs_sched
-
-    # Many times TORQUE_SERVICE and SCHED_SERVICE do not start properly. Wait and test them again
-    - command: sleep 5
-    - service: name={{SCHED_SERVICE}} state=started pattern=/usr/sbin/pbs_sched
-    - service: name={{TORQUE_SERVICE}} state=started pattern=/usr/sbin/pbs_server
-@end
+  template = 'openports'
 )
 
 deploy front 1

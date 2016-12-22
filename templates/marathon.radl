@@ -1,0 +1,20 @@
+description marathon (
+    kind = 'component' and
+    short = 'An open-source tool to orchestrate job execution in a Mesos cluster' and
+    content = 'Marathon is a production-grade container orchestration platform for Mesospheres Datacenter Operating System (DC/OS) and Apache Mesos.                                        
+
+Webpage: https://mesosphere.github.io/marathon/'
+)
+
+system front ( 
+    ec3_templates contains 'marathon' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.marathon')
+)
+
+configure front (
+@begin
+  - roles:
+    - { role: 'grycap.marathon' }
+@end
+)
+

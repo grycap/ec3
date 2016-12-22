@@ -3,28 +3,21 @@ include munge_misc (
     template = 'sudo-copy'
 )
 
+system front (
+  # Install ansible roles needed
+  disk.0.applications contains (name = 'ansible.modules.grycap.munge')
+)
+
 configure munge_repo_front (
 @begin
-    - apt: name=munge update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-    - yum: name=munge
-      when: ansible_os_family == "RedHat"
-    - shell: create-munge-key < /dev/null
-    - file: path=/var/log/munge state=directory mode=0700
-    - file: path=/var/log state=directory mode=0755
-    - service: name=munge state=restarted
+- roles:
+  - { role: 'grycap.munge', munge_type_of_node: "front" }
 @end
 )
 
 configure munge_repo_wn (
 @begin
-    - apt: name=munge update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-    - yum: name=munge
-      when: ansible_os_family == "RedHat"
-    - include: sudo_copy.yml src=/etc/munge/munge.key dest=/etc/munge/munge.key owner=munge group=munge mode="0400"
-    - file: path=/var/log/munge state=directory mode=0700
-    - file: path=/var/log state=directory mode=0755
-    - service: name=munge state=restarted
+- roles:
+  - { role: 'grycap.munge', munge_type_of_node: "wn" }
 @end
 )

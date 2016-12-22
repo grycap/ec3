@@ -6,28 +6,20 @@ description gnuplot (
 Webpage: http://www.gnuplot.info/'
 )
 
-configure gnuplot (
-@begin
-    - name: Apt install GNUplot in Deb system
-      apt: name=gnuplot update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-
-    - name: Yum install GNUplot in REL system
-      yum: name=gnuplot state=latest update_cache=yes
-      when: ansible_os_family == "RedHat"
-@end
+system front (
+  disk.0.applications contains (name = 'ansible.modules.grycap.gnuplot')
 )
 
 configure front (
 @begin
-  - tasks:
-    - include: gnuplot.yml
+  - roles:
+    - { role: 'grycap.gnuplot' }
 @end
 )
 
 configure wn (
 @begin
-  - tasks:
-    - include: gnuplot.yml
+  - roles:
+    - { role: 'grycap.gnuplot' }
 @end
 )

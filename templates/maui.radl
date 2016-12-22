@@ -1,30 +1,11 @@
+system front (
+  disk.0.applications contains (name = 'ansible.modules.grycap.maui')
+)
+
 configure front (
 @begin
 ---
-  - tasks:
-    - service: name={{SCHED_SERVICE}} state=stopped pattern=/usr/sbin/pbs_sched enabled=no
-    - apt: name=libtorque2-dev,subversion
-      when: ansible_os_family == "Debian"
-    - yum: name=torque-devel,subversion
-      when: ansible_os_family == "RedHat"
-
-    - subversion: repo=svn://opensvn.adaptivecomputing.com/maui/branches/3.3.1 dest=/tmp/maui
-    - command: ./configure --prefix=/usr/local/maui chdir=/tmp/maui/ creates=/tmp/maui/Makefile
-    - command: make chdir=/tmp/maui creates=chdir=/tmp/maui/bin/maui
-    - command: make install chdir=/tmp/maui creates=/usr/local/maui/maui.cfg
-    - lineinfile: dest=/usr/local/maui/maui.cfg regexp=DEFERTIME line='DEFERTIME  0'
-    - lineinfile: dest=/usr/local/maui/maui.cfg regexp=DEFERCOUNT line='DEFERCOUNT  99999'
-
-    - name: kill maui if exists
-      shell: kill $(pgrep maui)
-      ignore_errors: yes
-
-    - name: start maui daemon
-      shell: /usr/local/maui/sbin/maui
-
-    - name: add maui commands to the bash
-      copy:
-         dest: /etc/profile.d/maui.sh
-         content: export PATH="$PATH:/usr/local/maui/bin"
+  - roles:
+    - { role: 'grycap.maui' }
 @end
 )
