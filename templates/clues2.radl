@@ -11,6 +11,7 @@ configure front (
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
     roles:
       - { role: 'grycap.clues', auth: '{{AUTH}}',
                                 clues_queue_system: '{{QUEUE_SYSTEM}}',
