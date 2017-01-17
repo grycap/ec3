@@ -775,15 +775,22 @@ class CmdList:
         parser = subparsers.add_parser("list", help="list launched clusters")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
         parser.add_argument("-r", "--refresh", action="store_true", default=False, help="update state of the clusters")
+        parser.add_argument("-un", "--username", dest="username", nargs=1, default="", help="indicate the username you want to list deployed clusters")
         parser.set_defaults(func=CmdList.run)
 
-    @staticmethod
-    def run(options):
+    @staticmethod    
+    def run(options):                 
         info = []
         for clustername in ClusterStore.list():
             s = ClusterStore.load(clustername, options.refresh).get(system("front"))
-            info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
-                         "nodes": s.getValue("nodes", "?")})
+            if options.username != "":   
+                cluster_username = s.getValue("ec3aas.username", "?")
+                if cluster_username == options.username[0]:
+                    info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
+                                 "nodes": s.getValue("nodes", "?")})
+            else:            
+                info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
+                             "nodes": s.getValue("nodes", "?")})
         output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes"])
         sys.stdout.write(output + "\n")
 
