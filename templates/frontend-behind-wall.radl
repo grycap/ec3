@@ -21,7 +21,7 @@ configure fbw_wn (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     tasks:
-    - local_action: shell nohup /tmp/sshconnect.sh {{IM_NODE_USER}}@{{IM_NODE_HOSTNAME}} &
+    - local_action: shell nohup /tmp/sshconnect.sh {{ansible_ssh_user}}@{{IM_NODE_HOSTNAME}} &
     - apt: name=redsocks update_cache=yes cache_valid_time=3600
     - copy:
         content: |
@@ -93,10 +93,11 @@ configure front (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     tasks:
-    - shell: nohup ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -D {{FRONTEND}}:9999 {{IM_NODE_USER}}@{{FRONTEND}} > /tmp/.step0 2>&1
+    - shell: nohup ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -D {{FRONTEND}}:9999 {{ansible_ssh_user}}@{{FRONTEND}} > /tmp/.step0 2>&1
       args:
          creates: /tmp/.step0
       run_once: true
+      ignore_errors: yes
     - copy:
         content: |
             #! /bin/bash
