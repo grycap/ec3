@@ -30,35 +30,34 @@ system front (
   disk.0.applications contains (name = 'ansible.modules.grycap.monasca-alarms')
 )
 
+configure monasca_vars (
+@begin
+  keystone_ip_address: '10.0.0.83'
+  mysql_host: '127.0.0.1'
+  mysql_root_pass: 'secretdatabase'
+  os_username: 'admin'
+  os_password: 'yoyoyo'
+  os_project_name: 'admin'
+@end
+)
+
 configure front (
 @begin
-  - roles:
+  - pre-tasks:
+    - include_vars: monasca_vars.yml
+    vars:
+      os_mon_username: 'mini-mon'
+      os_mon_password: 'password'
+      os_mon_project_name: 'mini-mon'
+    roles:
     - { role: 'grycap.monasca', tags: [ "os-monasca" ],
-                                keystone_ip_address: '127.0.0.1',
-                                os_username: 'admin',
-                                os_password: 'yoyoyo',
-                                os_project_name: 'admin',
-                                os_mon_username: 'mini-mon',
-                                os_mon_password: 'password',
-                                os_mon_project_name: 'mini-mon',
                                 os_mon_agent_username: 'monasca-agent',
-                                os_mon_agent_password: 'password',
-                                mysql_root_pass: 'secretdatabase' }
+                                os_mon_agent_password: 'password' }
 
-    - { role: 'grycap.monasca-alarms', tags: [ "os-monasca-alarms" ],
-                                      keystone_ip_address: '127.0.0.1',
-                                      os_mon_username: 'mini-mon',
-                                      os_mon_password: 'password',
-                                      os_mon_project_name: 'mini-mon' }
+    - { role: 'grycap.monasca-alarms', tags: [ "os-monasca-alarms" ] }
 
     - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
-                                      keystone_ip_address: '127.0.0.1',
-                                      monasca_ip_address: '{{ansible_default_ipv4}}',
-                                      mysql_host: '127.0.0.1',
-                                      mysql_root_pass: 'secretdatabase',
-                                      os_username: 'admin',
-                                      os_password: 'yoyoyo',
-                                      os_project_name: 'admin' }
+                                      monasca_ip_address: '{{ansible_default_ipv4}}' }
 @end
 )
 
@@ -68,15 +67,11 @@ system wn (
 
 configure wn (
 @begin
-  - roles:
+  - pre-tasks:
+    - include_vars: monasca_vars.yml
+    roles:
     - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
-                                      keystone_ip_address: '127.0.0.1',
-                                      monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}',
-                                      mysql_host: '127.0.0.1',
-                                      mysql_root_pass: 'secretdatabase',
-                                      os_username: 'admin',
-                                      os_password: 'yoyoyo',
-                                      os_project_name: 'admin' }
+                                      monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
 @end
 )
 
@@ -86,16 +81,10 @@ system wnmesos (
 
 configure wnmesos (
 @begin
-  - roles:
+  - pre-tasks:
+    - include_vars: monasca_vars.yml
+    roles:
     - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
-                                      keystone_ip_address: '127.0.0.1',
-                                      monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}',
-                                      mysql_host: '127.0.0.1',
-                                      mysql_root_pass: 'secretdatabase',
-                                      os_username: 'admin',
-                                      os_password: 'yoyoyo',
-                                      os_project_name: 'admin' }
+                                      monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
 @end
 )
-
-deploy front 1
