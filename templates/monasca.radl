@@ -43,7 +43,7 @@ configure monasca_vars (
 
 configure front (
 @begin
-  - pre-tasks:
+  - pre_tasks:
     - include_vars: monasca_vars.yml
     vars:
       os_mon_username: 'mini-mon'
@@ -67,7 +67,7 @@ system wn (
 
 configure wn (
 @begin
-  - pre-tasks:
+  - pre_tasks:
     - include_vars: monasca_vars.yml
     roles:
     - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
@@ -81,7 +81,7 @@ system wnmesos (
 
 configure wnmesos (
 @begin
-  - pre-tasks:
+  - pre_tasks:
     - include_vars: monasca_vars.yml
     roles:
     - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
