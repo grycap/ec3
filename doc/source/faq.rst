@@ -42,6 +42,10 @@ automatically install the dependence. You can also contact us by using the conta
 
 Because the recipe of Mesos provided with EC3 is optimized for Centos 7 as well as Ubuntu 14.04. If you want to deploy a Mesos cluster, we encourage you to use one of each operative systems.
 
+**Which is the best combination to deploy a Galaxy cluster?**
+
+The best configuration for a elastic Galaxy cluster is to select Torque as a LRMS and install the NFS package. Support for Galaxy in SGE is not provided. Moreover, we have detected problems when using Galaxy with SLURM. So, we encourage you to use Torque and NFS in the EC3aaS and also with the EC3 CLI.
+
 
 EC3aaS Webpage
 --------------
