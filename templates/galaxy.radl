@@ -12,9 +12,10 @@ network public (
 )
 
 system front (
-      cpu.count>=1 and
+      cpu.count>=2 and
       memory.size>=3g and
-      net_interface.0.connection='public' 
+      # Install ansible roles needed
+      disk.0.applications contains (name = 'ansible.modules.grycap.galaxy')
 )
 
 system wn (
@@ -22,143 +23,24 @@ system wn (
       memory.size>=8g 
 )
 
-configure galaxy_vars (
-@begin
-GALAXY_VERSION: 16.01
-GALAXY_ADMIN_API_KEY: not_very_secret_api_key
-GALAXY_ADMIN_MAIL: admin@admin.com
-GALAXY_USER_ID: 4001
-GALAXY_USER: galaxy
-GALAXY_INSTALL_PATH: /home/{{GALAXY_USER}}/galaxy
-GALAXY_USER_PASSWORD: $6$Ehg4GHQT5y$6ZCTLffp.epiNEhS1M3ZB.P6Kii1wELySe/DCwUInGt8r7zgdAHfHw66DuPwpS6pfOiZ9PS/KaTiBKjoCn23t0
-@end
-)
-
 configure wn (
 @begin
    # This step must be performed before the configuration of torque (-5 prio)
   - ec3_prio: -7
-    tasks:
-     - include_vars: galaxy_vars.yml
-     # Create galaxy user
-     - user: name={{GALAXY_USER}} password={{GALAXY_USER_PASSWORD}} shell=/bin/bash uid={{GALAXY_USER_ID}}
+    roles:
+     - { role: grycap.galaxy, galaxy_node_type: wn }
 @end
 )
 
 configure front (
 @begin
   - vars:
-      SYSTEMS:
-        ec3_jpath: /system/*
-      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
 
-    handlers:
-    - name: restart cluesd
-      service: name=cluesd state=restarted
+    roles:
+     - { role: grycap.galaxy, galaxy_install_path: /home/galaxy/galaxy , galaxy_lrms: "{{ QUEUE_SYSTEM }}" }
 
-    tasks:
-    - include_vars: galaxy_vars.yml
-    # Configure CLUES to Reconsider queued jobs each 30 seconds
-    - ini_file: dest=/etc/clues2/clues2.cfg section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
-      with_items:
-        - { section: 'scheduling', option: 'RECONSIDER_JOB_TIME', value: '30' }
-      notify: restart cluesd
-
-    # Install requisites
-    - apt: name=python-virtualenv update_cache=yes cache_valid_time=3600
-      when: ansible_os_family == "Debian"
-    - yum: name=python-virtualenv
-      when: ansible_os_family == "RedHat"
-    # Download Galaxy
-    - file: path={{GALAXY_INSTALL_PATH | dirname}} state=directory recurse=yes
-    - get_url: url=https://github.com/galaxyproject/galaxy/archive/v{{GALAXY_VERSION}}.tar.gz dest=/tmp/v{{GALAXY_VERSION}}.tar.gz force=no
-    - unarchive: src=/tmp/v{{GALAXY_VERSION}}.tar.gz dest={{GALAXY_INSTALL_PATH | dirname}} copy=no
-    - file: src={{GALAXY_INSTALL_PATH | dirname}}/galaxy-{{GALAXY_VERSION}} dest={{GALAXY_INSTALL_PATH}} state=link
-
-    # General configuration
-    - copy: src={{GALAXY_INSTALL_PATH}}/config/galaxy.ini.sample dest={{GALAXY_INSTALL_PATH}}/config/galaxy.ini force=no
-    - ini_file: dest={{GALAXY_INSTALL_PATH}}/config/galaxy.ini section={{ item.section }} option={{ item.option }} value="{{ item.value }}"
-      with_items:
-        - { section: 'server:main', option: 'host', value: '0.0.0.0' }
-        - { section: 'app:main', option: 'admin_users', value: "{{GALAXY_ADMIN_MAIL}}" }
-        - { section: 'app:main', option: 'master_api_key', value: "{{GALAXY_ADMIN_API_KEY}}" }
-        - { section: 'app:main', option: 'tool_dependency_dir', value: "{{GALAXY_INSTALL_PATH}}/tool_dependency_dir" }
-
-
-    # LRMS specific configuration
-    - include: galaxy_pbs.yml
-      when: "{{ QUEUE_SYSTEM == 'torque' }}"
-
-    # Create galaxy user to launch the daemon
-    - user: name={{GALAXY_USER}} password={{GALAXY_USER_PASSWORD}} generate_ssh_key=yes shell=/bin/bash uid={{GALAXY_USER_ID}}
-    - local_action: command cp /home/{{GALAXY_USER}}/.ssh/id_rsa.pub /tmp/{{GALAXY_USER}}_id_rsa.pub creates=/tmp/{{GALAXY_USER}}_id_rsa.pub
-    - name: Add the authorized_key to the user {{GALAXY_USER}}
-      authorized_key: user={{GALAXY_USER}} key="{{ lookup('file', '/tmp/' + GALAXY_USER + '_id_rsa.pub') }}"
-
-    - file: path=/home/{{GALAXY_USER}} state=directory owner={{GALAXY_USER}} group={{GALAXY_USER}} recurse=yes
-
-    - copy: dest="{{GALAXY_INSTALL_PATH}}/config/local_env.sh" content="PYTHON_EGG_CACHE={{GALAXY_INSTALL_PATH}}/egg\nGALAXY_RUN_ALL=1\nexport PYTHON_EGG_CACHE GALAXY_RUN_ALL"
-
-    # Install python depencies
-    - shell: bash scripts/common_startup.sh chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/.venv/lib/python2.7/site-packages/yaml
-      become: true
-      become_user: "{{GALAXY_USER}}"
-
-    # Create DB
-    - shell: bash ./create_db.sh chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/database/universe.sqlite
-      become: true
-      become_user: "{{GALAXY_USER}}"
-
-    # Launch the server
-    - shell: bash run.sh --daemon chdir={{GALAXY_INSTALL_PATH}}/ creates={{GALAXY_INSTALL_PATH}}/main.pid
-      become: true
-      become_user: "{{GALAXY_USER}}"
-
-@end
-)
-
-configure galaxy_pbs (
-@begin
-    # Install pbs_python
-    - apt: name=libtorque2-dev
-      when: ansible_os_family == "Debian"
-    - yum: name=torque-devel
-      when: ansible_os_family == "RedHat"
-    - get_url: url=http://ftp.surfsara.nl/pub/outgoing/pbs_python-4.6.0.tar.gz dest=/tmp
-    - unarchive: src=/tmp/pbs_python-4.6.0.tar.gz dest=/tmp copy=no
-    - command: ./configure chdir=/tmp/pbs_python-4.6.0 creates=/tmp/pbs_python-4.6.0/Makefile
-    - command: make chdir=/tmp/pbs_python-4.6.0 creates=/tmp/pbs_python-4.6.0/build
-    - pip: name=/tmp/pbs_python-4.6.0 virtualenv={{GALAXY_INSTALL_PATH}}/.venv editable=false
-
-    # Configure job_conf.xml
-    - copy:
-        content: |
-            <?xml version="1.0"?>
-            <job_conf>
-            	<plugins>
-            		<plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
-            		<plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="{{NNODES}}" />
-            	</plugins>
-            	<handlers>
-            		<handler id="main" />
-            	</handlers>
-            	<destinations default="pbs">
-            		<destination id="local" runner="local"/>
-            		<destination id="pbs" runner="pbs" tags="mycluster" />
-            		<destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
-            			<param id="Resource_List">walltime=72:00:00</param>
-            		</destination>
-            	</destinations>
-            	<tools>
-            		<tool id="upload1" destination="local"/>
-            	</tools>
-            </job_conf>
-        dest: "{{GALAXY_INSTALL_PATH}}/config/job_conf.xml"
-
-    # Set the databse galaxy path to NFS shared dir
-    - file: path={{GALAXY_INSTALL_PATH}}/database/pbs state=directory recurse=yes
 @end
 )
 

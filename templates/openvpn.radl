@@ -31,6 +31,6 @@ configure wn (
 ---
   - ec3_prio: -10
     roles:
-    - { role: 'grycap.blcr', openvpn_type_of_node: "wn" }
+    - { role: 'grycap.openvpn', openvpn_type_of_node: "wn" }
 @end
 )
