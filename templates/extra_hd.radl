@@ -1,7 +1,7 @@
 description galaxy (
     kind = 'component' and
-    short = 'Adds an extra HD with 10 GB in /mnt directory' and
-    content = 'Adds an extra HD with 10 GB in /mnt directory'
+    short = 'Adds an extra HD with 100 GB in /mnt directory' and
+    content = 'Adds an extra HD with 100 GB in /mnt directory in the font node and mount it in the WNs with NFS in the shame path.'
 )
 
 
