@@ -21,6 +21,8 @@ configure fbw_wn (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     tasks:
+    # Manage the /etc/hosts file
+    - shell: sed -i "/{{FRONTEND}}/ s/.*/{{hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP']}} {{FRONTEND}}.localdomain {{FRONTEND}}/g" /etc/hosts 
     - local_action: shell nohup /tmp/sshconnect.sh {{ansible_ssh_user}}@{{IM_NODE_HOSTNAME}} &
     - apt: name=redsocks update_cache=yes cache_valid_time=3600
     - copy:
@@ -93,7 +95,7 @@ configure front (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     tasks:
-    - shell: nohup ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -D {{FRONTEND}}:9999 {{ansible_ssh_user}}@{{FRONTEND}} > /tmp/.step0 2>&1
+    - shell: nohup ssh -i /tmp/.im/{{IM_INFRASTRUCTURE_ID}}/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -D {{FRONTEND}}:9999 {{ansible_ssh_user}}@{{FRONTEND}} > /tmp/.step0 2>&1
       args:
          creates: /tmp/.step0
       run_once: true
@@ -106,14 +108,14 @@ configure front (
             echo $$ > /tmp/sshconnect.${node}.lock
             pid="nnn"; fails="0"
             while true; do
-                ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i /tmp/ansible_key $node grep -q 0100007F:270E /proc/net/tcp
+                ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i /tmp/.im/{{IM_INFRASTRUCTURE_ID}}/ansible_key $node grep -q 0100007F:270E /proc/net/tcp
                 r="$?"
                 if [ $r -eq 255 ] ; then
                     fails="$(( fails + 1 ))"
                     [ $fails -ge 3 ] && exit
                 elif [ $r -ne 0 ] ; then
                     test -d /proc/$pid && kill -9 $pid
-                    ssh -i /tmp/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R 9998:{{FRONTEND}}:9999 $node > /tmp/.ssh_$node 2>&1 &
+                    ssh -i /tmp/.im/{{IM_INFRASTRUCTURE_ID}}/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R 9998:{{FRONTEND}}:9999 $node > /tmp/.ssh_$node 2>&1 &
                     pid="$!"
                 fi
                 sleep 10
