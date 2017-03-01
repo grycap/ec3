@@ -1,14 +1,11 @@
 description fbw (
     kind = 'component' and
     short = 'Create SSH tunnels from the frontend to the working nodes.' and
-    content = 'Allow connectivity between frontend and working nodes when frontend is behind a firewall by using SSH tunnels. Once established the tunnels, working nodes redirect traffic to the frontend throw the tunnel. For that it is installed redsocks and inserted some rules in IPTables. See: http://darkk.net.ru/redsocks/.
+    content = 'Allow connectivity between frontend and working nodes when frontend is behind a firewall by using SSH tunnels. Once established the tunnels, working nodes redirect traffic to the frontend throw the tunnel. For that it is installed redsocks and inserted some rules in IPTables. See: http://darkk.net.ru/redsocks/.'
+)
 
-To use this template append the configure "fbw_wn" to the nodes\' configure like this:
-configure wn_outside (
-@begin
-  - ec3_append: fbw_wn
-@end
-)'
+system front (
+    disk.0.applications contains (name = 'ansible.modules.grycap.ssh-tunneling')
 )
 
 configure fbw_wn (
@@ -20,72 +17,8 @@ configure fbw_wn (
         ec3_xpath: /network/public/outports
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
-    tasks:
-    # Manage the /etc/hosts file
-    - shell: sed -i "/{{FRONTEND}}/ s/.*/{{hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP']}} {{FRONTEND}}.localdomain {{FRONTEND}}/g" /etc/hosts 
-    - local_action: shell nohup /tmp/sshconnect.sh {{ansible_ssh_user}}@{{IM_NODE_HOSTNAME}} &
-    - apt: name=redsocks update_cache=yes cache_valid_time=3600
-    - copy:
-        content: |
-            #! /bin/bash
-            test -f /tmp/.redsocksetup0 && exit
-            service redsocks stop || true
-            echo 'base { 
-                log_debug = off;
-                log_info = on;
-                log = "syslog:daemon";
-                daemon = on;
-                user = redsocks;
-                group = redsocks;
-                redirector = iptables;
-            }
-            redsocks {
-                local_ip = 127.0.0.1;
-                local_port = 12345;
-                ip = 127.0.0.1;
-                port = 9998;
-                type = socks5;
-            }' > /etc/redsocks.conf
-            port="12346"
-            UDPPORTS="`echo '{{FRONT_PORTS}}' | awk 'BEGIN {RS=","; FS="/"} /udp/ {print $1}'`"
-            for p in $UDPPORTS; do
-                echo "redudp {
-                        local_ip = 127.0.0.1;
-                        local_port = $port;
-                        ip = 127.0.0.1;
-                        port = 9998;
-                        dest_ip = `awk '/{{FRONTEND}}/ {print \$1}' /etc/hosts`;
-                        dest_port = $p;
-                        udp_timeout = 30;
-                        udp_timeout_stream = 180;
-                    }"
-                port="$(( port+1 ))"
-            done >> /etc/redsocks.conf
-            chgrp ssh /usr/sbin/sshd
-            chmod g+s /usr/sbin/sshd
-            touch /tmp/.redsocksetup0
-            killall -9 sshd
-            service ssh start
-        dest: /tmp/redsocksetup0.sh
-        mode: 0755
-
-    - copy:
-        content: |
-            #! /bin/bash
-            test -f /tmp/.redsocksetup1 && exit
-            /sbin/iptables -t nat -A OUTPUT -p tcp -d {{FRONTEND}} -m owner ! --gid-owner ssh -j REDIRECT --to-ports 12345;
-            port="12346";
-            for p in $UDPPORTS; do
-                /sbin/iptables -t nat -A OUTPUT -p udp --dport $p -d {{FRONTEND}} -m owner ! --gid-owner ssh -j REDIRECT --to-ports $port;
-                port="$(( port+1 ))";
-            done
-            /usr/sbin/redsocks -c /etc/redsocks.conf
-            touch /tmp/.redsocksetup1
-        dest: /tmp/redsocksetup1.sh
-        mode: 0755
-
-    - command: /tmp/redsocksetup0.sh
-    - command: /tmp/redsocksetup1.sh
+    roles:
+    - { role: 'grycap.ssh-tunneling', ssh_tunnels_node:'wn', front_ip:'{{FRONTEND}}', front_ports:'{{FRONT_PORTS}}'}
 @end
 ) 
 
@@ -94,33 +27,7 @@ configure front (
   - vars:
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
-    tasks:
-    - shell: nohup ssh -i /tmp/.im/{{IM_INFRASTRUCTURE_ID}}/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -D {{FRONTEND}}:9999 {{ansible_ssh_user}}@{{FRONTEND}} > /tmp/.step0 2>&1
-      args:
-         creates: /tmp/.step0
-      run_once: true
-      ignore_errors: yes
-    - copy:
-        content: |
-            #! /bin/bash
-            node="$1"
-            [ -f /tmp/sshconnect.${node}.lock ] && [ -d /proc/`cat /tmp/sshconnect.${node}.lock` ] && exit
-            echo $$ > /tmp/sshconnect.${node}.lock
-            pid="nnn"; fails="0"
-            while true; do
-                ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i /tmp/.im/{{IM_INFRASTRUCTURE_ID}}/ansible_key $node grep -q 0100007F:270E /proc/net/tcp
-                r="$?"
-                if [ $r -eq 255 ] ; then
-                    fails="$(( fails + 1 ))"
-                    [ $fails -ge 3 ] && exit
-                elif [ $r -ne 0 ] ; then
-                    test -d /proc/$pid && kill -9 $pid
-                    ssh -i /tmp/.im/{{IM_INFRASTRUCTURE_ID}}/ansible_key -N -f -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -R 9998:{{FRONTEND}}:9999 $node > /tmp/.ssh_$node 2>&1 &
-                    pid="$!"
-                fi
-                sleep 10
-            done
-        dest: /tmp/sshconnect.sh
-        mode: 0755
+    roles:
+    - { role: 'grycap.ssh-tunneling', ssh_tunnels_node:'front', front_ip:'{{FRONTEND}}'}
 @end
 ) 
