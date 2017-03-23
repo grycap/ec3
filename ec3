@@ -362,11 +362,11 @@ class ClusterStore:
         s0 = r.get(system("front"))
         if not refresh or not s0 or s0.getValue("state") not in system.IS_ACCESSIBLE: return r
         try:
-            new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
             success, res = new_im_server.GetInfrastructureInfo(infrId, auth)
             if not success: raise Exception(res)
-            success, info = new_im_server.GetVMInfo(infrId, "0", auth)
+            success, info = new_im_server.GetVMInfo(infrId, vmId, auth)
             if not success: raise Exception(info)
             r = parse_radl(info)
             r.check()
@@ -396,12 +396,13 @@ class ClusterStore:
             pass
 
     @staticmethod
-    def get_im_server_infrId_and_auth(r):
+    def get_im_server_infrId_and_vmId_and_auth(r):
         s0 = r.get(system("front"))
         im_server_name = s0.getValue("__im_server", default="http://%s:8899" % getPublicIP(s0))
         infrId = s0.getValue("__infrastructure_id", default=0)
+        vmId = s0.getValue("__vm_id", default="0")
         auth = json.loads(s0.getValue("auth"))
-        return im_server_name, infrId, auth
+        return im_server_name, infrId, vmId, auth
 
 class argparse_configyaml:
     def __init__(self, *args, **kwargs):
@@ -611,9 +612,30 @@ class CmdLaunch:
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
 
-        CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
+        vm_id = CmdLaunch.get_front_vm_id(options.xmlrpc[0], infrId, vm_ids, auth_data)
+
+        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, options.xmlrpc[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
         sys.exit(0)
+
+    @staticmethod
+    def get_front_vm_id(im_server_url, infrId, vm_ids, auth_data):
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            if len(vm_ids) == 1:
+                return vm_ids[0]
+            else:
+                for vm_id in vm_ids:
+                    success, info = im_server.GetVMInfo(infrId, vm_id, auth_data)
+                    if not success: raise Exception(info)
+                    radl = parse_radl(info)
+                    radl.check()
+                    if radl.get(system("front")):
+                        return vm_id
+                CLI.display("Error getting front-end VM ID. Assuming 0.", level=logging.WARNING)
+        except Exception as e:
+            CLI.display("Error getting front-end VM ID: %s. Assuming 0." % str(e), level=logging.WARNING)
+        return "0"
 
     @staticmethod
     def generate_radl(template_names, pieces_radl, auth_content):
@@ -680,10 +702,6 @@ class CmdLaunch:
             wn = radl.get(system("wn"))
             if not wn.getValue("disk.0.image.url"):
                 raise Exception("system 'wn' has no image URL.")
-           
-        deploys = radl.gets(deploy)
-        if len(deploys) != 1 or deploys[0].id != 'front': 
-            raise Exception("There must be only one deploy of the 'front' system")
         
         return True
 
@@ -877,7 +895,7 @@ class CmdDestroy:
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
-            new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
             
             if options.auth_file:
@@ -911,7 +929,7 @@ class CmdReconfigure:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -943,7 +961,7 @@ class CmdReconfigure:
             CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
-        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False,
+        CmdLaunch.wait_transfer_save(infrId, vmId, auth_data, im_server_url, False, False,
                                      options.clustername, False, False)
         sys.exit(0)
 
@@ -1008,7 +1026,7 @@ class CmdClone:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId_old, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId_old, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1078,7 +1096,9 @@ class CmdClone:
             sys.exit(1)
         new_clustername = options.clustername + "_cloned"
 
-        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        vm_id = CmdLaunch.get_front_vm_id(im_server_url, infrId, vm_ids, auth_data)
+
+        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, im_server_url, False, False, new_clustername, False, False)
         CLI.display("Infrastructure successfully cloned with ID: " + str(infrId) + ". The cluster name now is: " + new_clustername)
 
         # Destroy the old cluster if the user has requested it
@@ -1124,7 +1144,7 @@ class CmdMigrate:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1213,7 +1233,9 @@ class CmdMigrate:
             sys.exit(1)
         new_clustername = options.clustername + "_cloned"
 
-        CmdLaunch.wait_transfer_save(infrId2, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        vm_id = CmdLaunch.get_front_vm_id(im_server_url, infrId2, vm_ids, auth_data)
+
+        CmdLaunch.wait_transfer_save(infrId2, vm_id, auth_data, im_server_url, False, False, new_clustername, False, False)
         CLI.display("Infrastructure successfully cloned with ID: " + str(infrId2) + ". The cluster name now is: " + new_clustername)
 
         # Obtain the job list running in the cluster
@@ -1373,7 +1395,7 @@ class CmdStop:
             CLI.display("WARNING: you are going to stop the infrastructure (including frontend and nodes).")
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
-            cluster_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            cluster_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             cluster_im_server = xmlrpclib.ServerProxy(cluster_im_server_url, allow_none=True)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             
@@ -1424,7 +1446,7 @@ class CmdRestart:
 
         try:
             r = ClusterStore.load(options.clustername)
-            cluster_im_server_url, cluster_infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            cluster_im_server_url, cluster_infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
 
             # obtengo infrId del im externo
