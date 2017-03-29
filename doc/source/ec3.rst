@@ -400,6 +400,32 @@ In particular, if you are using Amazon Web Services, we suggest you use the Iden
 service to create a user with a new set of credentials. This way, you can rest assured that these credentials can
 be cancelled at anytime. 
 
+
+Usage of Golden Images
+-----------------------
+
+Golden images are a mechanism to accelerate the contextualization process of working nodes in the cluster. They are created when the first node of the cluster is deployed and configured. It provides a preconfigured AMI specially created for the cluster, with no interaction with the user required. Each golden image has a unique id that relates it with the infrastructure. Golden images are also deleted when the cluster is destroyed.
+
+There are two ways to indicate to EC3 the usage of this strategy:
+
+* Command option in the CLI interface: as explained before, the ``launch`` command offers the option ``-g``, ``--golden-images`` to indicate to EC3 the usage of golden images, e.g.::
+
+   ./ec3 launch mycluster slurm  ubuntu -a auth.dat --golden-images
+  
+* In the `RADL`_: as an advanced mode, the user can also specify the usage of golden images in the RADL file that describes the ``system`` architecture of the working nodes, e.g.::
+
+   system wn (
+     cpu.arch = 'x86_64' and
+     cpu.count >= 1 and
+     memory.size >= 1024m and
+     disk.0.os.name = 'linux' and
+     disk.0.os.credentials.username = 'ubuntu' and
+     disk.0.os.credentials.password = 'dsatrv' and
+     ec3_golden_images = 'true'
+   )
+
+Currently this feature is only available in the command-line interface for `OpenNebula`_ and `Amazon Web Services`_ providers. The list of supported providers will be uploaded soon.
+
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://imdocs.readthedocs.org/en/devel/radl.html
 .. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
