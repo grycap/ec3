@@ -555,7 +555,8 @@ class CmdLaunch:
         parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster", config=False)
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
-        parser.set_defaults(func=CmdLaunch.run)
+        parser.add_argument("-g", "--golden-images", action="store_true", dest="golden_image", default=False, help="generate a VMI from the first deployed node, to accelerate the contextualization process of next node deployments")
+	parser.set_defaults(func=CmdLaunch.run)
 
     @staticmethod
     def run(options):
@@ -592,6 +593,11 @@ class CmdLaunch:
         except Exception as e:
             CLI.display("Error generating RADL: %s Check the templates used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
             sys.exit(1)
+
+        # Consider the use of golden images
+        if options.golden_image:
+            if radl.get(system("front")):
+                radl.get(system("front")).setValue("ec3_golden_images", "true")
 
         # Finish if dry run
         if options.dry_run:
