@@ -79,6 +79,11 @@ To deploy a cluster issue this command::
 .. option:: -y, --yes
 
    Do not ask for confirmation when the connection to IM is not secure. Proceed anyway.
+   
+.. option:: -g, --golden-images
+
+   Generate a VMI from the first deployed node, to accelerate the contextualization process of next node                deployments.
+
 
 Command ``reconfigure``
 -----------------------
