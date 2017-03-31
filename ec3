@@ -596,8 +596,8 @@ class CmdLaunch:
 
         # Consider the use of golden images
         if options.golden_image:
-            if radl.get(system("front")):
-                radl.get(system("front")).setValue("ec3_golden_images", "true")
+            if radl.get(system("wn")):
+                radl.get(system("wn")).setValue("ec3_golden_images", "true")
 
         # Finish if dry run
         if options.dry_run:
