@@ -917,6 +917,7 @@ class CmdDestroy:
                 if not success: raise Exception(newInfrId)
             except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
+		sys.exit(1)
             #success, info = new_im_server.DestroyInfrastructure(infrId, auth)
             success, info = im_ext_server.DestroyInfrastructure(newInfrId, auth)
             if not success:
