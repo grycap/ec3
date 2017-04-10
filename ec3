@@ -18,7 +18,7 @@
 # limitations under the License.                                             #
 #--------------------------------------------------------------------------- #
 
-import sys, time, logging, os, argparse, tempfile, random, re, io
+import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess
 try:
     import xmlrpclib
 except ImportError:
@@ -30,9 +30,9 @@ try:
 except ImportError:
     import simplejson as json
 try:
-	unicode("hola")
+    unicode("hola")
 except NameError:
-	unicode = str
+    unicode = str
 
 from IM2.auth import Authentication
 from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
@@ -52,6 +52,8 @@ FILENAME_CONFIG = "~/.ec3/config.yml"
 TIMEOUT = 6000
 # Time in seconds between two consecutive requests to IM service
 DELAY = 5
+# Max number of errors permitted in the VM status check
+STATE_CHECK_RETRIES = 3
 
 def dump_radl(r, aspect=None):
     r = r.clone()
@@ -417,7 +419,7 @@ class argparse_configyaml:
                 self._defaults = yaml.load(open(configfilename, "r").read())
             except Exception as e:
                 #CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)), level=logging.ERROR, exception=True)
-                sys.stderr.write("ERROR: Error reading configuration file " + configfilename+ ". Delete it and try again.\n")
+                sys.stderr.write("ERROR: Error reading configuration file '%s': %s. Delete it and try again.\n" % (configfilename, str(e)))
                 sys.exit(-1)
             self._configfile = None
         else:
@@ -706,6 +708,26 @@ class CmdLaunch:
         return True
 
     @staticmethod
+    def get_vm_info(im_server, infrId, vmId, auth_data):
+        """
+        Get VM info with a number of retries
+        """
+        success = False
+        cont = 0
+        info = "Error getting VM info max number of attempts reached."
+        while not success and cont < STATE_CHECK_RETRIES:
+            cont += 1
+            try:
+                success, info = im_server.GetVMInfo(infrId, vmId, auth_data)
+            except Exception as vminfoex:
+                info = str(vminfoex)
+            if not success:
+                CLI.display("WARNING: Error getting VM info: %d (%d/%d)." % (info, cont, STATE_CHECK_RETRIES))
+                time.sleep(DELAY)
+
+        return success, info
+
+    @staticmethod
     def wait_transfer_save(infrId, vmId, auth_data, im_server_url, options_destroy, options_not_store,
                            options_clustername, options_print_radl, options_json):
         # Waiting for front-end configured
@@ -718,7 +740,7 @@ class CmdLaunch:
         im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
         try:
             while True:
-                success, info = im_server.GetVMInfo(infrId, vmId, auth_data)
+                success, info = CmdLaunch.get_vm_info(im_server, infrId, vmId, auth_data)
                 if not success: raise Exception(info)
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
@@ -895,7 +917,7 @@ class CmdDestroy:
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
-            new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            new_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
             
             if options.auth_file:
@@ -1026,7 +1048,7 @@ class CmdClone:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId_old, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            im_server_url, infrId_old, _, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1071,11 +1093,10 @@ class CmdClone:
         # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
         # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
         for s in radl_obj.gets(system):
-            id = s.getId()
             if s.getValue("ec3_class") is not None:
                 radl_obj.delete(s)
                 for c in radl_obj.gets(configure):
-                    if c.getId() == id:
+                    if c.getId() == s.getId():
                         radl_obj.delete(c)
 
         radl = dump_radl(radl_obj)
@@ -1144,7 +1165,7 @@ class CmdMigrate:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            im_server_url, infrId, _, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1193,8 +1214,7 @@ class CmdMigrate:
         # Comprobar que el cluster ha sido lanzado con blcr y slurm, en otro caso emitir un error y acabar ejecucion
         radl_obj = parse_radl(radl)
         for s in radl_obj.gets(system):
-            id = s.getId()
-            if id == "front":            
+            if s.getId() == "front":
                 if "blcr" not in s.getValue("ec3_templates_cmd") or "slurm" not in s.getValue("ec3_templates_cmd"):
                     CLI.display("Error migrating the cluster: Cluster %s is not a SLURM cluster with BLCR installed, so the migration process can't be performed." % str(options.clustername), level=logging.ERROR)
                     sys.exit(1)
@@ -1209,11 +1229,10 @@ class CmdMigrate:
         # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
         # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
         for s in radl_obj.gets(system):
-            id = s.getId()
             if s.getValue("ec3_class") is not None:
                 radl_obj.delete(s)
                 for c in radl_obj.gets(configure):
-                    if c.getId() == id:
+                    if c.getId() == s.getId():
                         radl_obj.delete(c)
 
         radl = dump_radl(radl_obj)
@@ -1255,7 +1274,7 @@ class CmdMigrate:
         
         if len(job_list) > 0:
             # Checkpoint all the jobs running in the cluster
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Performing a checkpoint to the job "+ key)
                     if key_pem == "":
@@ -1276,7 +1295,7 @@ class CmdMigrate:
                 CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
 
             # Copy the checkpoint files to a bucket in Amazon S3
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Uploading checkpoint files to S3")
                     if key_pem == "":
@@ -1301,7 +1320,7 @@ class CmdMigrate:
                 CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
             
             # Download checkpoint files from the bucket in Amazon S3 to the cloned cluster
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Downloading checkpoint files to S3")
                     if key_pem == "":
@@ -1313,7 +1332,7 @@ class CmdMigrate:
                     CLI.display("Error while downloading checkpoint files to S3", level=logging.ERROR)
                 
             # Restart the jobs in the cloned cluster
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Restarting the job "+ key)
                     if key_pem == "":
@@ -1340,7 +1359,7 @@ class CmdMigrate:
         
         CLI.display("Migration process completed")
         sys.exit(0)
-        
+
 
     # Parse the exit of the scontrol SLURM command
     @staticmethod
@@ -1351,7 +1370,7 @@ class CmdMigrate:
         for line in out.split("\n"):
             line = line.strip()
             if not line: continue
-            d = {}; r.append(d); s = False
+            d = {}; r.append(d); s = False; f = None
             for k in [ j for i in line.split("=") for j in i.rsplit(" ", 1) ]:
                 if s: d[f] = k
                 else: f = k
@@ -1362,12 +1381,12 @@ class CmdMigrate:
     @staticmethod
     def get_job_info(ip, user, passwd, key_pem):
         if key_pem == "":
-            exit = CmdMigrate.parse_scontrol(run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
+            output = CmdMigrate.parse_scontrol(run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
         else:
-            exit = CmdMigrate.parse_scontrol(run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
+            output = CmdMigrate.parse_scontrol(run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
         job_list = {}
-        if exit:
-            for key in exit:
+        if output:
+            for key in output:
                 if key["JobState"] == "RUNNING": 
                     job_list [str(key["JobId"])] = str(key["BatchHost"])
         return job_list
@@ -1395,7 +1414,7 @@ class CmdStop:
             CLI.display("WARNING: you are going to stop the infrastructure (including frontend and nodes).")
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
-            cluster_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            cluster_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             cluster_im_server = xmlrpclib.ServerProxy(cluster_im_server_url, allow_none=True)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             
@@ -1446,7 +1465,7 @@ class CmdRestart:
 
         try:
             r = ClusterStore.load(options.clustername)
-            cluster_im_server_url, cluster_infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            _, _, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
 
             # obtengo infrId del im externo
