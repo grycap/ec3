@@ -18,13 +18,13 @@ network public (
 network private ()
 
 system front (
-  # Net interfaces definition. Order matters !
-  net_interface.0.connection = 'private' and
-  net_interface.0.dns_name = 'monascaserver' and
-  net_interface.1.connection = 'public' and
-  net_interface.1.dns_name = 'monascaserverpublic' and
   ec3_templates contains 'monasca' and
   # Install ansible roles needed
+  disk.0.applications contains (name = 'ansible.modules.grycap.zookeeper') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.kafka') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.influxdb') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.grafana') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.storm') and
   disk.0.applications contains (name = 'ansible.modules.grycap.monasca') and
   disk.0.applications contains (name = 'ansible.modules.grycap.monasca-agent') and
   disk.0.applications contains (name = 'ansible.modules.grycap.monasca-alarms')
@@ -32,12 +32,15 @@ system front (
 
 configure monasca_vars (
 @begin
-  keystone_ip_address: '10.0.0.83'
+  keystone_ip_address: '10.0.0.3'
   mysql_host: '127.0.0.1'
   mysql_root_pass: 'secretdatabase'
   os_username: 'admin'
-  os_password: 'yoyoyo'
+  os_password: 'password'
   os_project_name: 'admin'
+  os_mon_agent_username: 'monasca-agent'
+  os_mon_agent_password: 'password'
+  os_mon_project_name: 'mini-mon'
 @end
 )
 
@@ -45,19 +48,18 @@ configure front (
 @begin
   - pre_tasks:
     - include_vars: monasca_vars.yml
+
     vars:
       os_mon_username: 'mini-mon'
       os_mon_password: 'password'
-      os_mon_project_name: 'mini-mon'
+      monasca_system_shell: '/bin/false'
+      monasca_system_user_name: 'monasca'
+      monasca_system_user_home: '/var/lib/{{ monasca_system_user_name }}'
+
     roles:
-    - { role: 'grycap.monasca', tags: [ "os-monasca" ],
-                                os_mon_agent_username: 'monasca-agent',
-                                os_mon_agent_password: 'password' }
+    - { role: 'grycap.monasca' }
+    - { role: 'grycap.monasca-alarms' }
 
-    - { role: 'grycap.monasca-alarms', tags: [ "os-monasca-alarms" ] }
-
-    - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
-                                      monasca_ip_address: '{{ansible_default_ipv4}}' }
 @end
 )
 
@@ -70,8 +72,8 @@ configure wn (
   - pre_tasks:
     - include_vars: monasca_vars.yml
     roles:
-    - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
-                                      monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
+    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}',
+                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
 @end
 )
 
@@ -84,7 +86,7 @@ configure wnmesos (
   - pre_tasks:
     - include_vars: monasca_vars.yml
     roles:
-    - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
-                                      monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
+    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}',
+                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
 @end
 )
