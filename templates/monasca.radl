@@ -72,8 +72,8 @@ configure wn (
   - pre_tasks:
     - include_vars: monasca_vars.yml
     roles:
-    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}',
-                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
+    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}',
+                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
 @end
 )
 
@@ -86,7 +86,7 @@ configure wnmesos (
   - pre_tasks:
     - include_vars: monasca_vars.yml
     roles:
-    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}',
-                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }
+    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}',
+                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
 @end
 )
