@@ -18,7 +18,7 @@ system front (
     net_interface.1.dns_name = 'htcondoreserver' and
     queue_system = 'htcondor' and
     # Install ansible roles needed
-    disk.0.applications contains (name = 'ansible.modules.grycap.sge') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.htcondor') and
     disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
     disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
