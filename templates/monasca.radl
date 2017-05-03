@@ -1,0 +1,91 @@
+description monasca (
+    kind = 'component' and
+    short = 'Monasca is a open-source multi-tenant, highly scalable, performant, fault-tolerant monitoring-as-a-service solution.' and
+    content = 'Monasca is a open-source multi-tenant, highly scalable, performant, fault-tolerant monitoring-as-a-service solution that integrates with OpenStack. It uses a REST API for high-speed metrics processing and querying and has a streaming alarm engine and notification engine.
+
+Webpage: https://wiki.openstack.org/wiki/Monasca'
+)
+
+network public (
+  outbound = 'yes' and
+  # Grafana
+  outports contains '3000/tcp' and
+  # Monasca api
+  outports contains '8070/tcp'
+)
+
+network private ()
+
+system front (
+  ec3_templates contains 'monasca' and
+  # Install ansible roles needed
+  disk.0.applications contains (name = 'ansible.modules.grycap.zookeeper') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.kafka') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.influxdb') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.grafana') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.storm') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.monasca') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.monasca-agent') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.monasca-alarms')
+)
+
+configure monasca_vars (
+@begin
+  keystone_ip_address: '10.0.0.3'
+  mysql_host: '127.0.0.1'
+  mysql_root_pass: 'secretdatabase'
+  os_username: 'admin'
+  os_password: 'password'
+  os_project_name: 'admin'
+  os_mon_agent_username: 'monasca-agent'
+  os_mon_agent_password: 'password'
+  os_mon_project_name: 'mini-mon'
+@end
+)
+
+configure front (
+@begin
+  - pre_tasks:
+    - include_vars: monasca_vars.yml
+
+    vars:
+      os_mon_username: 'mini-mon'
+      os_mon_password: 'password'
+      monasca_system_shell: '/bin/false'
+      monasca_system_user_name: 'monasca'
+      monasca_system_user_home: '/var/lib/{{ monasca_system_user_name }}'
+
+    roles:
+    - { role: 'grycap.monasca' }
+    - { role: 'grycap.monasca-alarms' }
+
+@end
+)
+
+system wn (
+  net_interface.0.connection='private'
+)
+
+configure wn (
+@begin
+  - pre_tasks:
+    - include_vars: monasca_vars.yml
+    roles:
+    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}',
+                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+@end
+)
+
+system wnmesos (
+  net_interface.0.connection='private'
+)
+
+configure wnmesos (
+@begin
+  - pre_tasks:
+    - include_vars: monasca_vars.yml
+    roles:
+    - { role: 'grycap.monasca-agent', monasca_ip_address: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}',
+                                      mysql_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+@end
+)
