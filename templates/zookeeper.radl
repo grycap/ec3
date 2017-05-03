@@ -1,9 +1,9 @@
-description chronos (
+description zookeeper (
     kind = 'component' and
-    short = 'An open-source tool to orchestrate job execution in a Mesos cluster' and
-    content = 'Chronos is a fault tolerant job scheduler for Mesos which handles dependencies and ISO8601 based schedules.
+    short = 'An open-source server which enables highly reliable distributed coordination' and
+    content = 'ZooKeeper is a centralized service for maintaining configuration information, naming, providing distributed synchronization, and providing group services.
 
-Webpage: https://mesos.github.io/chronos/'
+Webpage: https://zookeeper.apache.org/'
 )
 
 system front (

@@ -1,4 +1,4 @@
-description chronos (
+description consul (
     kind = 'component' and
     short = 'Service Discovery and Configuration Made Easy' and
     content = 'Consul makes it simple for services to register themselves and to discover other services via a DNS or HTTP interface.

@@ -1,4 +1,3 @@
-
 description monasca (
     kind = 'component' and
     short = 'Monasca is a open-source multi-tenant, highly scalable, performant, fault-tolerant monitoring-as-a-service solution.' and
