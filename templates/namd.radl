@@ -16,3 +16,10 @@ configure front (
     - { role: 'grycap.namd' }
 @end
 )
+
+configure wn (
+@begin
+  - roles:
+    - { role: 'grycap.namd' }
+@end
+)
