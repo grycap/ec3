@@ -728,7 +728,7 @@ class CmdLaunch:
             except Exception as vminfoex:
                 info = str(vminfoex)
             if not success:
-                CLI.display("WARNING: Error getting VM info: %d (%d/%d)." % (info, cont, STATE_CHECK_RETRIES))
+                CLI.display("WARNING: Error getting VM info: %s (%d/%d)." % (info, cont, STATE_CHECK_RETRIES))
                 time.sleep(DELAY)
 
         return success, info
