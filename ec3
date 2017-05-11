@@ -930,6 +930,16 @@ class CmdDestroy:
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
+		
+            #First, check if the infrastructure still remains in the external IM, due to problems installing internal IM
+            try:
+                success, info = im_ext_server.DestroyInfrastructure(infrId, auth)
+                if success:
+                    CLI.display("Success deleting the cluster!")
+		    sys.exit(0)
+            except Exception as e:
+                CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
 
             #Import the infrastructure to the external IM for the destroy operation
             try:
