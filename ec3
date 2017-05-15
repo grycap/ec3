@@ -41,7 +41,7 @@ from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Fea
 
 
 # Our public IM service
-IM_URL = 'http://servproject.i3m.upv.es:8899'
+IM_URL = 'https://servproject.i3m.upv.es:8899'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
@@ -1061,7 +1061,7 @@ class CmdClone:
     def parse(subparsers):
         parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its clonation")
@@ -1171,7 +1171,7 @@ class CmdMigrate:
     def parse(subparsers):
         parser = subparsers.add_parser("migrate", help="migrate a launched cluster together with its workload to another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-b", "--bucket", dest="bucket", nargs=1, help="Name of the already created bucket where to upload ckpt files")
