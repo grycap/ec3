@@ -39,6 +39,12 @@ from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, 
 import IM2.radl.radl as IM_RADL
 from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Features, Aspect, FeaturedAspect
 
+# Disable CERTIFICATE VERIFY
+try:
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+except:
+    pass
 
 # Our public IM service
 IM_URL = 'https://servproject.i3m.upv.es:8899'
