@@ -915,6 +915,7 @@ class CmdDestroy:
     def parse(subparsers):
         parser = subparsers.add_parser("destroy", help="destroy a launched cluster")
         parser.add_argument("clustername", help="name of the cluster to destroy")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
         parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about deleting the cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
@@ -924,7 +925,11 @@ class CmdDestroy:
 
     @staticmethod
     def run(options):
-        im_server_url = IM_URL
+        # If the user indicates an IM URL, we use it, if not we use the default IM
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
