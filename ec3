@@ -986,7 +986,8 @@ class CmdReconfigure:
         parser.add_argument("--add", action="append", help="add a piece of RADL")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
         parser.add_argument("-r", "--reload", action="store_true", dest="reload", default=False, help="reload templates used to launch the cluster and reconfigure the cluster with them (useful if templates changed)")
-        parser.set_defaults(func=CmdReconfigure.run)
+        parser.add_argument("--template", "-t",dest="new_template", help="add a new template/recipe of RADL to the cluster")
+	parser.set_defaults(func=CmdReconfigure.run)
 
     @staticmethod
     def run(options):
@@ -999,16 +1000,21 @@ class CmdReconfigure:
             sys.exit(1)
         try:
             if options.auth_file:
-                auth_content = [ str(l) for l in options.auth_file[0].readlines() if l.find("InfrastructureManager") < 0 ]
-                auth_data = Authentication.normalize(Authentication.read_auth_data(auth_content) + auth_data)
-            auth_content = Authentication.dump(auth_data)
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+            auth_data = Authentication.read_auth_data(auth_content)
         except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
         # Instantiate templates
-        if options.auth_file or options.reload or options.add:
+        if options.auth_file or options.reload or options.add or options.new_template:
             templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
+	    if options.new_template:
+                templates.append(options.new_template)
             radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
             for a in (radl.gets(deploy) + radl.gets(system)): radl.delete(a)
             radl = dump_radl(radl)
