@@ -60,7 +60,7 @@ configure front (
                             htcondor_server_name: 'htcondoreserver',
                             max_number_of_nodes: '{{ NNODES }}' }
     - { role: 'grycap.clues', auth: '{{AUTH}}',
-                              clues_queue_system: 'htcondor',
+                              clues_queue_system: 'condor',
                               max_number_of_nodes: '{{ NNODES }}',
                               vnode_prefix: 'wn' }
 @end
