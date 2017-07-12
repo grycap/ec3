@@ -10,6 +10,6 @@ system front (
 configure front (
 @begin
   - roles:
-    - { role: 'grycap.im' }
+    - { role: 'grycap.im'}
 @end
 )

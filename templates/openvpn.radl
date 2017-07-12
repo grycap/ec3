@@ -21,8 +21,11 @@ configure front (
 @begin
 ---
   - ec3_prio: -10
+    vars:
+      FRONTEND:
+        ec3_xpath: /system/front/net_interface.0.dns_name
     roles:
-    - { role: 'grycap.openvpn', openvpn_type_of_node: "front" }
+    - { role: 'grycap.openvpn', openvpn_type_of_node: "front", openvpn_frontname: '{{FRONTEND}}'}
 @end
 )
 
@@ -30,7 +33,10 @@ configure wn (
 @begin
 ---
   - ec3_prio: -10
+    vars:
+      FRONTEND:
+        ec3_xpath: /system/front/net_interface.0.dns_name
     roles:
-    - { role: 'grycap.blcr', openvpn_type_of_node: "wn" }
+    - { role: 'grycap.openvpn', openvpn_type_of_node: "wn", openvpn_frontname: '{{FRONTEND}}'}
 @end
 )

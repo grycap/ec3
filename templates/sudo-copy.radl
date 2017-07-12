@@ -1,16 +1,18 @@
 
 configure sudo_copy (
 @begin
-    - local_action: command sudo cp {{src}} /tmp/._sudo_cp_{{ src | basename }}
-      with_items: loop|default([0])
+    - local_action: command sudo cp -f {{src}} /tmp/._sudo_cp_{{ src | basename }}
+      with_items: "{{ loop|default([0]) }}"
+
     - local_action: command sudo chmod +r /tmp/._sudo_cp_{{ src | basename }}
-      with_items: loop|default([0])
+      with_items: "{{ loop|default([0]) }}"
+
     - copy:
         src: /tmp/._sudo_cp_{{ src | basename }}
         dest: "{{ dest }}"
         owner: "{{ owner | default(None) }}"
         group: "{{ group | default(None) }}"
         mode: "{{ mode | default(None) }}"
-      with_items: loop|default([0])
+      with_items: "{{ loop|default([0]) }}"
 @end
 )

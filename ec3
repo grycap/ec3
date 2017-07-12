@@ -18,7 +18,7 @@
 # limitations under the License.                                             #
 #--------------------------------------------------------------------------- #
 
-import sys, time, logging, os, argparse, tempfile, random, re, io
+import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess
 try:
     import xmlrpclib
 except ImportError:
@@ -30,9 +30,9 @@ try:
 except ImportError:
     import simplejson as json
 try:
-	unicode("hola")
+    unicode("hola")
 except NameError:
-	unicode = str
+    unicode = str
 
 from IM2.auth import Authentication
 from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
@@ -52,6 +52,8 @@ FILENAME_CONFIG = "~/.ec3/config.yml"
 TIMEOUT = 6000
 # Time in seconds between two consecutive requests to IM service
 DELAY = 5
+# Max number of errors permitted in the VM status check
+STATE_CHECK_RETRIES = 3
 
 def dump_radl(r, aspect=None):
     r = r.clone()
@@ -362,11 +364,11 @@ class ClusterStore:
         s0 = r.get(system("front"))
         if not refresh or not s0 or s0.getValue("state") not in system.IS_ACCESSIBLE: return r
         try:
-            new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
             success, res = new_im_server.GetInfrastructureInfo(infrId, auth)
             if not success: raise Exception(res)
-            success, info = new_im_server.GetVMInfo(infrId, "0", auth)
+            success, info = new_im_server.GetVMInfo(infrId, vmId, auth)
             if not success: raise Exception(info)
             r = parse_radl(info)
             r.check()
@@ -396,12 +398,13 @@ class ClusterStore:
             pass
 
     @staticmethod
-    def get_im_server_infrId_and_auth(r):
+    def get_im_server_infrId_and_vmId_and_auth(r):
         s0 = r.get(system("front"))
         im_server_name = s0.getValue("__im_server", default="http://%s:8899" % getPublicIP(s0))
         infrId = s0.getValue("__infrastructure_id", default=0)
+        vmId = s0.getValue("__vm_id", default="0")
         auth = json.loads(s0.getValue("auth"))
-        return im_server_name, infrId, auth
+        return im_server_name, infrId, vmId, auth
 
 class argparse_configyaml:
     def __init__(self, *args, **kwargs):
@@ -416,7 +419,7 @@ class argparse_configyaml:
                 self._defaults = yaml.load(open(configfilename, "r").read())
             except Exception as e:
                 #CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)), level=logging.ERROR, exception=True)
-                sys.stderr.write("ERROR: Error reading configuration file " + configfilename+ ". Delete it and try again.\n")
+                sys.stderr.write("ERROR: Error reading configuration file '%s': %s. Delete it and try again.\n" % (configfilename, str(e)))
                 sys.exit(-1)
             self._configfile = None
         else:
@@ -554,7 +557,8 @@ class CmdLaunch:
         parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster", config=False)
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
-        parser.set_defaults(func=CmdLaunch.run)
+        parser.add_argument("-g", "--golden-images", action="store_true", dest="golden_image", default=False, help="generate a VMI from the first deployed node, to accelerate the contextualization process of next node deployments")
+	parser.set_defaults(func=CmdLaunch.run)
 
     @staticmethod
     def run(options):
@@ -592,6 +596,11 @@ class CmdLaunch:
             CLI.display("Error generating RADL: %s Check the templates used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
             sys.exit(1)
 
+        # Consider the use of golden images
+        if options.golden_image:
+            if radl.get(system("wn")):
+                radl.get(system("wn")).setValue("ec3_golden_images", "true")
+
         # Finish if dry run
         if options.dry_run:
             if options.print_radl:
@@ -611,9 +620,30 @@ class CmdLaunch:
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
 
-        CmdLaunch.wait_transfer_save(infrId, vm_ids[0], auth_data, options.xmlrpc[0], options.destroy,
+        vm_id = CmdLaunch.get_front_vm_id(options.xmlrpc[0], infrId, vm_ids, auth_data)
+
+        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, options.xmlrpc[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
         sys.exit(0)
+
+    @staticmethod
+    def get_front_vm_id(im_server_url, infrId, vm_ids, auth_data):
+        try:
+            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
+            if len(vm_ids) == 1:
+                return vm_ids[0]
+            else:
+                for vm_id in vm_ids:
+                    success, info = im_server.GetVMInfo(infrId, vm_id, auth_data)
+                    if not success: raise Exception(info)
+                    radl = parse_radl(info)
+                    radl.check()
+                    if radl.get(system("front")):
+                        return vm_id
+                CLI.display("Error getting front-end VM ID. Assuming 0.", level=logging.WARNING)
+        except Exception as e:
+            CLI.display("Error getting front-end VM ID: %s. Assuming 0." % str(e), level=logging.WARNING)
+        return "0"
 
     @staticmethod
     def generate_radl(template_names, pieces_radl, auth_content):
@@ -680,12 +710,28 @@ class CmdLaunch:
             wn = radl.get(system("wn"))
             if not wn.getValue("disk.0.image.url"):
                 raise Exception("system 'wn' has no image URL.")
-           
-        deploys = radl.gets(deploy)
-        if len(deploys) != 1 or deploys[0].id != 'front': 
-            raise Exception("There must be only one deploy of the 'front' system")
         
         return True
+
+    @staticmethod
+    def get_vm_info(im_server, infrId, vmId, auth_data):
+        """
+        Get VM info with a number of retries
+        """
+        success = False
+        cont = 0
+        info = "Error getting VM info max number of attempts reached."
+        while not success and cont < STATE_CHECK_RETRIES:
+            cont += 1
+            try:
+                success, info = im_server.GetVMInfo(infrId, vmId, auth_data)
+            except Exception as vminfoex:
+                info = str(vminfoex)
+            if not success:
+                CLI.display("WARNING: Error getting VM info: %s (%d/%d)." % (info, cont, STATE_CHECK_RETRIES))
+                time.sleep(DELAY)
+
+        return success, info
 
     @staticmethod
     def wait_transfer_save(infrId, vmId, auth_data, im_server_url, options_destroy, options_not_store,
@@ -700,7 +746,7 @@ class CmdLaunch:
         im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
         try:
             while True:
-                success, info = im_server.GetVMInfo(infrId, vmId, auth_data)
+                success, info = CmdLaunch.get_vm_info(im_server, infrId, vmId, auth_data)
                 if not success: raise Exception(info)
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
@@ -775,15 +821,22 @@ class CmdList:
         parser = subparsers.add_parser("list", help="list launched clusters")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
         parser.add_argument("-r", "--refresh", action="store_true", default=False, help="update state of the clusters")
+        parser.add_argument("-un", "--username", dest="username", nargs=1, default="", help="indicate the username you want to list deployed clusters")
         parser.set_defaults(func=CmdList.run)
 
-    @staticmethod
-    def run(options):
+    @staticmethod    
+    def run(options):                 
         info = []
         for clustername in ClusterStore.list():
             s = ClusterStore.load(clustername, options.refresh).get(system("front"))
-            info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
-                         "nodes": s.getValue("nodes", "?")})
+            if options.username != "":   
+                cluster_username = s.getValue("ec3aas.username", "?")
+                if cluster_username == options.username[0]:
+                    info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
+                                 "nodes": s.getValue("nodes", "?")})
+            else:            
+                info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
+                             "nodes": s.getValue("nodes", "?")})
         output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes"])
         sys.stdout.write(output + "\n")
 
@@ -865,19 +918,32 @@ class CmdDestroy:
 
     @staticmethod
     def run(options):
+        im_server_url = IM_URL
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
-            new_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            new_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
-            
+            im_ext_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 
-            success, info = new_im_server.DestroyInfrastructure(infrId, auth)
+            #Import the infrastructure to the external IM for the destroy operation
+            try:
+                success, strInf = new_im_server.ExportInfrastructure(infrId, False, auth)
+                if not success: raise Exception(strInf)
+                success, newInfrId = im_ext_server.ImportInfrastructure(strInf, auth)
+                if not success: raise Exception(newInfrId)
+            except Exception as e:
+                CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
+                if options.force:
+                    ClusterStore.remove(options.clustername)
+		sys.exit(1)
+            #success, info = new_im_server.DestroyInfrastructure(infrId, auth)
+            success, info = im_ext_server.DestroyInfrastructure(newInfrId, auth)
             if not success:
                 raise Exception(info)
             CLI.display("Success deleting the cluster!")
@@ -888,6 +954,7 @@ class CmdDestroy:
                 ClusterStore.remove(options.clustername)
             sys.exit(1)
         ClusterStore.remove(options.clustername)
+
 
 class CmdReconfigure:
     @staticmethod
@@ -904,7 +971,7 @@ class CmdReconfigure:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -936,7 +1003,7 @@ class CmdReconfigure:
             CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
-        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False,
+        CmdLaunch.wait_transfer_save(infrId, vmId, auth_data, im_server_url, False, False,
                                      options.clustername, False, False)
         sys.exit(0)
 
@@ -1001,7 +1068,7 @@ class CmdClone:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId_old, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId_old, _, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1046,11 +1113,10 @@ class CmdClone:
         # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
         # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
         for s in radl_obj.gets(system):
-            id = s.getId()
             if s.getValue("ec3_class") is not None:
                 radl_obj.delete(s)
                 for c in radl_obj.gets(configure):
-                    if c.getId() == id:
+                    if c.getId() == s.getId():
                         radl_obj.delete(c)
 
         radl = dump_radl(radl_obj)
@@ -1071,7 +1137,9 @@ class CmdClone:
             sys.exit(1)
         new_clustername = options.clustername + "_cloned"
 
-        CmdLaunch.wait_transfer_save(infrId, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        vm_id = CmdLaunch.get_front_vm_id(im_server_url, infrId, vm_ids, auth_data)
+
+        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, im_server_url, False, False, new_clustername, False, False)
         CLI.display("Infrastructure successfully cloned with ID: " + str(infrId) + ". The cluster name now is: " + new_clustername)
 
         # Destroy the old cluster if the user has requested it
@@ -1117,7 +1185,7 @@ class CmdMigrate:
         # Check cluster name, authentication and IM server
         try:
             r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, auth_data = ClusterStore.get_im_server_infrId_and_auth(r)
+            im_server_url, infrId, _, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1166,8 +1234,7 @@ class CmdMigrate:
         # Comprobar que el cluster ha sido lanzado con blcr y slurm, en otro caso emitir un error y acabar ejecucion
         radl_obj = parse_radl(radl)
         for s in radl_obj.gets(system):
-            id = s.getId()
-            if id == "front":            
+            if s.getId() == "front":
                 if "blcr" not in s.getValue("ec3_templates_cmd") or "slurm" not in s.getValue("ec3_templates_cmd"):
                     CLI.display("Error migrating the cluster: Cluster %s is not a SLURM cluster with BLCR installed, so the migration process can't be performed." % str(options.clustername), level=logging.ERROR)
                     sys.exit(1)
@@ -1182,11 +1249,10 @@ class CmdMigrate:
         # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
         # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
         for s in radl_obj.gets(system):
-            id = s.getId()
             if s.getValue("ec3_class") is not None:
                 radl_obj.delete(s)
                 for c in radl_obj.gets(configure):
-                    if c.getId() == id:
+                    if c.getId() == s.getId():
                         radl_obj.delete(c)
 
         radl = dump_radl(radl_obj)
@@ -1206,7 +1272,9 @@ class CmdMigrate:
             sys.exit(1)
         new_clustername = options.clustername + "_cloned"
 
-        CmdLaunch.wait_transfer_save(infrId2, "0", auth_data, im_server_url, False, False, new_clustername, False, False)
+        vm_id = CmdLaunch.get_front_vm_id(im_server_url, infrId2, vm_ids, auth_data)
+
+        CmdLaunch.wait_transfer_save(infrId2, vm_id, auth_data, im_server_url, False, False, new_clustername, False, False)
         CLI.display("Infrastructure successfully cloned with ID: " + str(infrId2) + ". The cluster name now is: " + new_clustername)
 
         # Obtain the job list running in the cluster
@@ -1226,7 +1294,7 @@ class CmdMigrate:
         
         if len(job_list) > 0:
             # Checkpoint all the jobs running in the cluster
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Performing a checkpoint to the job "+ key)
                     if key_pem == "":
@@ -1247,7 +1315,7 @@ class CmdMigrate:
                 CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
 
             # Copy the checkpoint files to a bucket in Amazon S3
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Uploading checkpoint files to S3")
                     if key_pem == "":
@@ -1272,7 +1340,7 @@ class CmdMigrate:
                 CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
             
             # Download checkpoint files from the bucket in Amazon S3 to the cloned cluster
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Downloading checkpoint files to S3")
                     if key_pem == "":
@@ -1284,7 +1352,7 @@ class CmdMigrate:
                     CLI.display("Error while downloading checkpoint files to S3", level=logging.ERROR)
                 
             # Restart the jobs in the cloned cluster
-            for key, value in job_list.iteritems():
+            for key in job_list.keys():
                 try:
                     CLI.display("Restarting the job "+ key)
                     if key_pem == "":
@@ -1311,7 +1379,7 @@ class CmdMigrate:
         
         CLI.display("Migration process completed")
         sys.exit(0)
-        
+
 
     # Parse the exit of the scontrol SLURM command
     @staticmethod
@@ -1322,7 +1390,7 @@ class CmdMigrate:
         for line in out.split("\n"):
             line = line.strip()
             if not line: continue
-            d = {}; r.append(d); s = False
+            d = {}; r.append(d); s = False; f = None
             for k in [ j for i in line.split("=") for j in i.rsplit(" ", 1) ]:
                 if s: d[f] = k
                 else: f = k
@@ -1333,12 +1401,12 @@ class CmdMigrate:
     @staticmethod
     def get_job_info(ip, user, passwd, key_pem):
         if key_pem == "":
-            exit = CmdMigrate.parse_scontrol(run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
+            output = CmdMigrate.parse_scontrol(run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
         else:
-            exit = CmdMigrate.parse_scontrol(run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
+            output = CmdMigrate.parse_scontrol(run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
         job_list = {}
-        if exit:
-            for key in exit:
+        if output:
+            for key in output:
                 if key["JobState"] == "RUNNING": 
                     job_list [str(key["JobId"])] = str(key["BatchHost"])
         return job_list
@@ -1366,7 +1434,7 @@ class CmdStop:
             CLI.display("WARNING: you are going to stop the infrastructure (including frontend and nodes).")
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
-            cluster_im_server_url, infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            cluster_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             cluster_im_server = xmlrpclib.ServerProxy(cluster_im_server_url, allow_none=True)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             
@@ -1417,7 +1485,7 @@ class CmdRestart:
 
         try:
             r = ClusterStore.load(options.clustername)
-            cluster_im_server_url, cluster_infrId, auth = ClusterStore.get_im_server_infrId_and_auth(r)
+            _, _, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
 
             # obtengo infrId del im externo

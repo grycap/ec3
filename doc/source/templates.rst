@@ -210,6 +210,10 @@ the behaviour of EC3:
    Used for hybrid clusters.
    The default value is ''.
 
+``ec3_reuse_nodes = <boolean>``
+   Indicates that you want to stop/start working nodes instead of powering off/on them.
+   The default value is 'false'.
+
 System and network inheritance
 ------------------------------
 

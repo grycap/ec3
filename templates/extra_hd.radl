@@ -1,0 +1,53 @@
+description galaxy (
+    kind = 'component' and
+    short = 'Adds an extra HD with 100 GB in /mnt directory' and
+    content = 'Adds an extra HD with 100 GB in /mnt directory in the font node and mount it in the WNs with NFS in the shame path.'
+)
+
+
+network public (
+    outports contains '111/tcp' and
+    outports contains '111/udp' and
+    outports contains '2046/tcp' and
+    outports contains '2046/udp' and
+    outports contains '2047/tcp' and
+    outports contains '2047/udp' and
+    outports contains '2048/tcp' and
+    outports contains '2048/udp' and
+    outports contains '2049/tcp' and
+    outports contains '2049/udp' and
+    outports contains '892/tcp' and
+    outports contains '892/udp' and
+    outports contains '32803/tcp' and
+    outports contains '32769/udp' 
+)
+
+
+system front (
+      disk.1.size=100GB and
+      disk.1.fstype='ext4' and
+      disk.1.mount_path='/mnt'
+)
+
+
+configure wn (
+@begin
+  - roles:
+     - { role: 'grycap.nfs', nfs_mode: 'wn',
+                             nfs_client_imports: [{ local: "/mnt",
+                             remote: "/mnt",
+                             server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
+
+@end
+)
+
+configure front (
+@begin
+  - roles:
+     - { role: 'grycap.nfs', nfs_mode: 'front',
+                             nfs_exports: [{path: "/mnt",
+                             export: "wn*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}] }
+
+@end
+)
+
