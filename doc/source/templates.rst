@@ -219,7 +219,7 @@ the behaviour of EC3:
    The default value is 'false'.
    
 ``ec3_additional_vm = <boolean>``
-   EXPERIMANTAL. Indicates that you want this VM to be treated as an additional VM of the cluster, for example, to install server services that you do not want to put in the front machine.
+   EXPERIMENTAL. Indicates that you want this VM to be treated as an additional VM of the cluster, for example, to install server services that you do not want to put in the front machine.
    The default value is 'false'.
 
 System and network inheritance
