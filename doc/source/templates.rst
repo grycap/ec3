@@ -213,6 +213,14 @@ the behaviour of EC3:
 ``ec3_reuse_nodes = <boolean>``
    Indicates that you want to stop/start working nodes instead of powering off/on them.
    The default value is 'false'.
+   
+``ec3_golden_images = <boolean>``
+   Indicates that you want to use the golden images feature. See `golden images`_ for more info.
+   The default value is 'false'.
+   
+``ec3_additional_vm = <boolean>``
+   EXPERIMANTAL. Indicates that you want this VM to be treated as an additional VM of the cluster, for example, to install server services that you do not want to put in the front machine.
+   The default value is 'false'.
 
 System and network inheritance
 ------------------------------
@@ -469,4 +477,5 @@ Also, it is important to provide a ``description`` section in each new template,
 .. _`Amazon Web Services`: https://aws.amazon.com/
 .. _`IM`: http://www.grycap.upv.es/im
 .. _`Including a recipe from another`: http://ec3.readthedocs.org/en/latest/templates.html#including-a-recipe-from-another
+.. _`golden images`: http://ec3.readthedocs.io/en/devel/ec3.html#usage-of-golden-images 
 
