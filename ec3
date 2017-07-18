@@ -753,13 +753,15 @@ class CmdLaunch:
         try:
             while True:
                 success, info = CmdLaunch.get_vm_info(im_server, infrId, vmId, auth_data)
+                success, state_info = im_server.GetInfrastructureState(infrId, auth_data)
                 if not success: raise Exception(info)
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
                 radl.check()
                 system_front = radl.get(system("front"))
                 vm_ip = getPublicIP(system_front)
-                state = system_front.getValue("state")
+                #state = system_front.getValue("state")
+                state = state_info['state']
                 system_front.setValue("__im_server", im_server_url)
                 system_front.setValue("__infrastructure_id", infrId)
                 system_front.setValue("__vm_id", vmId)
