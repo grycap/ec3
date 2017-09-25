@@ -1,0 +1,19 @@
+description consul (
+    kind = 'component' and
+    short = 'Service Discovery and Configuration Made Easy' and
+    content = 'Consul makes it simple for services to register themselves and to discover other services via a DNS or HTTP interface.
+
+Webpage: https://www.consul.io'
+)
+
+system front (
+    ec3_templates contains 'consul' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.consul')
+)
+
+configure front (
+@begin
+  - roles:
+    - { role: 'grycap.consul' }
+@end
+)

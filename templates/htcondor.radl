@@ -13,10 +13,11 @@ network public (
 network private ()
 
 system front (
-    net_interface.0.connection='public' and
-    net_interface.1.connection='private' and
+    net_interface.0.connection='private' and
+    net_interface.0.dns_name = 'htcondoreserverprivate' and
+    net_interface.1.connection='public' and
     net_interface.1.dns_name = 'htcondoreserver' and
-    queue_system = 'htcondor' and
+    queue_system = 'condor' and
     # Install ansible roles needed
     disk.0.applications contains (name = 'ansible.modules.grycap.htcondor') and
     disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
@@ -60,7 +61,7 @@ configure front (
                             htcondor_server_name: 'htcondoreserver',
                             max_number_of_nodes: '{{ NNODES }}' }
     - { role: 'grycap.clues', auth: '{{AUTH}}',
-                              clues_queue_system: 'htcondor',
+                              clues_queue_system: 'condor',
                               max_number_of_nodes: '{{ NNODES }}',
                               vnode_prefix: 'wn' }
 @end

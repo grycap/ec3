@@ -1,0 +1,19 @@
+description zookeeper (
+    kind = 'component' and
+    short = 'An open-source server which enables highly reliable distributed coordination' and
+    content = 'ZooKeeper is a centralized service for maintaining configuration information, naming, providing distributed synchronization, and providing group services.
+
+Webpage: https://zookeeper.apache.org/'
+)
+
+system front (
+    ec3_templates contains 'zookeeper' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.zookeeper')
+)
+
+configure front (
+@begin
+  - roles:
+    - { role: 'grycap.zookeeper' }
+@end
+)

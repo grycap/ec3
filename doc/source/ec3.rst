@@ -111,6 +111,14 @@ It can also be used to apply a new configuration to a running cluster::
 
    Reload templates used to launch the cluster and reconfigure it with them
    (useful if some templates were modified).
+   
+
+.. option:: --template, -t
+
+   Add a new template/recipe. This option is useful to add new templates to a running cluster.
+   The following example adds the docker recipe to the configuration of the cluster (i.e. installs Docker)::
+
+      ./ec3 reconfigure mycluster -r -t docker
 
 Command ``ssh``
 ---------------

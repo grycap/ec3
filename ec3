@@ -39,9 +39,15 @@ from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, 
 import IM2.radl.radl as IM_RADL
 from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Features, Aspect, FeaturedAspect
 
+# Disable CERTIFICATE VERIFY
+try:
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+except:
+    pass
 
 # Our public IM service
-IM_URL = 'http://servproject.i3m.upv.es:8899'
+IM_URL = 'https://servproject.i3m.upv.es:8899'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
@@ -747,13 +753,15 @@ class CmdLaunch:
         try:
             while True:
                 success, info = CmdLaunch.get_vm_info(im_server, infrId, vmId, auth_data)
+                success, state_info = im_server.GetInfrastructureState(infrId, auth_data)
                 if not success: raise Exception(info)
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
                 radl.check()
                 system_front = radl.get(system("front"))
                 vm_ip = getPublicIP(system_front)
-                state = system_front.getValue("state")
+                #state = system_front.getValue("state")
+                state = state_info['state']
                 system_front.setValue("__im_server", im_server_url)
                 system_front.setValue("__infrastructure_id", infrId)
                 system_front.setValue("__vm_id", vmId)
@@ -829,7 +837,7 @@ class CmdList:
         info = []
         for clustername in ClusterStore.list():
             s = ClusterStore.load(clustername, options.refresh).get(system("front"))
-            if options.username != "":   
+            if options.username and options.username[0] != "":   
                 cluster_username = s.getValue("ec3aas.username", "?")
                 if cluster_username == options.username[0]:
                     info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
@@ -909,6 +917,7 @@ class CmdDestroy:
     def parse(subparsers):
         parser = subparsers.add_parser("destroy", help="destroy a launched cluster")
         parser.add_argument("clustername", help="name of the cluster to destroy")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
         parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about deleting the cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
@@ -918,7 +927,11 @@ class CmdDestroy:
 
     @staticmethod
     def run(options):
-        im_server_url = IM_URL
+        # If the user indicates an IM URL, we use it, if not we use the default IM
+        if options.xmlrpc:
+            im_server_url = options.xmlrpc[0]
+        else:
+            im_server_url = IM_URL
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
@@ -930,6 +943,17 @@ class CmdDestroy:
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
+		
+            #First, check if the infrastructure still remains in the external IM, due to problems installing internal IM
+            try:
+                success, info = im_ext_server.DestroyInfrastructure(infrId, auth)
+                if success:
+                    CLI.display("Success deleting the cluster!")
+		    ClusterStore.remove(options.clustername)
+		    sys.exit(0)
+            except Exception as e:
+                CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
 
             #Import the infrastructure to the external IM for the destroy operation
             try:
@@ -964,7 +988,8 @@ class CmdReconfigure:
         parser.add_argument("--add", action="append", help="add a piece of RADL")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
         parser.add_argument("-r", "--reload", action="store_true", dest="reload", default=False, help="reload templates used to launch the cluster and reconfigure the cluster with them (useful if templates changed)")
-        parser.set_defaults(func=CmdReconfigure.run)
+        parser.add_argument("--template", "-t",dest="new_template", help="add a new template/recipe of RADL to the cluster")
+	parser.set_defaults(func=CmdReconfigure.run)
 
     @staticmethod
     def run(options):
@@ -977,16 +1002,21 @@ class CmdReconfigure:
             sys.exit(1)
         try:
             if options.auth_file:
-                auth_content = [ str(l) for l in options.auth_file[0].readlines() if l.find("InfrastructureManager") < 0 ]
-                auth_data = Authentication.normalize(Authentication.read_auth_data(auth_content) + auth_data)
-            auth_content = Authentication.dump(auth_data)
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+            auth_data = Authentication.read_auth_data(auth_content)
         except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
         # Instantiate templates
-        if options.auth_file or options.reload or options.add:
+        if options.auth_file or options.reload or options.add or options.new_template:
             templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
+	    if options.new_template:
+                templates.append(options.new_template)
             radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
             for a in (radl.gets(deploy) + radl.gets(system)): radl.delete(a)
             radl = dump_radl(radl)
@@ -1050,7 +1080,7 @@ class CmdClone:
     def parse(subparsers):
         parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its clonation")
@@ -1160,7 +1190,7 @@ class CmdMigrate:
     def parse(subparsers):
         parser = subparsers.add_parser("migrate", help="migrate a launched cluster together with its workload to another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (http://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-b", "--bucket", dest="bucket", nargs=1, help="Name of the already created bucket where to upload ckpt files")
