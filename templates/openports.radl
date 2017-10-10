@@ -11,6 +11,7 @@ configure wn (
         ec3_xpath: /network/public/outports
     tasks:
     - iptables:
+        action: insert
         chain: INPUT
         protocol: "{{item|basename}}"
         destination_port: "{{item|dirname}}"
@@ -37,6 +38,7 @@ configure front (
         ec3_xpath: /network/public/outports
     tasks:
     - iptables:
+        action: insert
         chain: INPUT
         protocol: "{{item|basename}}"
         destination_port: "{{item|dirname}}"
