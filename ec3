@@ -61,8 +61,26 @@ DELAY = 5
 # Max number of errors permitted in the VM status check
 STATE_CHECK_RETRIES = 3
 
-def dump_radl(r, aspect=None):
-    r = r.clone()
+def dump_radl(rin, aspect=None):
+    r = rin.clone()
+    # Delete the deploys to add it now in correct order
+    for a in (r.gets(deploy)):
+        r.delete(a)
+
+    dep_front = None
+    other_deps = []
+    for dep in rin.gets(deploy):
+        if dep.id == "front" and dep.vm_number == 1:
+            dep_front = dep
+        else:
+            other_deps.append(dep)
+    if not dep_front:
+        raise Exception("There must be at least one deploy with name 'front' and VM number 1")
+    else:
+        r.add(dep_front)
+        for dep in other_deps:
+            r.add(dep)
+
     for a in r.aspects:
         if not isinstance(a, FeaturedAspect): continue
         for p in a.props:
