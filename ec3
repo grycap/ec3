@@ -855,7 +855,7 @@ class CmdList:
         info = []
         for clustername in ClusterStore.list():
             s = ClusterStore.load(clustername, options.refresh).get(system("front"))
-            if options.username[0] != "":   
+            if options.username and options.username[0] != "":   
                 cluster_username = s.getValue("ec3aas.username", "?")
                 if cluster_username == options.username[0]:
                     info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
