@@ -16,6 +16,7 @@
 
 import copy
 import itertools
+from collections import OrderedDict
 try:
 	from urlparse import urlparse
 	le2 = lambda a,b: a <= b
@@ -1176,7 +1177,7 @@ class RADL(object):
 	"""Parsed RADL document."""
 	
 	def __init__(self, aspects=[], ifpresent="error", check=True, **kwargs):
-		self.props = {}
+		self.props = OrderedDict()
 		"""Dict of aspects with key (type, id)."""
 
 		for a in aspects:
@@ -1323,7 +1324,8 @@ class RADL(object):
 	def clone(self, check=True):
 		r = RADL()
 		for a in self.aspects:
-			r.props[a.getKey()] = a.clone()
+			new_a = a.clone()
+			r.props[new_a.getKey()] = new_a
 		for a in r.aspects:
 			for f in (a.features if isinstance(a, Features) else []):
 				if isinstance(f.value, Aspect):
