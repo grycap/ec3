@@ -61,25 +61,27 @@ DELAY = 5
 # Max number of errors permitted in the VM status check
 STATE_CHECK_RETRIES = 3
 
-def dump_radl(rin, aspect=None):
+def dump_radl(rin, aspect=None, order_deploys=False):
     r = rin.clone()
-    # Delete the deploys to add it now in correct order
-    for a in (r.gets(deploy)):
-        r.delete(a)
 
-    dep_front = None
-    other_deps = []
-    for dep in rin.gets(deploy):
-        if dep.id == "front" and dep.vm_number == 1:
-            dep_front = dep
+    if order_deploys:
+        # Delete the deploys to add it now in correct order
+        for a in (r.gets(deploy)):
+            r.delete(a)
+
+        dep_front = None
+        other_deps = []
+        for dep in rin.gets(deploy):
+            if dep.id == "front" and dep.vm_number == 1:
+                dep_front = dep
+            else:
+                other_deps.append(dep)
+        if not dep_front:
+            raise Exception("There must be at least one deploy with name 'front' and VM number 1")
         else:
-            other_deps.append(dep)
-    if not dep_front:
-        raise Exception("There must be at least one deploy with name 'front' and VM number 1")
-    else:
-        r.add(dep_front)
-        for dep in other_deps:
-            r.add(dep)
+            r.add(dep_front)
+            for dep in other_deps:
+                r.add(dep)
 
     for a in r.aspects:
         if not isinstance(a, FeaturedAspect): continue
@@ -635,7 +637,7 @@ class CmdLaunch:
         # Create infrastructure
         CLI.display("Creating infrastructure")
         try:
-            success, infrId = im_server.CreateInfrastructure(dump_radl(radl), auth_data)
+            success, infrId = im_server.CreateInfrastructure(dump_radl(radl, order_deploys=True), auth_data)
             if not success: raise Exception(infrId)
             success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
             if not success: raise Exception(vm_ids)
@@ -734,7 +736,15 @@ class CmdLaunch:
             wn = radl.get(system("wn"))
             if not wn.getValue("disk.0.image.url"):
                 raise Exception("system 'wn' has no image URL.")
-        
+
+        dep_front = None
+        for dep in radl.gets(deploy):
+            if dep.id == "front" and dep.vm_number == 1:
+                dep_front = dep
+
+        if not dep_front:
+            raise Exception("There must be at least one deploy with name 'front' and VM number 1")
+
         return True
 
     @staticmethod
