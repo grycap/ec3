@@ -1,0 +1,60 @@
+description network (
+    kind = 'component' and
+    short = 'A hacking configuration for the overlay networks.' and
+    content = 'It is only supposed to be used in the BIGSEA cluster.'
+)
+
+
+configure front (
+@begin
+  - vars:
+      #SCRIPT_LOCAL:
+      #  ec3_file: plug_local_net.sh
+      #SCRIPT_REMOTE:
+      #  ec3_file: plug_remote.sh
+      NET_NAME: 'bs-net'
+
+    tasks:
+    - name: copy scripts to the cluster
+      get_url:
+        url: "https://raw.githubusercontent.com/grycap/ec3/overlay-hack/templates/plug_local_net.sh"
+        dest: /var/tmp/plug_local_net.sh
+        mode: 0755
+    - get_url:
+        url: "https://raw.githubusercontent.com/grycap/ec3/overlay-hack/templates/plug_remote.sh"
+        dest: /var/tmp/plug_remote.sh
+        mode: 0755
+
+#    - name: copy scripts to the cluster
+#      copy:
+#        dest: /var/tmp/plug_local_net.sh
+#        content: "{{SCRIPT_LOCAL}}"
+#        mode: 0755
+#    - copy:
+#        dest: /var/tmp/plug_remote.sh
+#        content: "{{SCRIPT_REMOTE}}"
+#        mode: 0755
+
+    - name: create overlay network
+      command: docker network create --driver overlay --subnet=10.0.9.0/24 "{{NET_NAME}}"
+
+#    - name: execute local script
+#      command: /var/tmp/plug_local_net.sh "{{NET_NAME}}"
+
+@end
+)
+
+configure wn (
+@begin
+  #- vars:
+  #    SCRIPT_REMOTE:
+  #      ec3_file: plug_remote.sh
+
+  - tasks:
+    - name: copy script to the node
+      get_url:
+        url: "https://raw.githubusercontent.com/grycap/ec3/overlay-hack/templates/plug_remote.sh"
+        dest: /var/tmp/plug_remote.sh
+        mode: 0755
+@end
+)
