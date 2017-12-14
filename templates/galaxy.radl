@@ -47,6 +47,7 @@ configure front (
       nfs_mode: 'front'
       nfs_exports: [{path: "/mnt",
                      export: "wn*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}]
+      when: QUEUE_SYSTEM != local
     - role: grycap.galaxy
       galaxy_slurm_server_name: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'
       galaxy_lrms: "{{ QUEUE_SYSTEM }}"
