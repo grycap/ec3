@@ -15,7 +15,7 @@ system front (
       cpu.count>=2 and
       memory.size>=3g and
       # Install ansible roles needed
-      disk.0.applications contains (name = 'ansible.modules.grycap.galaxy')
+      disk.0.applications contains (name = 'ansible.modules.grycap.galaxy,docker')
 )
 
 system wn (
@@ -25,9 +25,13 @@ system wn (
 
 configure wn (
 @begin
-   # This step must be performed before the configuration of torque (-5 prio)
+   # This step must be performed before the configuration of the LRMS (-5 prio)
   - ec3_prio: -7
     roles:
+     - { role: 'grycap.nfs', nfs_mode: 'wn',
+                             nfs_client_imports: [{ local: "/mnt",
+                             remote: "/mnt",
+                             server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
      - { role: grycap.galaxy, galaxy_node_type: wn }
 @end
 )
@@ -39,7 +43,13 @@ configure front (
         ec3_xpath: /system/front/queue_system
 
     roles:
-     - { role: grycap.galaxy, galaxy_install_path: /home/galaxy/galaxy , galaxy_lrms: "{{ QUEUE_SYSTEM }}" }
+    - role: 'grycap.nfs'
+      nfs_mode: 'front'
+      nfs_exports: [{path: "/mnt",
+                     export: "wn*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}]
+    - role: grycap.galaxy
+      galaxy_slurm_server_name: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'
+      galaxy_lrms: "{{ QUEUE_SYSTEM }}"
 
 @end
 )
