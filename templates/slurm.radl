@@ -12,8 +12,6 @@ network public (
   outbound = 'yes' and
   outports contains '6818/tcp' and
   outports contains '6817/tcp' and
-  # Im XMLRPC port
-  outports contains '8899/tcp'
 )
 
 network private ()
@@ -29,8 +27,7 @@ system front (
   ec3_templates contains 'slurm' and
   # Install ansible roles needed
   disk.0.applications contains (name = 'ansible.modules.grycap.slurm') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.im')
+  disk.0.applications contains (name = 'ansible.modules.grycap.clues')
 )
 
 configure front (
@@ -50,7 +47,6 @@ configure front (
     roles:
     # The install order matters !
     # If the role order is altered the installation won't work
-    - { role: 'grycap.im' }
     - { role: 'grycap.slurm', max_number_of_nodes: '{{NNODES}}',
                               slurm_server_ip: '{{ansible_default_ipv4}}',
                               slurm_type_of_node: 'front',
@@ -78,7 +74,7 @@ configure wn (
 )
 
 include slurm_misc (
-  template = 'openports'
+  template = 'openports im'
 )
 
 deploy front 1
