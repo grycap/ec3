@@ -31,8 +31,7 @@ system front (
     ec3_templates contains 'mesos' and
     # Install ansible roles needed
     disk.0.applications contains (name = 'ansible.modules.grycap.mesos') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.im')
+    disk.0.applications contains (name = 'ansible.modules.grycap.clues')
 )
 
 system wn (
@@ -61,7 +60,6 @@ configure front (
     roles:
     # The install order matters !
     # If the role order is altered the installation won't work
-    - { role: 'grycap.im' }
     - { role: 'grycap.mesos', mesos_type_of_node: 'front', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn' }
     - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
                               auth: '{{AUTH}}',
@@ -80,6 +78,10 @@ configure wn (
     roles:
     - { role: 'grycap.mesos', mesos_type_of_node: 'wn', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn'}
 @end
+)
+
+include mesos_misc (
+  template = 'im'
 )
 
 deploy front 1
