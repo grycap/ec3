@@ -24,8 +24,9 @@ network public (
   outports contains '892/tcp' and    
   outports contains '892/udp' and
   outports contains '32803/tcp' and
-  outports contains '32769/udp'
-
+  outports contains '32769/udp' and
+  # Im XMLRPC port
+  outports contains '8899/tcp'
 )
 network private ()
 
@@ -39,7 +40,8 @@ system front (
   # Install ansible roles needed
   disk.0.applications contains (name = 'ansible.modules.grycap.sge') and
   disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.nfs')
+  disk.0.applications contains (name = 'ansible.modules.grycap.nfs') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
 configure front (
@@ -57,6 +59,7 @@ configure front (
     roles:
     # The install order matters !
     # If the role order is altered the installation won't work
+    - { role: 'grycap.im' }
     - { role: 'grycap.sge', sge_type_of_node: 'front',
                             sge_server_name: 'sgeserver',
                             max_number_of_nodes: '{{ NNODES }}' }
@@ -88,7 +91,7 @@ configure wn (
 )
 
 include sge_misc (
-  template = 'openports im'
+  template = 'openports'
 )
 
 deploy front 1
