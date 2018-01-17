@@ -72,7 +72,7 @@ configure wn (
 )
 
 include torque_misc (
-  template = 'openports,im'
+  template = 'openports im'
 )
 
 deploy front 1
