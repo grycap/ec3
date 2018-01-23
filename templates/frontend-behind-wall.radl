@@ -18,7 +18,7 @@ configure fbw_wn (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     roles:
-    - { role: 'grycap.ssh-tunneling', ssh_tunnels_node:'wn', front_ip:'{{FRONTEND}}', front_ports:'{{FRONT_PORTS}}'}
+    - { role: 'grycap.ssh-tunneling', ssh_tunnels_node: 'wn', front_ip: '{{FRONTEND}}', front_ports: '{{FRONT_PORTS}}'}
 @end
 ) 
 
@@ -28,6 +28,6 @@ configure front (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     roles:
-    - { role: 'grycap.ssh-tunneling', ssh_tunnels_node:'front', front_ip:'{{FRONTEND}}'}
+    - { role: 'grycap.ssh-tunneling', ssh_tunnels_node: 'front', front_ip: '{{FRONTEND}}'}
 @end
 ) 

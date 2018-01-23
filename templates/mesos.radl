@@ -15,7 +15,9 @@ network public (
     outports contains '2888/tcp' and
     outports contains '3888/tcp' and
     outports contains '4400/tcp' and
-    outports contains '8080/tcp'
+    outports contains '8080/tcp' and
+    # Im XMLRPC port
+    outports contains '8899/tcp'
 )
 
 network private ()
