@@ -1,0 +1,14 @@
+configure userlist (
+@begin
+---
+users:
+  USER_NAME_1:
+    name: 'XXXXXX'
+    uid: 'XXXX'
+    password: 'XXXXXXXXXX'
+  USER_NAME_2:
+    name: 'XXXXXX'
+    uid: 'XXXX'
+    password: 'XXXXXXXXXX'    
+@end
+) 

@@ -1,0 +1,43 @@
+description weave (
+    kind = 'component' and
+    short = 'Simple, resilient multi-host Docker networking and more.' and
+    content = 'Weave Cloud simplifies deployment, observability and monitoring for containers and microservices so you can focus on building your application and not on managing infrastructure. Webpage: https://www.weave.works/'
+)
+
+system front (
+    ec3_templates contains 'weave' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.weave,weave_users')
+)
+
+configure front (
+@begin
+  - ec3_prio: 20
+    pre_tasks:
+      - include_vars: setusers.yml
+    roles:
+      - { role: 'grycap.weave', weave_type_of_node: 'front',
+                                weave_frontend_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+@end
+)
+
+configure wnmesos (
+@begin
+  - ec3_prio: 20
+    pre_tasks:
+      - include_vars: setusers.yml
+    roles:
+      - { role: 'grycap.weave', weave_type_of_node: 'wn',
+                                weave_frontend_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+@end
+)
+
+configure wn (
+@begin
+  - ec3_prio: 20
+    pre_tasks:
+      - include_vars: setusers.yml
+    roles:
+      - { role: 'grycap.weave', weave_type_of_node: 'wn',
+                                weave_frontend_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+@end
+)

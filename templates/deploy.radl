@@ -1,0 +1,3 @@
+deploy front 1 
+deploy monasca 1
+deploy datanode 3

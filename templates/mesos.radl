@@ -1,12 +1,10 @@
-#https://www.digitalocean.com/community/tutorials/how-to-configure-a-production-ready-mesosphere-cluster-on-ubuntu-14-04
 description mesos (
     kind = 'main' and
     short = 'Install and configure a Mesos cluster from mesosphere repo.' and
-    content = 'The template installs Mesos 0.22.1. If you want to use Chronos or Marathon, please, include their recipes in the EC3 command line.
+    content = 'The template installs Mesos 0.27.1, Marathon 0.15.3 and Chronos 2.4.0 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
 
 Webpage: http://mesos.apache.org/'
 )
-
 
 network public (
     outbound = 'yes' and
@@ -21,53 +19,79 @@ network public (
 network private ()
 
 system front (
-#    cpu.count>=1 and
-#    memory.size>=512m and
-    net_interface.0.connection = 'public' and
-    net_interface.0.dns_name = 'mesosserverpublic' and
-    net_interface.1.connection = 'private' and
-    net_interface.1.dns_name = 'mesosserver' and
+    cpu.count>=8 and
+    memory.size>=16g and
+    net_interface.0.connection = 'private' and
+    net_interface.0.dns_name = 'bsintserver' and
+    net_interface.1.connection = 'public' and
+    net_interface.1.dns_name = 'bsintserverpub' and
     queue_system = 'mesos' and
     ec3_templates contains 'mesos' and
     # Install ansible roles needed
-    disk.0.applications contains (name = 'ansible.modules.grycap.mesos') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.mesos,weave-users') and    
     disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.docker-registry') and
     disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
 system wn (
+    cpu.count>=2 and
+    memory.size>=8g and
     net_interface.0.connection='private'
 )
 
 configure front (
 @begin
 ---
-  - vars:
-      FILE:
-        ec3_file: is_cluster_ready
+  - ec3_prio: -5
+    vars:
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
       QUORUM: 1
       SYSTEMS:
          ec3_jpath: /system/*
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
-    # Variables needed for CLUES
       AUTH:
         ec3_xpath: /system/front/auth
       QUEUE_SYSTEM:
         ec3_xpath: /system/front/queue_system
       EXTRACT_PROXY_FILE:
         ec3_file: extract_proxy.py
+      PRIVATE_NODENAME:
+        ec3_xpath: /system/front/net_interface.0.dns_name
+      PUBLIC_NODENAME:
+        ec3_xpath: /system/front/net_interface.1.dns_name
+      VNODEPREFIX: 'bsintwn'
+      principal: 'ubuntu'
+      secret: 'ubuntusecret'
+
+    pre_tasks:
+    - file:
+        path: /opt/docker_local
+        state: directory
+        mode: 0755
+    - include_vars: userlist.yml        
+
     roles:
     # The install order matters !
     # If the role order is altered the installation won't work
     - { role: 'grycap.im' }
-    - { role: 'grycap.mesos', mesos_type_of_node: 'front', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn' }
+    - { role: 'grycap.mesos', mesos_type_of_node: 'front',
+                              max_number_of_nodes: '{{NNODES}}',
+                              vnode_prefix: '{{VNODEPREFIX}}',
+                              mesos_docker_opts: '-g /opt/docker_local',
+                              principal: 'ubuntu',
+                              secret: 'ubuntusecret',
+                              mesos_front_public_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+    - { role: 'grycap.docker-registry', docker_type_of_node: 'front', docker_installation: 'both', front_hostname: '{{PRIVATE_NODENAME}}' }
     - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
                               auth: '{{AUTH}}',
+                              marathon_username: "ubuntu", marathon_password: "ubuntu_secret",
+                              chronos_username: "ubuntu", chronos_password: "ubuntu_secret",
+                              mesos_servername: '{{PUBLIC_NODENAME}}',
                               extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
                               ec3_max_instances: '{{NNODES}}',
-                              vnode_prefix: 'wn' }
+                              vnode_prefix: '{{VNODEPREFIX}}' }
 
 @end
 )
@@ -75,11 +99,46 @@ configure front (
 configure wn (
 @begin
 ---
-  - vars:
+# MESOS is the last service to be deployed to avoid being active to soon - ec3_prio: -5
+  - ec3_prio: 10
+    vars:
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      PRIVATE_NODENAME:
+        ec3_xpath: /system/front/net_interface.0.dns_name
+      PUBLIC_NODENAME:
+        ec3_xpath: /system/front/net_interface.1.dns_name
+      VNODEPREFIX: 'bsintwn'
+
+    pre_tasks:
+    - include_vars: userlist.yml  
+
     roles:
-    - { role: 'grycap.mesos', mesos_type_of_node: 'wn', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn'}
+      - { role: 'grycap.docker-registry', docker_type_of_node: 'wn', docker_installation: 'both', front_hostname: '{{PRIVATE_NODENAME}}' }
+      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
+                                max_number_of_nodes: '{{NNODES}}',
+                                vnode_prefix: '{{VNODEPREFIX}}',
+                                principal: 'ubuntu',
+                                mesos_slave_resources: 'ports:[10101-65535]',
+                                mesos_docker_opts: '--experimental --registry-mirror=http://{{PRIVATE_NODENAME}}:5555',
+                                secret: 'ubuntusecret',
+                                mesos_front_public_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' }
+    tasks:
+     - name: Add resources
+       lineinfile:
+         dest: /etc/mesos-slave/resources
+         line: 'ports:[10101-65535]'
+     - name: Install Mesos-DNS
+       get_url: url=https://github.com/mesosphere/mesos-dns/releases/download/v0.6.0/mesos-dns-v0.6.0-linux-amd64 dest=/opt/mesos-dns force=no
+       register: result
+       until: result|success
+       retries: 5
+       delay: 2 
+     - name: Set up Mesos DNS as main DNS server
+       lineinfile:
+         dest: /etc/resolvconf/resolv.conf.d/head
+         line: 'nameserver {{PRIVATE_NODENAME}}'
+
 @end
 )
 
-deploy front 1
+#deploy front 1
