@@ -61,8 +61,28 @@ DELAY = 5
 # Max number of errors permitted in the VM status check
 STATE_CHECK_RETRIES = 3
 
-def dump_radl(r, aspect=None):
-    r = r.clone()
+def dump_radl(rin, aspect=None, order_deploys=False):
+    r = rin.clone()
+
+    if order_deploys:
+        # Delete the deploys to add it now in correct order
+        for a in (r.gets(deploy)):
+            r.delete(a)
+
+        dep_front = None
+        other_deps = []
+        for dep in rin.gets(deploy):
+            if dep.id == "front" and dep.vm_number == 1:
+                dep_front = dep
+            else:
+                other_deps.append(dep)
+        if not dep_front:
+            raise Exception("There must be at least one deploy with name 'front' and VM number 1")
+        else:
+            r.add(dep_front)
+            for dep in other_deps:
+                r.add(dep)
+
     for a in r.aspects:
         if not isinstance(a, FeaturedAspect): continue
         for p in a.props:
@@ -617,7 +637,7 @@ class CmdLaunch:
         # Create infrastructure
         CLI.display("Creating infrastructure")
         try:
-            success, infrId = im_server.CreateInfrastructure(dump_radl(radl), auth_data)
+            success, infrId = im_server.CreateInfrastructure(dump_radl(radl, order_deploys=True), auth_data)
             if not success: raise Exception(infrId)
             success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
             if not success: raise Exception(vm_ids)
@@ -716,7 +736,15 @@ class CmdLaunch:
             wn = radl.get(system("wn"))
             if not wn.getValue("disk.0.image.url"):
                 raise Exception("system 'wn' has no image URL.")
-        
+
+        dep_front = None
+        for dep in radl.gets(deploy):
+            if dep.id == "front" and dep.vm_number == 1:
+                dep_front = dep
+
+        if not dep_front:
+            raise Exception("There must be at least one deploy with name 'front' and VM number 1")
+
         return True
 
     @staticmethod
@@ -753,13 +781,15 @@ class CmdLaunch:
         try:
             while True:
                 success, info = CmdLaunch.get_vm_info(im_server, infrId, vmId, auth_data)
+                success, state_info = im_server.GetInfrastructureState(infrId, auth_data)
                 if not success: raise Exception(info)
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
                 radl.check()
                 system_front = radl.get(system("front"))
                 vm_ip = getPublicIP(system_front)
-                state = system_front.getValue("state")
+                #state = system_front.getValue("state")
+                state = state_info['state']
                 system_front.setValue("__im_server", im_server_url)
                 system_front.setValue("__infrastructure_id", infrId)
                 system_front.setValue("__vm_id", vmId)
@@ -835,7 +865,7 @@ class CmdList:
         info = []
         for clustername in ClusterStore.list():
             s = ClusterStore.load(clustername, options.refresh).get(system("front"))
-            if options.username != "":   
+            if options.username and options.username[0] != "":   
                 cluster_username = s.getValue("ec3aas.username", "?")
                 if cluster_username == options.username[0]:
                     info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),

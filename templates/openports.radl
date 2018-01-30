@@ -10,10 +10,22 @@ configure wn (
       OUTPORTS:
         ec3_xpath: /network/public/outports
     tasks:
-    - shell: echo '{{OUTPORTS}}' | awk 'BEGIN {RS=","; FS="/"} {
-                system("/sbin/iptables -I INPUT -p " $2 " --dport " $1 " -j ACCEPT"); }'
-      run_once: true
+    - iptables:
+        action: insert
+        chain: INPUT
+        protocol: "{{item|basename}}"
+        destination_port: "{{item|dirname}}"
+        jump: ACCEPT
+      with_items: '{{OUTPORTS.split('','')}}'
       when: ansible_os_family == "RedHat"
+    - firewalld:
+        port: "{{item}}"
+        permanent: true
+        state: enabled
+        immediate: true
+      with_items: "{{OUTPORTS.split(',')}}"
+      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
 @end
 ) 
 
@@ -25,10 +37,22 @@ configure front (
       OUTPORTS:
         ec3_xpath: /network/public/outports
     tasks:
-    - shell: echo '{{OUTPORTS}}' | awk 'BEGIN {RS=","; FS="/"} {
-                system("/sbin/iptables -I INPUT -p " $2 " --dport " $1 " -j ACCEPT"); }'
-      run_once: true
+    - iptables:
+        action: insert
+        chain: INPUT
+        protocol: "{{item|basename}}"
+        destination_port: "{{item|dirname}}"
+        jump: ACCEPT
+      with_items: '{{OUTPORTS.split('','')}}'
       when: ansible_os_family == "RedHat"
+    - firewalld:
+        port: "{{item}}"
+        permanent: true
+        state: enabled
+        immediate: true
+      with_items: "{{OUTPORTS.split(',')}}"
+      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
 @end
 )
  
