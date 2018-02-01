@@ -8,13 +8,13 @@ Webpage: https://mesosphere.github.io/marathon/'
 
 system front ( 
     ec3_templates contains 'marathon' and
-    disk.0.applications contains (name = 'ansible.modules.grycap.marathon')
+    disk.0.applications contains (name = 'ansible.modules.grycap.marathon,fix-config')
 )
 
 configure front (
 @begin
   - roles:
-    - { role: 'grycap.marathon' }
+    - { role: 'grycap.marathon', marathon_mesos_role: "bigsea" }
 @end
 )
 
