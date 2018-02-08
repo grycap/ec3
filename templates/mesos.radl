@@ -15,9 +15,7 @@ network public (
     outports contains '2888/tcp' and
     outports contains '3888/tcp' and
     outports contains '4400/tcp' and
-    outports contains '8080/tcp' and
-    # Im XMLRPC port
-    outports contains '8899/tcp'
+    outports contains '8080/tcp'
 )
 
 network private ()
@@ -32,9 +30,7 @@ system front (
     queue_system = 'mesos' and
     ec3_templates contains 'mesos' and
     # Install ansible roles needed
-    disk.0.applications contains (name = 'ansible.modules.grycap.mesos') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-    disk.0.applications contains (name = 'ansible.modules.grycap.im')
+    disk.0.applications contains (name = 'ansible.modules.grycap.mesos')
 )
 
 system wn (
@@ -61,15 +57,7 @@ configure front (
       EXTRACT_PROXY_FILE:
         ec3_file: extract_proxy.py
     roles:
-    # The install order matters !
-    # If the role order is altered the installation won't work
-    - { role: 'grycap.im' }
     - { role: 'grycap.mesos', mesos_type_of_node: 'front', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn' }
-    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
-                              auth: '{{AUTH}}',
-                              extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
-                              ec3_max_instances: '{{NNODES}}',
-                              vnode_prefix: 'wn' }
 
 @end
 )
@@ -82,6 +70,10 @@ configure wn (
     roles:
     - { role: 'grycap.mesos', mesos_type_of_node: 'wn', max_number_of_nodes: '{{NNODES}}', vnode_prefix: 'wn'}
 @end
+)
+
+include mesos_misc (
+  template = 'openports im clues2'
 )
 
 deploy front 1

@@ -17,9 +17,7 @@ network public (
   outports contains '15004/tcp' and
   outports contains '15004/udp' and
   outports contains '1023/tcp' and
-  outports contains '1023/udp' and
-  # Im XMLRPC port
-  outports contains '8899/tcp'
+  outports contains '1023/udp'
 )
 network private ()
 
@@ -32,9 +30,7 @@ system front (
   queue_system = 'torque' and
   ec3_templates contains 'torque' and
   # Install ansible roles needed
-  disk.0.applications contains (name = 'ansible.modules.grycap.torque') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
-  disk.0.applications contains (name = 'ansible.modules.grycap.im')
+  disk.0.applications contains (name = 'ansible.modules.grycap.torque')
 )
 
 configure front (
@@ -49,15 +45,8 @@ configure front (
         ec3_xpath: /system/front/auth
 
     roles:
-    # The install order matters !
-    # If the role order is altered the installation won't work
-    - { role: 'grycap.im' }
     - { role: 'grycap.torque', torque_type_of_node: 'front',
                                max_number_of_nodes: '{{ NNODES }}' }
-    - { role: 'grycap.clues', auth: '{{AUTH}}',
-                              clues_queue_system: 'torque',
-                              max_number_of_nodes: '{{ NNODES }}',
-                              vnode_prefix: 'wn' }
 @end
 )
 
@@ -74,7 +63,7 @@ configure wn (
 )
 
 include torque_misc (
-  template = 'openports'
+  template = 'openports im clues2'
 )
 
 deploy front 1
