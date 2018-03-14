@@ -209,6 +209,10 @@ the behaviour of EC3:
    Set the name of the next system configuration to try when no more instances can be allocated from a cloud provider.
    Used for hybrid clusters.
    The default value is ''.
+  
+``ec3_inherit_from = <string>``
+   Name of the already defined ``system`` from which inherit its characteristics. For example, if we have already defined a    ``system wn`` where we have specified cpu and os, and we want to change memory only for a new system, instead of writing again the values for cpu and os, we inherit these values from the specified system like ``ec3_inherit_from = system wn``. 
+   The default value is 'None'.
 
 ``ec3_reuse_nodes = <boolean>``
    Indicates that you want to stop/start working nodes instead of powering off/on them.
@@ -244,9 +248,6 @@ the behaviour of EC3:
    matches with the specified pattern ``ec3_if_fail` variable will be ignored.
    The default value is 'None'.
    
- ``ec3_inherit_from = <string>``
-   Name of the already defined ``system`` from which inherit its characteristics. For example, if we have already defined a ``system wn`` where we have specified cpu and os, and we want to change memory only for a new system, instead of writing again the values for cpu and os, we inherit these values from the specified system like ``ec3_inherit_from = system wn``. 
-   The default value is 'None'.
 
 System and network inheritance
 ------------------------------
