@@ -229,7 +229,7 @@ the behaviour of EC3:
 
 ``ec3_node_keywords = <string>``
    Comma separated list of pairs key=value that specifies some specific features supported by this type of node
-   (i.e. gpu=1,infiniban=1).
+   (i.e. gpu=1,infiniband=1).
    The default value is 'None'.
    
 ``ec3_node_queues_list = <string>``
@@ -242,6 +242,10 @@ the behaviour of EC3:
    For example if ``ec3_max_instances`` is set to 5 a valid value can be: 'wn[1-5]'. 
    This variable has preference over ``ec3_if_fail`` so if a virtual node to be switched on 
    matches with the specified pattern ``ec3_if_fail` variable will be ignored.
+   The default value is 'None'.
+   
+ ``ec3_inherit_from = <string>``
+   Name of the already defined ``system`` from which inherit its characteristics. For example, if we have already defined a ``system wn`` where we have specified cpu and os, and we want to change memory only for a new system, instead of writing again the values for cpu and os, we inherit these values from the specified system like ``ec3_inherit_from = system wn``. 
    The default value is 'None'.
 
 System and network inheritance
