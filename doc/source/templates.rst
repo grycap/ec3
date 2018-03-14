@@ -219,8 +219,30 @@ the behaviour of EC3:
    The default value is 'false'.
    
 ``ec3_additional_vm = <boolean>``
-   EXPERIMENTAL. Indicates that you want this VM to be treated as an additional VM of the cluster, for example, to install server services that you do not want to put in the front machine.
+   Indicates that you want this VM to be treated as an additional VM of the cluster, for example, to install server services that you do not want to put in the front machine.
    The default value is 'false'.
+   
+``ec3_node_type = <string>``
+   Indicates the type of the node. Currently the only supported value is ``wn``. It enables to 
+   distinguish the WNs from the rest of nodes.
+   The default value is 'None'.
+
+``ec3_node_keywords = <string>``
+   Comma separated list of pairs key=value that specifies some specific features supported by this type of node
+   (i.e. gpu=1,infiniban=1).
+   The default value is 'None'.
+   
+``ec3_node_queues_list = <string>``
+   Comma separated list of queues this type of node belongs to.
+   The default value is 'None'.
+   
+``ec3_node_pattern = <string>``
+   A pattern (as a Python regular expression) to match the name of the virtual nodes with the current node type
+   The value of this variable must be set according to the value of the variable ``ec3_max_instances``.
+   For example if ``ec3_max_instances`` is set to 5 a valid value can be: 'wn[1-5]'. 
+   This variable has preference over ``ec3_if_fail`` so if a virtual node to be switched on 
+   matches with the specified pattern ``ec3_if_fail` variable will be ignored.
+   The default value is 'None'.
 
 System and network inheritance
 ------------------------------
