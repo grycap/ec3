@@ -13,6 +13,7 @@ Contents:
 
    intro
    arch
+   models
    ec3
    ec3aas
    templates
