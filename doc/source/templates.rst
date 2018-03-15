@@ -186,7 +186,7 @@ machine.  The supported features are:
    is not installed.
 
 Special EC3 Features
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 There are also other special features related with EC3. These features enable to customize
 the behaviour of EC3:
