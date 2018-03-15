@@ -24,10 +24,10 @@ In EC3, a template specifying this model would be, for instance::
 
    system wn (
       ec3_max_instances = 6 and
-	  ec3_node_type = 'wn' and
+      ec3_node_type = 'wn' and
       cpu.count = 4 and
       memory.size >= 2048M and
-	  disk.0.os.name = 'linux' and
+      disk.0.os.name = 'linux' and
       net_interface.0.connection = 'net'
    )
 
@@ -55,19 +55,19 @@ In EC3, a template specifying this model would be, for instance::
 
    system wn (
       ec3_max_instances = 6 and
-	  ec3_node_type = 'wn' and
-	  ec3_node_queues_list = 'smalljobs' and
-	  ec3_node_pattern = 'wn[1,2,3]' and 
+      ec3_node_type = 'wn' and
+      ec3_node_queues_list = 'smalljobs' and
+      ec3_node_pattern = 'wn[1,2,3]' and 
       cpu.count = 4 and
       memory.size >= 2048M and
-	  disk.0.os.name = 'linux' and
+      disk.0.os.name = 'linux' and
       net_interface.0.connection = 'net'
    )
    
    system largewn (
       ec3_inherit_from = system wn and
-	  ec3_node_queues_list = 'largejobs' and
-	  ec3_node_pattern = 'wn[4,5,6]' and
+      ec3_node_queues_list = 'largejobs' and
+      ec3_node_pattern = 'wn[4,5,6]' and
       cpu.count = 8 and
       memory.size >= 4096M
    )
@@ -102,21 +102,21 @@ VPN or SSH tunneling techniques.
 In EC3, a template specifying this model would be, for instance::
 
 	system wn (
-		disk.0.os.name = 'linux' and
-		disk.0.image.url = 'one://mymachine.es/1' and 
-		disk.0.os.credentials.username = 'ubuntu' and
-		ec3_max_instances = 6 and               # maximum instances of this kind
+            disk.0.os.name = 'linux' and
+            disk.0.image.url = 'one://mymachine.es/1' and 
+            disk.0.os.credentials.username = 'ubuntu' and
+            ec3_max_instances = 6 and               # maximum instances of this kind
 	    cpu.count = 4 and
-        memory.size >= 2048M and
-		ec3_if_fail = 'wn_aws'
+            memory.size >= 2048M and
+            ec3_if_fail = 'wn_aws'
 	)
 
 	system wn_aws (
-		ec3_inherit_from = system wn and        # Copy features from system 'wn'
-		disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
-		disk.0.os.credentials.username = 'ubuntu' and
-		ec3_max_instances = 8 and               # maximum instances of this kind
-		ec3_if_fail = ''
+            ec3_inherit_from = system wn and        # Copy features from system 'wn'
+            disk.0.image.url = 'aws://us-east-1/ami-30519058' and # Ubuntu 14.04
+            disk.0.os.credentials.username = 'ubuntu' and
+            ec3_max_instances = 8 and               # maximum instances of this kind
+            ec3_if_fail = ''
 	)
 
 
