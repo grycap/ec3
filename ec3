@@ -44,7 +44,7 @@ except:
     pass
 
 # Our public IM service
-IM_URL = 'https://servproject.i3m.upv.es:8800'
+IM_URL = 'https://appsgrycap.i3m.upv.es:30443'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
