@@ -237,6 +237,16 @@ def apply_ec3_features(r):
         s.setId(a.getId())
         r.add(s, ifpresent="merge", conflict="other", missing="other")
 
+def format_rest_auth_data(auth_data):
+    rest_auth_data = ""
+    if auth_data:
+        for item in auth_data:
+            for key, value in item.items():
+                value.replace("\n", "\\\\n")
+                rest_auth_data += "%s = %s;" % (key, value)
+            rest_auth_data += "\\n"
+    return rest_auth_data
+
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
         self.check_simple(dict(template=(str, lambda x,_: len(x.value.strip()))), r)
@@ -389,7 +399,7 @@ class ClusterStore:
         try:
             new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
 
-            headers = {"Authorization": auth, "Accept": "application/json"}
+            headers = {"Authorization": format_rest_auth_data(auth), "Accept": "application/json"}
             url = "%s/infrastructures/%s" % (new_im_server_url, infrId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -397,7 +407,7 @@ class ClusterStore:
             for elem in resp.json()["uri-list"]:
                 res.append(os.path.basename(list(elem.values())[0]))
 
-            headers = {"Authorization": auth}
+            headers = {"Authorization": format_rest_auth_data(auth)}
             url = "%s/infrastructures/%s/vms/%s" % (new_im_server_url, infrId, vmId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -647,13 +657,13 @@ class CmdLaunch:
         # Create infrastructure
         CLI.display("Creating infrastructure")
         try:
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures" % options.restapi[0]
             resp = requests.request("POST", url, verify=False, headers=headers, data=dump_radl(radl, order_deploys=True))
             resp.raise_for_status()
             infrId = os.path.basename(resp.text)
 
-            headers = {"Authorization": auth_data, "Accept": "application/json"}
+            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
             url = "%s/infrastructures/%s" % (options.restapi[0], infrId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -678,8 +688,8 @@ class CmdLaunch:
                 return vm_ids[0]
             else:
                 for vm_id in vm_ids:
-                    headers = {"Authorization": auth_data}
-                    url = "%s/infrastructures/%s/vms/%s" % (im_server_url, iinfrIdnf_id, vm_id)
+                    headers = {"Authorization": format_rest_auth_data(auth_data)}
+                    url = "%s/infrastructures/%s/vms/%s" % (im_server_url, infrId, vm_id)
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     resp.raise_for_status()
                     radl = parse_radl(resp.text)
@@ -778,8 +788,8 @@ class CmdLaunch:
         while not success and cont < STATE_CHECK_RETRIES:
             cont += 1
             try:
-                headers = {"Authorization": auth_data}
-                url = "%s/infrastructures/%s/vms/%s" % (im_server_url, infrId, vm_vmIdid)
+                headers = {"Authorization": format_rest_auth_data(auth_data)}
+                url = "%s/infrastructures/%s/vms/%s" % (im_server_url, infrId, vmId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
                 info = resp.text
@@ -806,7 +816,7 @@ class CmdLaunch:
             while True:
                 success, info = CmdLaunch.get_vm_info(im_server_url, infrId, vmId, auth_data)
 
-                headers = {"Authorization": auth_data, "Accept": "application/json"}
+                headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
                 url = "%s/infrastructures/%s/state" % (im_server_url, infrId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
@@ -827,7 +837,7 @@ class CmdLaunch:
                 if not options_not_store: ClusterStore.save(options_clustername, radl)
                 if state == system.CONFIGURED: break
                 if state in [system.FAILED, system.UNCONFIGURED]:
-                    headers = {"Authorization": auth_data}
+                    headers = {"Authorization": format_rest_auth_data(auth_data)}
                     url = "%s/infrastructures/%s/contmsg" % (im_server_url, infrId)
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     resp.raise_for_status()
@@ -842,7 +852,7 @@ class CmdLaunch:
             CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
-                    headers = {"Authorization": auth_data}
+                    headers = {"Authorization": format_rest_auth_data(auth_data)}
                     url = "%s/infrastructures/%s" % (im_server_url, infrId)
                     resp = requests.request("DELETE", url, verify=False, headers=headers)
                     resp.raise_for_status()
@@ -858,7 +868,7 @@ class CmdLaunch:
             new_im_server_url = "http://%s:8800" % vm_ip
             try:
                 if new_im_server_url != im_server_url:
-                    headers = {"Authorization": auth_data, "Accept": "application/json"}
+                    headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
                     url = "%s/infrastructures/%s/data" % (im_server_url, infrId)
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     resp.raise_for_status()
@@ -873,12 +883,12 @@ class CmdLaunch:
                 system_front.delValue("__im_server")
                 system_front.setValue("__infrastructure_id", newInfrId)
                 if new_im_server_url != im_server_url:
-                    headers = {"Authorization": auth_data}
+                    headers = {"Authorization": format_rest_auth_data(auth_data)}
                     url = "%s/infrastructures/%s/data?delete=yes" % (im_server_url, infrId)
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     resp.raise_for_status()
                 
-                headers = {"Authorization": auth_data}
+                headers = {"Authorization": format_rest_auth_data(auth_data)}
                 url = "%s/infrastructures/%s" % (new_im_server_url, newInfrId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
@@ -1017,7 +1027,7 @@ class CmdDestroy:
 		
             #First, check if the infrastructure still remains in the external IM, due to problems installing internal IM
             try:
-                headers = {"Authorization": auth}
+                headers = {"Authorization": format_rest_auth_data(auth)}
                 url = "%s/infrastructures/%s" % (im_server_url, infrId)
                 resp = requests.request("DELETE", url, verify=False, headers=headers)
                 if resp.status_code == 200:
@@ -1030,13 +1040,13 @@ class CmdDestroy:
 
             #Import the infrastructure to the external IM for the destroy operation
             try:
-                headers = {"Authorization": auth, "Accept": "application/json"}
+                headers = {"Authorization": format_rest_auth_data(auth), "Accept": "application/json"}
                 url = "%s/infrastructures/%s/data" % (new_im_server_url, infrId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
                 strInf = resp.text
 
-                headers = {"Authorization": auth}
+                headers = {"Authorization": format_rest_auth_data(auth)}
                 url = "%s/infrastructures" % new_im_server_url
                 resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                 resp.raise_for_status()
@@ -1046,7 +1056,7 @@ class CmdDestroy:
                 if options.force:
                     ClusterStore.remove(options.clustername)
 		sys.exit(1)
-            headers = {"Authorization": auth}
+            headers = {"Authorization": format_rest_auth_data(auth)}
             url = "%s/infrastructures/%s" % (im_server_url, newInfrId)
             resp = requests.request("DELETE", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -1106,7 +1116,7 @@ class CmdReconfigure:
         # Reconfigure infrastructure
         CLI.display("Reconfiguring infrastructure")
         try:
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s/reconfigure" % (im_server_url, infrId)
             resp = requests.request("PUT", url, verify=False, headers=headers, data=radl)
             resp.raise_for_status()
@@ -1208,7 +1218,7 @@ class CmdClone:
         # Recover RADL
         radl = ""
         try:
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s/radl" % (im_server_url, infrId_old)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -1240,7 +1250,7 @@ class CmdClone:
 
         try:
             #print auth_data
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures" % im_server_url
             resp = requests.request("POST", url, verify=False, headers=headers, data=rad)
             resp.raise_for_status()
@@ -1263,7 +1273,7 @@ class CmdClone:
         # Destroy the old cluster if the user has requested it
         if options.eliminate:
             CLI.display("Finally, let's delete the old cluster")
-            headers = {"Authorization": rest_auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s" % (im_server_url, infrId_old)
             resp = requests.request("DELETE", url, verify=False, headers=headers)
             ClusterStore.remove(options.clustername)
@@ -1346,7 +1356,7 @@ class CmdMigrate:
         # Recover RADL
         radl = ""
         try:
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s/radl" % (im_server_url, infrId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -1385,7 +1395,7 @@ class CmdMigrate:
         CLI.display("Cloning infrastructure")
 
         try:
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures" % im_server_url
             resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
             resp.raise_for_status()
@@ -1497,7 +1507,7 @@ class CmdMigrate:
         # Destroy the old cluster if the user has requested it
         if options.eliminate:
             CLI.display("Finally, let's delete the old cluster")
-            headers = {"Authorization": auth_data}
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s" % (im_server_url, infrId)
             resp = requests.request("DELETE", url, verify=False, headers=headers)
             ClusterStore.remove(options.clustername)
@@ -1572,13 +1582,13 @@ class CmdStop:
 
             #Import the infrastructure for the restart operation
             try:
-                headers = {"Authorization": auth, "Accept": "application/json"}
+                headers = {"Authorization": format_rest_auth_data(auth), "Accept": "application/json"}
                 url = "%s/infrastructures/%s/data" % (cluster_im_server_url, infrId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
                 strInf = resp.text
 
-                headers = {"Authorization": auth}
+                headers = {"Authorization": format_rest_auth_data(auth)}
                 url = "%s/infrastructures" % im_server_url
                 resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                 resp.raise_for_status()
@@ -1590,7 +1600,7 @@ class CmdStop:
 
             #Stop the infrastructure
             #success, info = cluster_im_server.StopInfrastructure(infrId, auth)
-            headers = {"Authorization": auth}
+            headers = {"Authorization": format_rest_auth_data(auth)}
             url = "%s/infrastructures/%s/stop" % (im_server_url, newInfrId)
             resp = requests.request("PUT", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -1630,7 +1640,7 @@ class CmdRestart:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 
-            headers = {"Authorization": auth}
+            headers = {"Authorization": format_rest_auth_data(auth)}
             url = "%s/infrastructures/%s/start" % (im_server_url, ids[ids.index('#')+1:])
             resp = requests.request("PUT", url, verify=False, headers=headers)
             resp.raise_for_status()
