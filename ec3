@@ -19,10 +19,7 @@
 #--------------------------------------------------------------------------- #
 
 import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess
-try:
-    import xmlrpclib
-except ImportError:
-    import xmlrpc.client as xmlrpclib
+import requests
 
 import yaml
 try:
@@ -47,7 +44,7 @@ except:
     pass
 
 # Our public IM service
-IM_URL = 'https://servproject.i3m.upv.es:8899'
+IM_URL = 'https://servproject.i3m.upv.es:8800'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
@@ -391,19 +388,33 @@ class ClusterStore:
         if not refresh or not s0 or s0.getValue("state") not in system.IS_ACCESSIBLE: return r
         try:
             new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
-            new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
-            success, res = new_im_server.GetInfrastructureInfo(infrId, auth)
-            if not success: raise Exception(res)
-            success, info = new_im_server.GetVMInfo(infrId, vmId, auth)
-            if not success: raise Exception(info)
+
+            headers = {"Authorization": auth, "Accept": "application/json"}
+            url = "%s/infrastructures/%s" % (new_im_server_url, infrId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
+            res = []
+            for elem in resp.json()["uri-list"]:
+                res.append(os.path.basename(list(elem.values())[0]))
+
+            headers = {"Authorization": auth}
+            url = "%s/infrastructures/%s/vms/%s" % (new_im_server_url, infrId, vmId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
+            info = resp.text
+
             r = parse_radl(info)
             r.check()
             for prop in ("auth", "__im_server", "__infrastructure_id"):
                 if s0.hasFeature(prop):
                     r.get(system("front")).setValue(prop, s0.getValue(prop))
             r.get(system("front")).setValue("nodes", len(res)-1)
-            success, cont_out = new_im_server.GetInfrastructureContMsg(infrId, auth)
-            if not success: raise Exception(cont_out)
+
+            url = "%s/infrastructures/%s/contmsg" % (new_im_server_url, infrId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
+            cont_out = resp.text
+
             r.get(system("front")).setValue("contextualization_output", cont_out)
             ClusterStore.save(clustername, r)
         except Exception as e:
@@ -579,7 +590,7 @@ class CmdLaunch:
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
     #   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
     #   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service")
         parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster", config=False)
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
@@ -605,14 +616,13 @@ class CmdLaunch:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
         try:
-            if not options.xmlrpc: raise Exception("option is not set")
-            if not options.dry_run and options.xmlrpc[0].startswith("http:") and not options.xmlrpc[0].startswith("http://localhost"):
+            if not options.restapi: raise Exception("option is not set")
+            if not options.dry_run and options.restapi[0].startswith("http:") and not options.restapi[0].startswith("http://localhost"):
                 CLI.display("WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.")
                 if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                     sys.exit(1)
-            im_server = xmlrpclib.ServerProxy(options.xmlrpc[0], allow_none=True)
         except Exception as e:
-            CLI.display("Error in -u/--xmlrpc-url: %s" % str(e), level=logging.ERROR)
+            CLI.display("Error in -u/--restapi-url: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
         # Instantiate templates
@@ -637,32 +647,42 @@ class CmdLaunch:
         # Create infrastructure
         CLI.display("Creating infrastructure")
         try:
-            success, infrId = im_server.CreateInfrastructure(dump_radl(radl, order_deploys=True), auth_data)
-            if not success: raise Exception(infrId)
-            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
-            if not success: raise Exception(vm_ids)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures" % options.restapi[0]
+            resp = requests.request("POST", url, verify=False, headers=headers, data=dump_radl(radl, order_deploys=True))
+            resp.raise_for_status()
+            infrId = os.path.basename(resp.text)
+
+            headers = {"Authorization": auth_data, "Accept": "application/json"}
+            url = "%s/infrastructures/%s" % (options.restapi[0], infrId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
+            vm_ids = []
+            for elem in resp.json()["uri-list"]:
+                vm_ids.append(os.path.basename(list(elem.values())[0]))
         except Exception as e:
             CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
 
-        vm_id = CmdLaunch.get_front_vm_id(options.xmlrpc[0], infrId, vm_ids, auth_data)
+        vm_id = CmdLaunch.get_front_vm_id(options.restapi[0], infrId, vm_ids, auth_data)
 
-        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, options.xmlrpc[0], options.destroy,
+        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, options.restapi[0], options.destroy,
                                      options.not_store, options.clustername, options.print_radl, options.json)
         sys.exit(0)
 
     @staticmethod
     def get_front_vm_id(im_server_url, infrId, vm_ids, auth_data):
         try:
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             if len(vm_ids) == 1:
                 return vm_ids[0]
             else:
                 for vm_id in vm_ids:
-                    success, info = im_server.GetVMInfo(infrId, vm_id, auth_data)
-                    if not success: raise Exception(info)
-                    radl = parse_radl(info)
+                    headers = {"Authorization": auth_data}
+                    url = "%s/infrastructures/%s/vms/%s" % (im_server_url, iinfrIdnf_id, vm_id)
+                    resp = requests.request("GET", url, verify=False, headers=headers)
+                    resp.raise_for_status()
+                    radl = parse_radl(resp.text)
                     radl.check()
                     if radl.get(system("front")):
                         return vm_id
@@ -748,7 +768,7 @@ class CmdLaunch:
         return True
 
     @staticmethod
-    def get_vm_info(im_server, infrId, vmId, auth_data):
+    def get_vm_info(im_server_url, infrId, vmId, auth_data):
         """
         Get VM info with a number of retries
         """
@@ -758,7 +778,12 @@ class CmdLaunch:
         while not success and cont < STATE_CHECK_RETRIES:
             cont += 1
             try:
-                success, info = im_server.GetVMInfo(infrId, vmId, auth_data)
+                headers = {"Authorization": auth_data}
+                url = "%s/infrastructures/%s/vms/%s" % (im_server_url, infrId, vm_vmIdid)
+                resp = requests.request("GET", url, verify=False, headers=headers)
+                resp.raise_for_status()
+                info = resp.text
+                success = True
             except Exception as vminfoex:
                 info = str(vminfoex)
             if not success:
@@ -777,12 +802,16 @@ class CmdLaunch:
         system_front = None
         res = None
         radl = None
-        im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
         try:
             while True:
-                success, info = CmdLaunch.get_vm_info(im_server, infrId, vmId, auth_data)
-                success, state_info = im_server.GetInfrastructureState(infrId, auth_data)
-                if not success: raise Exception(info)
+                success, info = CmdLaunch.get_vm_info(im_server_url, infrId, vmId, auth_data)
+
+                headers = {"Authorization": auth_data, "Accept": "application/json"}
+                url = "%s/infrastructures/%s/state" % (im_server_url, infrId)
+                resp = requests.request("GET", url, verify=False, headers=headers)
+                resp.raise_for_status()
+                state_info = resp.json()['state']
+
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
                 radl.check()
@@ -798,8 +827,12 @@ class CmdLaunch:
                 if not options_not_store: ClusterStore.save(options_clustername, radl)
                 if state == system.CONFIGURED: break
                 if state in [system.FAILED, system.UNCONFIGURED]:
-                    success, info = im_server.GetInfrastructureContMsg(infrId, auth_data)
-                    raise Exception(info if success else "unexpected failure")
+                    headers = {"Authorization": auth_data}
+                    url = "%s/infrastructures/%s/contmsg" % (im_server_url, infrId)
+                    resp = requests.request("GET", url, verify=False, headers=headers)
+                    resp.raise_for_status()
+                    raise Exception(resp.text)
+
                 if state not in system.IS_ACCESSIBLE: raise Exception("Frontend in incorrect state")
                 if time.time() - time0 > TIMEOUT:
                     raise Exception("Time out! Infrastructure is not still configured!")
@@ -809,8 +842,10 @@ class CmdLaunch:
             CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
-                    success, info = im_server.DestroyInfrastructure(infrId, auth_data)
-                    if not success: raise Exception(info)
+                    headers = {"Authorization": auth_data}
+                    url = "%s/infrastructures/%s" % (im_server_url, infrId)
+                    resp = requests.request("DELETE", url, verify=False, headers=headers)
+                    resp.raise_for_status()
                     CLI.display("Infrastructure successfully destroyed")
                 except Exception as e:
                     CLI.display("Error while destroying the infrastructure: %s" % str(e), level=logging.ERROR)
@@ -820,23 +855,33 @@ class CmdLaunch:
 
             # Transfer infrastructure
             CLI.display("Transferring infrastructure")
-            new_im_server_url = "http://%s:8899" % vm_ip
-            new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
+            new_im_server_url = "http://%s:8800" % vm_ip
             try:
                 if new_im_server_url != im_server_url:
-                    success, strInf = im_server.ExportInfrastructure(infrId, False, auth_data)
-                    if not success: raise Exception(strInf)
-                    success, newInfrId = new_im_server.ImportInfrastructure(strInf, auth_data)
-                    if not success: raise Exception(newInfrId)
+                    headers = {"Authorization": auth_data, "Accept": "application/json"}
+                    url = "%s/infrastructures/%s/data" % (im_server_url, infrId)
+                    resp = requests.request("GET", url, verify=False, headers=headers)
+                    resp.raise_for_status()
+                    strInf = resp.json()["data"]
+
+                    url = "%s/infrastructures" % new_im_server_url
+                    resp = requests.request("PUT", url, verify=False, headers=headers, data=data)
+                    resp.raise_for_status()
+                    newInfrId = resp.text
                 else:
                     newInfrId = infrId
                 system_front.delValue("__im_server")
                 system_front.setValue("__infrastructure_id", newInfrId)
                 if new_im_server_url != im_server_url:
-                    success, _ = im_server.ExportInfrastructure(infrId, True, auth_data)
-                    if not success: raise Exception(res)
-                success, res = new_im_server.GetInfrastructureInfo(newInfrId, auth_data)
-                if not success: raise Exception(res)
+                    headers = {"Authorization": auth_data}
+                    url = "%s/infrastructures/%s/data?delete=yes" % (im_server_url, infrId)
+                    resp = requests.request("GET", url, verify=False, headers=headers)
+                    resp.raise_for_status()
+                
+                headers = {"Authorization": auth_data}
+                url = "%s/infrastructures/%s" % (new_im_server_url, newInfrId)
+                resp = requests.request("GET", url, verify=False, headers=headers)
+                resp.raise_for_status()
             except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
             CLI.display("Front-end ready!")
@@ -945,7 +990,7 @@ class CmdDestroy:
     def parse(subparsers):
         parser = subparsers.add_parser("destroy", help="destroy a launched cluster")
         parser.add_argument("clustername", help="name of the cluster to destroy")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service. If not indicated, EC3 uses default value (%s)." % IM_URL)
         parser.add_argument("--force", action="store_true", default=False, help="destroy the local information of the cluster anyway")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about deleting the cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
@@ -956,8 +1001,8 @@ class CmdDestroy:
     @staticmethod
     def run(options):
         # If the user indicates an IM URL, we use it, if not we use the default IM
-        if options.xmlrpc:
-            im_server_url = options.xmlrpc[0]
+        if options.restapi:
+            im_server_url = options.restapi[0]
         else:
             im_server_url = IM_URL
         try:
@@ -966,16 +1011,16 @@ class CmdDestroy:
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
             new_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
-            new_im_server = xmlrpclib.ServerProxy(new_im_server_url, allow_none=True)
-            im_ext_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 		
             #First, check if the infrastructure still remains in the external IM, due to problems installing internal IM
             try:
-                success, info = im_ext_server.DestroyInfrastructure(infrId, auth)
-                if success:
+                headers = {"Authorization": auth}
+                url = "%s/infrastructures/%s" % (im_server_url, infrId)
+                resp = requests.request("DELETE", url, verify=False, headers=headers)
+                if resp.status_code == 200:
                     CLI.display("Success deleting the cluster!")
 		    ClusterStore.remove(options.clustername)
 		    sys.exit(0)
@@ -985,19 +1030,26 @@ class CmdDestroy:
 
             #Import the infrastructure to the external IM for the destroy operation
             try:
-                success, strInf = new_im_server.ExportInfrastructure(infrId, False, auth)
-                if not success: raise Exception(strInf)
-                success, newInfrId = im_ext_server.ImportInfrastructure(strInf, auth)
-                if not success: raise Exception(newInfrId)
+                headers = {"Authorization": auth, "Accept": "application/json"}
+                url = "%s/infrastructures/%s/data" % (new_im_server_url, infrId)
+                resp = requests.request("GET", url, verify=False, headers=headers)
+                resp.raise_for_status()
+                strInf = resp.text
+
+                headers = {"Authorization": auth}
+                url = "%s/infrastructures" % new_im_server_url
+                resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
+                resp.raise_for_status()
+                newInfrId = resp.text
             except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
                 if options.force:
                     ClusterStore.remove(options.clustername)
 		sys.exit(1)
-            #success, info = new_im_server.DestroyInfrastructure(infrId, auth)
-            success, info = im_ext_server.DestroyInfrastructure(newInfrId, auth)
-            if not success:
-                raise Exception(info)
+            headers = {"Authorization": auth}
+            url = "%s/infrastructures/%s" % (im_server_url, newInfrId)
+            resp = requests.request("DELETE", url, verify=False, headers=headers)
+            resp.raise_for_status()
             CLI.display("Success deleting the cluster!")
         except Exception as e:
             CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
@@ -1054,9 +1106,10 @@ class CmdReconfigure:
         # Reconfigure infrastructure
         CLI.display("Reconfiguring infrastructure")
         try:
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            success, info = im_server.Reconfigure(infrId, radl, auth_data)
-            if not success: raise Exception(info)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures/%s/reconfigure" % (im_server_url, infrId)
+            resp = requests.request("PUT", url, verify=False, headers=headers, data=radl)
+            resp.raise_for_status()
         except Exception as e:
             CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1108,7 +1161,7 @@ class CmdClone:
     def parse(subparsers):
         parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service. If not indicated, EC3 uses default value (%s)." % IM_URL)
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its clonation")
@@ -1118,8 +1171,8 @@ class CmdClone:
     @staticmethod
     def run(options):
         # If the user indicates an IM URL, we use it, if not we use the default value
-        if options.xmlrpc:
-            im_server_url = options.xmlrpc[0]
+        if options.restapi:
+            im_server_url = options.restapi[0]
         else:
             im_server_url = IM_URL  
 
@@ -1155,8 +1208,11 @@ class CmdClone:
         # Recover RADL
         radl = ""
         try:
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            success, radl = im_server.GetInfrastructureRADL(infrId_old, auth_data)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures/%s/radl" % (im_server_url, infrId_old)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
+            radl = resp.text
         except Exception as e:
             CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1183,13 +1239,17 @@ class CmdClone:
         CLI.display("Cloning infrastructure")
 
         try:
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
             #print auth_data
-            success, infrId = im_server.CreateInfrastructure(radl, auth_data)
-            if not success: raise Exception(infrId)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures" % im_server_url
+            resp = requests.request("POST", url, verify=False, headers=headers, data=rad)
+            resp.raise_for_status()
+            infrId = os.path.basename(resp.text)
+
             CLI.display("Success creating infrastructure " + str(infrId))
-            success, vm_ids = im_server.GetInfrastructureInfo(infrId, auth_data)
-            if not success: raise Exception(vm_ids)
+            url = "%s/infrastructures/%s" % (im_server_url, infrId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
         except Exception as e:
             CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1203,12 +1263,15 @@ class CmdClone:
         # Destroy the old cluster if the user has requested it
         if options.eliminate:
             CLI.display("Finally, let's delete the old cluster")
-            success, info = im_server.DestroyInfrastructure(infrId_old, auth_data)
+            headers = {"Authorization": rest_auth_data}
+            url = "%s/infrastructures/%s" % (im_server_url, infrId_old)
+            resp = requests.request("DELETE", url, verify=False, headers=headers)
             ClusterStore.remove(options.clustername)
-            if not success:
-                raise Exception(info)
-                sys.exit(1)
-            CLI.display("Success deleting the old cluster!")
+            if resp.status_code != 200:
+                CLI.display("Error deleting the old cluster!")
+                resp.raise_for_status()
+            else:
+                CLI.display("Success deleting the old cluster!")
         
         CLI.display("Clone process completed")
         sys.exit(0)
@@ -1218,7 +1281,7 @@ class CmdMigrate:
     def parse(subparsers):
         parser = subparsers.add_parser("migrate", help="migrate a launched cluster together with its workload to another Cloud provider")
         parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service. If not indicated, EC3 uses default value (https://servproject.i3m.upv.es:8899).")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service. If not indicated, EC3 uses default value (%s)." % IM_URL)
         parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
         parser.add_argument("-b", "--bucket", dest="bucket", nargs=1, help="Name of the already created bucket where to upload ckpt files")
@@ -1228,8 +1291,8 @@ class CmdMigrate:
     @staticmethod
     def run(options):
         # If the user indicates an IM URL, we use it, if not we use the default value
-        if options.xmlrpc:
-            im_server_url = options.xmlrpc[0]
+        if options.restapi:
+            im_server_url = options.restapi[0]
         else:
             im_server_url = IM_URL  
 
@@ -1283,8 +1346,11 @@ class CmdMigrate:
         # Recover RADL
         radl = ""
         try:
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            success, radl = im_server.GetInfrastructureRADL(infrId, auth_data)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures/%s/radl" % (im_server_url, infrId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
+            radl = resp.text
         except Exception as e:
             CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1319,12 +1385,15 @@ class CmdMigrate:
         CLI.display("Cloning infrastructure")
 
         try:
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            success, infrId2 = im_server.CreateInfrastructure(radl, auth_data)
-            if not success: raise Exception(infrId2)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures" % im_server_url
+            resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
+            resp.raise_for_status()
+            infrId2 = os.path.basename(resp.text)
             CLI.display("Success creating infrastructure " + str(infrId2))
-            success, vm_ids = im_server.GetInfrastructureInfo(infrId2, auth_data)
-            if not success: raise Exception(vm_ids)
+            url = "%s/infrastructures/%s" % (im_server_url, infrId2)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
         except Exception as e:
             CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1428,10 +1497,13 @@ class CmdMigrate:
         # Destroy the old cluster if the user has requested it
         if options.eliminate:
             CLI.display("Finally, let's delete the old cluster")
-            success, info = im_server.DestroyInfrastructure(infrId, auth_data)
+            headers = {"Authorization": auth_data}
+            url = "%s/infrastructures/%s" % (im_server_url, infrId)
+            resp = requests.request("DELETE", url, verify=False, headers=headers)
             ClusterStore.remove(options.clustername)
-            if not success:
-                raise Exception(info)
+            if resp.status_code != 200:
+                CLI.display("Error deleting the old cluster!")
+                resp.raise_for_status()
                 sys.exit(1)
             CLI.display("Success deleting the old cluster!")
         
@@ -1476,14 +1548,14 @@ class CmdStop:
         parser.add_argument("clustername", help="name of the cluster to stop")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about stopping the cluster")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service that is outside the cluster")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service that is outside the cluster")
         parser.set_defaults(func=CmdStop.run)
 
     @staticmethod
     def run(options):
         # If the user indicates an IM URL, we use it, if not we use the default IM
-        if options.xmlrpc:
-            im_server_url = options.xmlrpc[0]
+        if options.restapi:
+            im_server_url = options.restapi[0]
         else:
             im_server_url = IM_URL
 
@@ -1493,19 +1565,24 @@ class CmdStop:
             if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
             cluster_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
-            cluster_im_server = xmlrpclib.ServerProxy(cluster_im_server_url, allow_none=True)
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
-            
+
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 
             #Import the infrastructure for the restart operation
             try:
-                success, strInf = cluster_im_server.ExportInfrastructure(infrId, False, auth)
-                if not success: raise Exception(strInf)
-                success, newInfrId = im_server.ImportInfrastructure(strInf, auth)
-                if not success: raise Exception(newInfrId)
+                headers = {"Authorization": auth, "Accept": "application/json"}
+                url = "%s/infrastructures/%s/data" % (cluster_im_server_url, infrId)
+                resp = requests.request("GET", url, verify=False, headers=headers)
+                resp.raise_for_status()
+                strInf = resp.text
+
+                headers = {"Authorization": auth}
+                url = "%s/infrastructures" % im_server_url
+                resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
+                resp.raise_for_status()
+                newInfrId = resp.text
                 ids = infrId + "#" + newInfrId
                 ClusterStore.write(options.clustername + "_ids", ids)
             except Exception as e:
@@ -1513,9 +1590,10 @@ class CmdStop:
 
             #Stop the infrastructure
             #success, info = cluster_im_server.StopInfrastructure(infrId, auth)
-            success, info = im_server.StopInfrastructure(newInfrId, auth)
-            if not success:
-                raise Exception(info)
+            headers = {"Authorization": auth}
+            url = "%s/infrastructures/%s/stop" % (im_server_url, newInfrId)
+            resp = requests.request("PUT", url, verify=False, headers=headers)
+            resp.raise_for_status()
             CLI.display("Success stopping the cluster!")
             sys.exit(0)
         except Exception as e:
@@ -1529,22 +1607,21 @@ class CmdRestart:
     def parse(subparsers):
         parser = subparsers.add_parser("restart", help="restart a previously stopped cluster")
         parser.add_argument("clustername", help="name of the cluster to restart")
-        parser.add_argument("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=[IM_URL], help="URL to IM XML-RPC service that is outside the cluster")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service that is outside the cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
         parser.set_defaults(func=CmdRestart.run)
 
     @staticmethod
     def run(options):
         # If the user indicates an IM URL, we use it, if not we use the default IM
-        if options.xmlrpc:
-            im_server_url = options.xmlrpc[0]
+        if options.restapi:
+            im_server_url = options.restapi[0]
         else:
             im_server_url = IM_URL
 
         try:
             r = ClusterStore.load(options.clustername)
             _, _, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
-            im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
 
             # obtengo infrId del im externo
             ids = ClusterStore.read(options.clustername + "_ids")
@@ -1553,10 +1630,14 @@ class CmdRestart:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 
-            success, info = im_server.StartInfrastructure(ids[ids.index('#')+1:], auth)
-            success, info = im_server.ExportInfrastructure(ids[ids.index('#')+1:], True, auth)
-            if not success:
-                raise Exception(info)
+            headers = {"Authorization": auth}
+            url = "%s/infrastructures/%s/start" % (im_server_url, ids[ids.index('#')+1:])
+            resp = requests.request("PUT", url, verify=False, headers=headers)
+            resp.raise_for_status()
+
+            url = "%s/infrastructures/%s/data?delete=yes" % (im_server_url, ids[ids.index('#')+1:])
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            resp.raise_for_status()
             CLI.display("Success restarting the cluster!")
             sys.exit(0)
         except Exception as e:
