@@ -53,7 +53,7 @@ except:
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:30443'
 # RADL template path
-TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
+TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates", "/tmp/ec3/templates"]
 # Path where to store launched clusters
 CLUSTER_STORE_PATH = "~/.ec3/clusters"
 # Config file path
@@ -454,7 +454,7 @@ class ClusterStore:
     @staticmethod
     def get_im_server_infrId_and_vmId_and_auth(r):
         s0 = r.get(system("front"))
-        im_server_name = s0.getValue("__im_server", default="http://%s:8899" % getPublicIP(s0))
+        im_server_name = s0.getValue("__im_server", default="http://%s:8800" % getPublicIP(s0))
         infrId = s0.getValue("__infrastructure_id", default=0)
         vmId = s0.getValue("__vm_id", default="0")
         auth = json.loads(s0.getValue("auth"))
@@ -880,10 +880,11 @@ class CmdLaunch:
                     resp.raise_for_status()
                     strInf = resp.json()["data"]
 
+                    headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
                     url = "%s/infrastructures" % new_im_server_url
                     resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                     resp.raise_for_status()
-                    newInfrId = resp.text
+                    newInfrId = os.path.basename(resp.text)
                 else:
                     newInfrId = infrId
                 system_front.delValue("__im_server")
@@ -1050,12 +1051,13 @@ class CmdDestroy:
                 url = "%s/infrastructures/%s/data" % (new_im_server_url, infrId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
-                strInf = resp.text
+                strInf = resp.json()["data"]
 
+                headers = {"Authorization": format_rest_auth_data(auth), "Accept": "text/*"}
                 url = "%s/infrastructures" % im_server_url
                 resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                 resp.raise_for_status()
-                newInfrId = resp.text
+                newInfrId = os.path.basename(resp.text)
             except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
                 if options.force:
@@ -1600,13 +1602,13 @@ class CmdStop:
                 url = "%s/infrastructures/%s/data" % (cluster_im_server_url, infrId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
-                strInf = resp.text
+                strInf = resp.json()["data"]
 
-                headers = {"Authorization": format_rest_auth_data(auth)}
+                headers = {"Authorization": format_rest_auth_data(auth), "Accept": "text/*"}
                 url = "%s/infrastructures" % im_server_url
                 resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                 resp.raise_for_status()
-                newInfrId = resp.text
+                newInfrId = os.path.basename(resp.text)
                 ids = infrId + "#" + newInfrId
                 ClusterStore.write(options.clustername + "_ids", ids)
             except Exception as e:
