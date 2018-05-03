@@ -101,7 +101,7 @@ EC3 has an official Docker container image available in `Docker Hub`_ that can b
 
    $ sudo docker pull grycap/ec3
    
-You can exploit all the potential of EC3 as if you download the CLI and run it on your computer. 
+You can exploit all the potential of EC3 as if you download the CLI and run it on your computer:: 
 
    $ sudo docker run grycap/ec3 list
    $ sudo docker run grycap/ec3 templates
