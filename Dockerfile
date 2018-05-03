@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
     git \
     python-ply \
     python-dev \
-    python-yaml
+    python-yaml \
+    sshpass
 
 ENV EC3_HOME /opt/ec3
 RUN mkdir -p "$EC3_HOME"
