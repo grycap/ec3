@@ -20,6 +20,13 @@
 
 import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess
 import requests
+try:
+    # to avoid Warnings 
+    import urllib3
+    urllib3.disable_warnings()
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+except:
+    pass
 
 import yaml
 try:
@@ -46,7 +53,7 @@ except:
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:30443'
 # RADL template path
-TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
+TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates", "/tmp/ec3/templates"]
 # Path where to store launched clusters
 CLUSTER_STORE_PATH = "~/.ec3/clusters"
 # Config file path
@@ -407,7 +414,7 @@ class ClusterStore:
             for elem in resp.json()["uri-list"]:
                 res.append(os.path.basename(list(elem.values())[0]))
 
-            headers = {"Authorization": format_rest_auth_data(auth)}
+            headers = {"Authorization": format_rest_auth_data(auth), "Accept": "text/*"}
             url = "%s/infrastructures/%s/vms/%s" % (new_im_server_url, infrId, vmId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -657,7 +664,7 @@ class CmdLaunch:
         # Create infrastructure
         CLI.display("Creating infrastructure")
         try:
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
+            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
             url = "%s/infrastructures" % options.restapi[0]
             resp = requests.request("POST", url, verify=False, headers=headers, data=dump_radl(radl, order_deploys=True))
             resp.raise_for_status()
@@ -688,12 +695,11 @@ class CmdLaunch:
                 return vm_ids[0]
             else:
                 for vm_id in vm_ids:
-                    headers = {"Authorization": format_rest_auth_data(auth_data)}
+                    headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
                     url = "%s/infrastructures/%s/vms/%s" % (im_server_url, infrId, vm_id)
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     resp.raise_for_status()
                     radl = parse_radl(resp.text)
-                    radl.check()
                     if radl.get(system("front")):
                         return vm_id
                 CLI.display("Error getting front-end VM ID. Assuming 0.", level=logging.WARNING)
@@ -788,11 +794,11 @@ class CmdLaunch:
         while not success and cont < STATE_CHECK_RETRIES:
             cont += 1
             try:
-                headers = {"Authorization": format_rest_auth_data(auth_data)}
+                headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
                 url = "%s/infrastructures/%s/vms/%s" % (im_server_url, infrId, vmId)
                 resp = requests.request("GET", url, verify=False, headers=headers)
                 resp.raise_for_status()
-                info = resp.text
+                info = str(resp.text)
                 success = True
             except Exception as vminfoex:
                 info = str(vminfoex)
@@ -815,6 +821,9 @@ class CmdLaunch:
         try:
             while True:
                 success, info = CmdLaunch.get_vm_info(im_server_url, infrId, vmId, auth_data)
+                CLI.logger.debug("Front-end info: %s" % info)
+                radl = parse_radl(info)
+                radl.check()
 
                 headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
                 url = "%s/infrastructures/%s/state" % (im_server_url, infrId)
@@ -822,13 +831,10 @@ class CmdLaunch:
                 resp.raise_for_status()
                 state_info = resp.json()['state']
 
-                CLI.logger.debug("Front-end info: %s" % info)
-                radl = parse_radl(info)
-                radl.check()
                 system_front = radl.get(system("front"))
-                vm_ip = getPublicIP(system_front)
+                vm_ip = str(getPublicIP(system_front))
                 #state = system_front.getValue("state")
-                state = state_info['state']
+                state = str(state_info['state'])
                 system_front.setValue("__im_server", im_server_url)
                 system_front.setValue("__infrastructure_id", infrId)
                 system_front.setValue("__vm_id", vmId)
@@ -837,7 +843,7 @@ class CmdLaunch:
                 if not options_not_store: ClusterStore.save(options_clustername, radl)
                 if state == system.CONFIGURED: break
                 if state in [system.FAILED, system.UNCONFIGURED]:
-                    headers = {"Authorization": format_rest_auth_data(auth_data)}
+                    headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
                     url = "%s/infrastructures/%s/contmsg" % (im_server_url, infrId)
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     resp.raise_for_status()
@@ -852,7 +858,7 @@ class CmdLaunch:
             CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
-                    headers = {"Authorization": format_rest_auth_data(auth_data)}
+                    headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
                     url = "%s/infrastructures/%s" % (im_server_url, infrId)
                     resp = requests.request("DELETE", url, verify=False, headers=headers)
                     resp.raise_for_status()
@@ -875,7 +881,7 @@ class CmdLaunch:
                     strInf = resp.json()["data"]
 
                     url = "%s/infrastructures" % new_im_server_url
-                    resp = requests.request("PUT", url, verify=False, headers=headers, data=data)
+                    resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                     resp.raise_for_status()
                     newInfrId = resp.text
                 else:
@@ -1046,7 +1052,6 @@ class CmdDestroy:
                 resp.raise_for_status()
                 strInf = resp.text
 
-                headers = {"Authorization": format_rest_auth_data(auth)}
                 url = "%s/infrastructures" % new_im_server_url
                 resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                 resp.raise_for_status()
@@ -1055,7 +1060,7 @@ class CmdDestroy:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
                 if options.force:
                     ClusterStore.remove(options.clustername)
-		sys.exit(1)
+                sys.exit(1)
             headers = {"Authorization": format_rest_auth_data(auth)}
             url = "%s/infrastructures/%s" % (im_server_url, newInfrId)
             resp = requests.request("DELETE", url, verify=False, headers=headers)
@@ -1218,7 +1223,7 @@ class CmdClone:
         # Recover RADL
         radl = ""
         try:
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
+            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
             url = "%s/infrastructures/%s/radl" % (im_server_url, infrId_old)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
@@ -1252,14 +1257,18 @@ class CmdClone:
             #print auth_data
             headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures" % im_server_url
-            resp = requests.request("POST", url, verify=False, headers=headers, data=rad)
+            resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
             resp.raise_for_status()
             infrId = os.path.basename(resp.text)
 
+            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
             CLI.display("Success creating infrastructure " + str(infrId))
             url = "%s/infrastructures/%s" % (im_server_url, infrId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
+            vm_ids = []
+            for elem in resp.json()["uri-list"]:
+                vm_ids.append(os.path.basename(list(elem.values())[0]))
         except Exception as e:
             CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -1401,9 +1410,14 @@ class CmdMigrate:
             resp.raise_for_status()
             infrId2 = os.path.basename(resp.text)
             CLI.display("Success creating infrastructure " + str(infrId2))
+
+            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
             url = "%s/infrastructures/%s" % (im_server_url, infrId2)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
+            vm_ids = []
+            for elem in resp.json()["uri-list"]:
+                vm_ids.append(os.path.basename(list(elem.values())[0]))
         except Exception as e:
             CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
