@@ -93,6 +93,28 @@ Working nodes will be provisioned and relinquished automatically to increase and
 
 Enjoy your virtual elastic cluster!
 
+
+EC3 in Docker Hub
+-----------------
+
+EC3 has an official Docker container image available in `Docker Hub`_ that can be used instead of installing the CLI. You can download it by typing: 
+
+   $ sudo docker pull grycap/ec3
+   
+You can exploit all the potential of EC3 as if you download the CLI and run it on your computer. 
+
+   $ sudo docker run grycap/ec3 list
+   $ sudo docker run grycap/ec3 templates
+ 
+To launch a cluster, you can use the recipes that you have locally by mounting the folder as a volume. Also it is recommendable to mantain the data of active clusters locally, by mounting a volume as follows:
+
+   $ sudo docker run -v /home/user/:/tmp/ -v /home/user/ec3/templates/:/etc/ec3/templates -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 launch mycluster torque ubuntu16-ramses -a /tmp/auth.dat 
+
+So, later on, when you need to destroy the cluster, you can type:
+
+   $ sudo docker run -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 destroy mycluster
+
+
 Additional information
 ----------------------
 
@@ -120,3 +142,4 @@ Additional information
 .. _`Authorization file`: http://ec3.readthedocs.org/en/devel/ec3.html#authorization-file
 .. _`Templates`: http://ec3.readthedocs.org/en/devel/templates.html
 .. _`templates documentation`: http://ec3.readthedocs.org/en/devel/templates.html#ec3-types-of-templates
+.. _`Docker Hub`: https://hub.docker.com/r/grycap/ec3/
