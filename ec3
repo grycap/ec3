@@ -1030,7 +1030,7 @@ class CmdDestroy:
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
-		
+
             #First, check if the infrastructure still remains in the external IM, due to problems installing internal IM
             try:
                 headers = {"Authorization": format_rest_auth_data(auth)}
@@ -1038,8 +1038,8 @@ class CmdDestroy:
                 resp = requests.request("DELETE", url, verify=False, headers=headers)
                 if resp.status_code == 200:
                     CLI.display("Success deleting the cluster!")
-		    ClusterStore.remove(options.clustername)
-		    sys.exit(0)
+                    ClusterStore.remove(options.clustername)
+                    sys.exit(0)
             except Exception as e:
                 CLI.display("Error destroying cluster '%s': %s" % (options.clustername, str(e)),
                         level=logging.ERROR)
@@ -1052,7 +1052,7 @@ class CmdDestroy:
                 resp.raise_for_status()
                 strInf = resp.text
 
-                url = "%s/infrastructures" % new_im_server_url
+                url = "%s/infrastructures" % im_server_url
                 resp = requests.request("PUT", url, verify=False, headers=headers, data=strInf)
                 resp.raise_for_status()
                 newInfrId = resp.text
