@@ -249,7 +249,7 @@ def format_rest_auth_data(auth_data):
     if auth_data:
         for item in auth_data:
             for key, value in item.items():
-                value.replace("\n", "\\\\n")
+                value = value.replace("\n", "\\\\n")
                 rest_auth_data += "%s = %s;" % (key, value)
             rest_auth_data += "\\n"
     return rest_auth_data
