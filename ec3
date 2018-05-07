@@ -418,7 +418,7 @@ class ClusterStore:
             url = "%s/infrastructures/%s/vms/%s" % (new_im_server_url, infrId, vmId)
             resp = requests.request("GET", url, verify=False, headers=headers)
             resp.raise_for_status()
-            info = resp.text
+            info = str(resp.text)
 
             r = parse_radl(info)
             r.check()
