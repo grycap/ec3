@@ -22,11 +22,8 @@ Installation
 
 The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_ and an `IM`_ server, which is used to
 launch virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
-next commands::
-
-    sudo pip install im
-    sudo service im start
+`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server. See 
+`IM documentation <http://imdocs.readthedocs.io/en/latest/manual.html>`_ for more information.
 
 `PyYAML`_ and `PLY`_ are usually available in distribution repositories (``python-yaml``, ``python-ply`` in Debian; ``PyYAML``, ``python-ply`` in Red Hat; and ``PyYAML``, ``PLY`` in pip).
 
@@ -81,7 +78,7 @@ Once the cluster has been deployed, open a ssh session to the front-end (you may
    ubuntu@torqueserver:~$
 
 You may use the cluster as usual, depending on the LRMS.
-For Torque, you can decide to submit a couple of jobs using qsub, to test elasticity in the cluster:
+For Torque, you can decide to submit a couple of jobs using qsub, to test elasticity in the cluster::
 
    $ for i in 1 2; do echo "/bin/sleep 50" | qsub; done
 

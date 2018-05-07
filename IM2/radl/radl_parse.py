@@ -143,7 +143,7 @@ class RADLParser:
 	}
 	
 	def t_VAR(self, t):
-		r'[a-zA-Z_.][\w\d_.]*'
+		r'[a-zA-Z_.][\w\d_.-]*'
 		t.type = self.reserved.get(t.value, 'VAR')  # Check reserved words
 		return t
 	
