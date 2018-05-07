@@ -22,11 +22,8 @@ Installation
 
 The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_ and an `IM`_ server, which is used to
 launch virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
-next commands::
-
-    sudo pip install im
-    sudo service im start
+`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server. See 
+`IM documentation <http://imdocs.readthedocs.io/en/latest/manual.html>`_ for more information.
 
 `PyYAML`_ and `PLY`_ are usually available in distribution repositories (``python-yaml``, ``python-ply`` in Debian; ``PyYAML``, ``python-ply`` in Red Hat; and ``PyYAML``, ``PLY`` in pip).
 
@@ -92,7 +89,6 @@ This guarantees that jobs will enter execution as soon as the working nodes are 
 Working nodes will be provisioned and relinquished automatically to increase and decrease the cluster size according to the elasticity policies provided by CLUES.
 
 Enjoy your virtual elastic cluster!
-
 
 
 EC3 in Docker Hub
