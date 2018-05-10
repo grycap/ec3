@@ -109,7 +109,7 @@ To launch a cluster, you can use the recipes that you have locally by mounting t
 
 Notice that you need to change the local paths to the paths where you store the auth file, the templates folder and the .ec3/clusters folder. So, later on, when you need to destroy the cluster, you can type::
 
-   $ sudo docker run -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 destroy mycluster
+   $ sudo docker run -ti -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 destroy mycluster
 
 
 Additional information
