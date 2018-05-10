@@ -107,7 +107,11 @@ To launch a cluster, you can use the recipes that you have locally by mounting t
 
    $ sudo docker run -v /home/user/:/tmp/ -v /home/user/ec3/templates/:/etc/ec3/templates -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 launch mycluster torque ubuntu16 -a /tmp/auth.dat 
 
-Notice that you need to change the local paths to the paths where you store the auth file, the templates folder and the .ec3/clusters folder. So, later on, when you need to destroy the cluster, you can type::
+Notice that you need to change the local paths to the paths where you store the auth file, the templates folder and the .ec3/clusters folder. So, once the front-end is deployed and configured you can connect to it by using::
+
+   $ sudo docker run -ti -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 ssh mycluster
+
+Later on, when you need to destroy the cluster, you can type::
 
    $ sudo docker run -ti -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 destroy mycluster
 
