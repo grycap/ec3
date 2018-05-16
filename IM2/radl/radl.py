@@ -1021,6 +1021,7 @@ class _system(Features):
 		- ``one://<server>:<port>/<image-id>``, for OpenNebula;
 		- ``ost://<server>:<port>/<ami-id>``, for OpenStack; and
 		- ``aws://<region>/<ami-id>``, for Amazon Web Service.
+		- ``fbw://<image-name>``, for FogBow.
 	
 		Return(dict): a dict with some of this keys:
 	
@@ -1033,16 +1034,20 @@ class _system(Features):
 	
 		res = dict([ (k, "") for k in ["provider", "host", "port", "location", "image"] ])
 		urlp = urlparse(url)
-		SCHEMES = {"one": "OpenNebula", "ost": "OpenStack", "aws": "EC2", "dummy": "DUMMY"}
+		SCHEMES = {"one": "OpenNebula", "ost": "OpenStack", "aws": "EC2", "dummy": "DUMMY", "fbw": "FogBow"}
 		if urlp.scheme in SCHEMES:
 			res["provider"] = SCHEMES[urlp.scheme]
 		if urlp.scheme == "aws":
 			res["location"] = urlp.netloc
-		else:
+		elif urlp.scheme != "fbw":
 			res["host"] = urlp.hostname
 			res["port"] = urlp.port
-		res["image"] = urlp.path.lstrip("/")
-	
+		if urlp.scheme == "fbw":
+			res["image"] = urlp.netloc
+			res["location"] = "FogBow"
+		else:
+			res["image"] = urlp.path.lstrip("/")
+
 		return res
 
 	def concrete(self, other=None):
