@@ -879,6 +879,101 @@ class FeaturedAspect(Features, Aspect):
 	def __str__(self):
 		return repr(self)
 
+class outport():
+	"""Store OutPorts data"""
+
+	def __init__(self, port_init, port_end, protocol, range=False):
+		self.port_init = int(port_init)
+		self.port_end = int(port_end)
+		self.protocol = protocol
+		self.range = range
+
+	def __eq__(self, other):
+		return (self.port_init == other.port_init and self.port_end == other.port_end
+				and self.protocol == other.protocol and self.range == other.range)
+
+	def __str__(self):
+		if self.is_range:
+			return "%d:%d/%s" % (self.port_init, self.port_end, self.protocol)
+		else:
+			return "%d-%d/%s" % (self.port_init, self.port_end, self.protocol)
+
+	def is_range(self):
+		return self.range
+	
+	def get_port_init(self):
+		return self.port_init
+
+	def get_port_end(self):
+		return self.port_end
+
+	def get_local_port(self):
+		return self.port_end
+
+	def get_remote_port(self):
+		return self.port_init
+
+	def get_protocol(self):
+		return self.protocol
+
+	@staticmethod
+	def parseOutPorts(outports):
+		"""
+		Parse the outports string
+		Valid formats:
+		8899/tcp-8899/tcp,22/tcp-22/tcp
+		8899/tcp-8899,22/tcp-22
+		8899-8899,22-22
+		8899/tcp,22/udp
+		8899,22
+		1:10/tcp,9:22/udp
+		1:10,9:22
+		Returns a list of outport objects
+		"""
+		res = []
+		ports = outports.split(',')
+		for port in ports:
+			if port.find('-') != -1 and port.find(':') != -1:
+				raise RADLParseException('Port range (:) and port mapping (-) cannot be combined.')
+			if port.find(':') != -1:
+				parts = port.split(':')
+				range_init = parts[0]
+				range_end = parts[1]
+				range_end_parts = range_end.split("/")
+				if len(range_end_parts) > 1:
+					protocol = range_end_parts[1]
+					range_end = range_end_parts[0]
+				else:
+					protocol = "tcp"
+				res.append(outport(range_init, range_end, protocol, True))
+			else:
+				parts = port.split('-')
+				remote_port = parts[0]
+				if len(parts) > 1:
+					local_port = parts[1]
+				else:
+					local_port = remote_port
+	
+				local_port_parts = local_port.split("/")
+				if len(local_port_parts) > 1:
+					local_protocol = local_port_parts[1]
+					local_port = local_port_parts[0]
+				else:
+					local_protocol = "tcp"
+			
+				remote_port_parts = remote_port.split("/")	
+				if len(remote_port_parts) > 1:
+					remote_protocol = remote_port_parts[1]
+					remote_port = remote_port_parts[0]
+				else:
+					remote_protocol = "tcp"
+
+				if remote_protocol != local_protocol:
+					raise RADLParseException("Different protocols used in local and remote outports.")
+
+				res.append(outport(remote_port, local_port, local_protocol))
+		return res
+
 class network(FeaturedAspect):
 	"""Store a RADL ``network``."""
 
@@ -893,6 +988,18 @@ class network(FeaturedAspect):
 	def isPublic(self):
 		"""Return true if outbound = yes."""
 		return self.getValue("outbound") == "yes"
+
+	def getOutPorts(self):
+		"""
+		Get the outports of this network.
+		outports format: 22/tcp-22/tcp,8899/tcp,8800
+		Returns a list of outport objects
+		"""
+		outports = self.getValue("outports")
+		if outports:
+			return outport.parseOutPorts(outports)
+		else:
+			return None
 
 class FeaturesApp(Features):
 	"""Store an RADL application."""

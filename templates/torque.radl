@@ -18,8 +18,8 @@ network public (
   outports contains '15004/udp' and
   outports contains '1023/tcp' and
   outports contains '1023/udp' and
-  # Im XMLRPC port
-  outports contains '8899/tcp'
+  # Im REST port
+  outports contains '8800/tcp'
 )
 network private ()
 

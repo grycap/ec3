@@ -26,7 +26,7 @@ network public (
   outports contains '32803/tcp' and
   outports contains '32769/udp' and
   # Im XMLRPC port
-  outports contains '8899/tcp'
+  outports contains '8800/tcp'
 )
 network private ()
 

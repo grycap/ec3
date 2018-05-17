@@ -254,6 +254,28 @@ def format_rest_auth_data(auth_data):
             rest_auth_data += "\\n"
     return rest_auth_data
 
+def get_out_port(radl, port, protocol="tcp"):
+    """
+    Get the port from the RADL
+
+    Returns: int with the port
+    """
+    res = port
+
+    public_net = None
+    for net in radl.gets(network):
+        if net.isPublic():
+            public_net = net
+
+    if public_net:
+        outports = public_net.getOutPorts()
+        if outports:
+            for outport in outports:
+                if outport.get_local_port() == port and outport.get_protocol() == protocol:
+                    res = outport.get_remote_port()
+
+    return res
+
 class include(IM_RADL.FeaturedAspect):
     def check(self, r):
         self.check_simple(dict(template=(str, lambda x,_: len(x.value.strip()))), r)
@@ -457,7 +479,7 @@ class ClusterStore:
     @staticmethod
     def get_im_server_infrId_and_vmId_and_auth(r):
         s0 = r.get(system("front"))
-        im_server_name = s0.getValue("__im_server", default="http://%s:8800" % getPublicIP(s0))
+        im_server_name = s0.getValue("__im_server", default="http://%s:%s" % (getPublicIP(s0), get_out_port(r, 8800)))
         infrId = s0.getValue("__infrastructure_id", default=0)
         vmId = s0.getValue("__vm_id", default="0")
         auth = json.loads(s0.getValue("auth"))
@@ -879,7 +901,8 @@ class CmdLaunch:
 
             # Transfer infrastructure
             CLI.display("Transferring infrastructure")
-            new_im_server_url = "http://%s:8800" % vm_ip
+            im_port = get_out_port(radl, 8800)
+            new_im_server_url = "http://%s:%s" % (vm_ip, im_port)
             try:
                 if new_im_server_url != im_server_url:
                     headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
@@ -1119,7 +1142,7 @@ class CmdReconfigure:
                 if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                     auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
                                     (random.random()*1e15, random.random()*1e15))
-            auth_data = Authentication.read_auth_data(auth_content)
+                auth_data = Authentication.read_auth_data(auth_content)
         except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
