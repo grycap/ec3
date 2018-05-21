@@ -1003,11 +1003,13 @@ class CmdSsh:
     @staticmethod
     def run(options):
         try:
-            front_system = ClusterStore.load(options.clustername).get(system("front"))
+            radl = ClusterStore.load(options.clustername)
+            front_system = radl.get(system("front"))
+            ssh_port = get_out_port(radl, 22)
             if front_system.getValue("disk.0.os.credentials.private_key"):
-                ops = CmdSsh._connect_key(front_system)
+                ops = CmdSsh._connect_key(front_system, ssh_port)
             else:
-                ops = CmdSsh._connect_password(front_system)
+                ops = CmdSsh._connect_password(front_system, ssh_port)
             if options.show_only:
                 CLI.display(" ".join(ops))
                 sys.exit(0)
@@ -1023,19 +1025,21 @@ class CmdSsh:
             sys.exit(1)
 
     @staticmethod
-    def _connect_password(s):
+    def _connect_password(s, ssh_port):
         return ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
                 "ssh", "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
-                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), getPublicIP(s))]
+                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), getPublicIP(s)),
+                "-p %s" % ssh_port]
 
     @staticmethod
-    def _connect_key(s):
+    def _connect_key(s, ssh_port):
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         f.write(s.getValue("disk.0.os.credentials.private_key"))
         f.close()
         return ["ssh", "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
                 "-o", "StrictHostKeyChecking=no",
-                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), getPublicIP(s))]
+                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), getPublicIP(s)),
+                "-p %s" % ssh_port]
 
 class CmdDestroy:
     @staticmethod
