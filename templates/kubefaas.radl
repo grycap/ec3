@@ -1,0 +1,18 @@
+description kubefaas (
+    kind = 'component' and
+    short = 'Install FaaS frameworks in a kubernetes cluster' and
+    content = 'Install FaaS frameworks in a kubernetes cluster'
+)
+
+system front (
+    ec3_templates contains 'kubefaas' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.kubefaas')
+)
+
+configure front (
+@begin
+---
+  - roles:
+    - { role: 'grycap.kubefaas', faas_framework: 'openfaas' }
+@end
+)
