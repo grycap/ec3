@@ -16,3 +16,4 @@ configure front (
     - { role: 'grycap.kubefaas', faas_framework: 'openfaas' }
 @end
 )
+
