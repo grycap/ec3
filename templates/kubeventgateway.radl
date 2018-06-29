@@ -1,0 +1,18 @@
+description kubeminio (
+    kind = 'component' and
+    short = 'Install Minio in a kubernetes cluster' and
+    content = 'Install Minio in a kubernetes cluster'
+)
+
+system front (
+    ec3_templates contains 'kubeventgateway' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.kubeventgateway')
+)
+
+configure front (
+@begin
+---
+  - roles:
+    - role: 'grycap.kubeventgateway'
+@end
+)

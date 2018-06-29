@@ -1,0 +1,18 @@
+description kubeminio (
+    kind = 'component' and
+    short = 'Install Minio in a kubernetes cluster' and
+    content = 'Install Minio in a kubernetes cluster'
+)
+
+system front (
+    ec3_templates contains 'kubeminio' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.kubeminio')
+)
+
+configure front (
+@begin
+---
+  - roles:
+    - { role: 'grycap.kubeminio', enable_notifications: true }
+@end
+)
