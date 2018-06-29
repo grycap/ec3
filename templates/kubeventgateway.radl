@@ -1,7 +1,7 @@
-description kubeminio (
+description kubeventgateway (
     kind = 'component' and
-    short = 'Install Minio in a kubernetes cluster' and
-    content = 'Install Minio in a kubernetes cluster'
+    short = 'Install Event Gateway in a kubernetes cluster' and
+    content = 'Install Event Gateway in a kubernetes cluster'
 )
 
 system front (
