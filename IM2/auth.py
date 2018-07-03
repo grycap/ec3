@@ -35,7 +35,7 @@ class Authentication:
 
 	- id: ID used to refer the token.
 	- type: service, one of InfrastructureManager, VMRC, OpenNebula, EC2, OpenStack, OCCI,
-          LibCloud and LibVirt.
+		  LibCloud and LibVirt.
 	- username: username in the service; in EC2 and OpenStack it is the *Access Key ID*.
 	- host(optional): access point of the provider
 	  
@@ -71,58 +71,84 @@ class Authentication:
 		return False
 
 	@staticmethod
+	def split_line(line):
+		"""
+		Split line using ; as separator char
+		considering single quotes as a way to delimit
+		tokens. (in particular to enable using char ; inside a token)
+		"""
+		tokens = []
+		token = ""
+		in_qoutes = False
+		in_dqoutes = False
+		for char in line:
+			if char == '"' and not in_qoutes:
+				in_dqoutes = not in_dqoutes
+			elif char == "'" and not in_dqoutes:
+				in_qoutes = not in_qoutes
+			elif char == ";" and not in_qoutes and not in_dqoutes:
+				tokens.append(token)
+				token = ""
+			else:
+				token += char
+		# Add the last token
+		if token.strip() != "":
+			tokens.append(token)
+
+		return tokens
+
+	@staticmethod
 	def read_auth_data(filename):
 		"""
-		Parser authentication tokens from a file or list of strings.
+		Read a file to load the Authentication data.
+		The file has the following format:
 
-		Tokens are represented in string as a sequence of pairs separated by semicolon (;),
-		where every pair is a key and its value separated by "\ =\ " (space, equal, space).
-		Values can contain "=" and blank characters (neither at the beginning nor at the
-		end, because they will be stripped). Also the string "\\n" is replaced by carriage
-		returns in values.
+		id = one; type = OpenNebula; host = oneserver:2633; username = user; password = pass
+		type = InfrastructureManager; username = user; password = 'pass;test'
+		type = VMRC; host = http://server:8080/vmrc; username = user; password = "pass';test"
+		id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
+		id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
+		id = occi; type = OCCI; host = occiserver:4567; username = user; password = file(/tmp/filename)
+		id = occi; type = OCCI; proxy = file(/tmp/proxy.pem)
 
-		Strings or lines that start with "#" are ignored.
+		Arguments:
+		   - filename(str or list): The filename to read or list of auth lines
 
-		Args:
-
-		- filename(str or list): filename or list of str.
-
-		Return: list of tokens.
+		Returns: a list with all the auth data
 		"""
-
 		if isinstance(filename, list):
 			lines = filename
 		else:
 			auth_file = open(filename, 'r')
 			lines = auth_file.readlines()
 			auth_file.close()
-	
+
 		res = []
-		i = 0
+
 		for line in lines:
-			i += 1
 			line = line.strip()
 			if len(line) > 0 and not line.startswith("#"):
 				auth = {}
-				tokens = line.split(";")
+				tokens = Authentication.split_line(line)
 				for token in tokens:
 					key_value = token.split(" = ")
 					if len(key_value) != 2:
-						raise AuthenticationParserError(i)
-
-					value = key_value[1].strip().replace("\\n","\n")
-					# Enable to specify a filename and set the contents of it
-					if value.startswith("file(") and value.endswith(")"):
-						filename = value[5:len(value)-1]
-						try:
-							value_file = open(filename, 'r')
-							value = value_file.read()
-							value_file.close()
-						except:
-							pass
-					auth[key_value[0].strip()] = value
+						break
+					else:
+						value = key_value[1].strip().replace("\\n", "\n")
+						# Enable to specify a filename and set the contents of
+						# it
+						if value.startswith("file(") and value.endswith(")"):
+							filename = value[5:len(value) - 1]
+							try:
+								value_file = open(filename, 'r')
+								value = value_file.read()
+								value_file.close()
+							except:
+								pass
+						auth[key_value[0].strip()] = value
 				res.append(auth)
-		
+
 		return res
 
 	@staticmethod
