@@ -1506,8 +1506,8 @@ class CmdStop:
                 if not success: raise Exception(strInf)
                 success, newInfrId = im_server.ImportInfrastructure(strInf, auth)
                 if not success: raise Exception(newInfrId)
-                ids = infrId + "#" + newInfrId
-                ClusterStore.write(options.clustername + "_ids", ids)
+                #ids = infrId + "#" + newInfrId
+                #ClusterStore.write(options.clustername + "_ids", ids)
             except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
 
@@ -1543,18 +1543,18 @@ class CmdRestart:
 
         try:
             r = ClusterStore.load(options.clustername)
-            _, _, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            _, cluster_infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             im_server = xmlrpclib.ServerProxy(im_server_url, allow_none=True)
 
             # obtengo infrId del im externo
-            ids = ClusterStore.read(options.clustername + "_ids")
+            #ids = ClusterStore.read(options.clustername + "_ids")
 
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 
-            success, info = im_server.StartInfrastructure(ids[ids.index('#')+1:], auth)
-            success, info = im_server.ExportInfrastructure(ids[ids.index('#')+1:], True, auth)
+            success, info = im_server.StartInfrastructure(cluster_infrId, auth)
+            success, info = im_server.ExportInfrastructure(cluster_infrId, True, auth)
             if not success:
                 raise Exception(info)
             CLI.display("Success restarting the cluster!")
