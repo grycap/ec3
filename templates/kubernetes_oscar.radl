@@ -29,6 +29,7 @@ system front (
   disk.0.applications contains (name = 'ansible.modules.grycap.kubefaas') and
   disk.0.applications contains (name = 'ansible.modules.grycap.kubeminio') and
   disk.0.applications contains (name = 'ansible.modules.grycap.kubeventgateway') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.kuberegistry') and
   disk.1.size=20GB and
   disk.1.fstype='ext4' and
   disk.1.mount_path='/pv/minio' and
@@ -65,7 +66,7 @@ configure front (
       kube_deploy_dashboard: true
       kube_persistent_volumes:
       - {namespace : "minio", name : "pvnfsminio", label : "minio", capacity_storage : "20Gi", nfs_path : "/pv/minio"}
-      - {namespace : "docker-registry", name : "pvnfsregistry", label : "docker-registry", capacity_storage : "20Gi", nfs_path : "/pv/registry"}
+      - {namespace : "docker-registry", name : "pvnfsregistry", label : "registry", capacity_storage : "20Gi", nfs_path : "/pv/registry"}
       - {namespace : "event-gateway", name : "pvnfsetcdeg", label : "event-gateway", capacity_storage : "2Gi", nfs_path : "/pv/etcd-event-gateway"}
 
     - role: 'grycap.kubefaas'
@@ -81,6 +82,9 @@ configure front (
       - {id: "5", endpoint: "http://event-gateway.event-gateway:4000/function5"}
 
     - role: 'grycap.kubeventgateway'
+
+    - role: 'grycap.kuberegistry'
+      public_access: true
 
 @end
 )
