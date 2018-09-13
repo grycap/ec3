@@ -17,6 +17,18 @@ configure lemonade (
         version: master
         #track_submodules: yes
         
+    - name: configure Spark details in Juicer
+      lineinfile:
+          dest: /var/tmp/lemonade/config/juicer-config.yaml
+          regexp: 'libprocess_advertise_ip:'
+          line: "libprocess_advertise_ip: {{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}"
+          state: present
+    - lineinfile: 
+          dest: /var/tmp/lemonade/config/juicer-config.yaml 
+          regexp: 'spark.driver.host:' 
+          line: 'spark.driver.host: {{ hostvars[groups["front"][0]]["IM_NODE_FQDN"] }}' 
+          state: present
+
     - name: Init git submodule 
       command: git submodule init chdir=/var/tmp/lemonade
       
