@@ -1,4 +1,4 @@
-description jupyter-notebook (
+description jupyternotebook (
     kind = 'component' and
     short = 'A tool to share scientific documents.' and
     content = 'The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations, visualizations and narrative text. 
@@ -12,7 +12,7 @@ network public (
     outports contains '30040/tcp'
 )
 
-configure jupyter-notebook (
+configure jupyternotebook (
 @begin
     - name: wait for kubernetes to restart
       wait_for: timeout=50
@@ -37,6 +37,6 @@ configure jupyter-notebook (
 configure front (
 @begin
   - tasks:
-    - include: jupyter-notebook.yml
+    - include: jupyternotebook.yml
 @end
 )

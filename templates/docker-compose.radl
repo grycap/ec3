@@ -1,4 +1,4 @@
-description docker-compose (
+description dockercompose (
     kind = 'component' and
     short = 'Compose is a tool for defining and running multi-container Docker applications.' and
     content = 'Docker Compose is a tool for defining and running multi-container Docker applications.
@@ -6,7 +6,7 @@ description docker-compose (
 Webpage: https://docs.docker.com/compose/'
 )
 
-configure docker-compose (
+configure dockercompose (
 @begin
     - name: Get Kernel name
       command: uname -s
@@ -31,14 +31,14 @@ configure docker-compose (
 configure front (
 @begin
   - tasks:
-    - include: docker-compose.yml
+    - include: dockercompose.yml
 @end
 )
 
 #configure wn (
 #@begin
 #  - tasks:
-#    - include: docker-compose.yml
+#    - include: dockercompose.yml
 #@end
 #)
 
