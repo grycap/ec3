@@ -134,8 +134,8 @@ def getPublicIP(s):
     return None
 
 def get_content_from_template_file(filename):
-    t = [ os.path.join(base_path, filename) for base_path in TEMPLATE_PATHS
-          if os.path.isfile(os.path.join(base_path, filename)) ]
+    t = [ os.path.join(os.path.expanduser(base_path), filename) for base_path in TEMPLATE_PATHS
+          if os.path.isfile(os.path.join(os.path.expanduser(base_path), filename)) ]
     if not t: raise Exception("File not found in %s" % TEMPLATE_PATHS)
     f = open(t[0], "r")
     c = f.read()
@@ -1193,7 +1193,7 @@ class CmdTemplates:
         info = []
         templates = set()
         search = re.compile(options.search[0], re.IGNORECASE) if options.search[0] else None
-        for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(p) for f in os.listdir(p) if os.path.isfile(os.path.join(p, f)) and f.endswith("radl") ]:
+        for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(os.path.expanduser(p)) for f in os.listdir(os.path.expanduser(p)) if os.path.isfile(os.path.join(os.path.expanduser(p), f)) and f.endswith("radl") ]:
             if t in templates: continue
             if options.name[0] and options.name[0] != t: continue
             templates.add(t)
