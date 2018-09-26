@@ -1,0 +1,44 @@
+description dockercompose (
+    kind = 'component' and
+    short = 'Compose is a tool for defining and running multi-container Docker applications.' and
+    content = 'Docker Compose is a tool for defining and running multi-container Docker applications.
+
+Webpage: https://docs.docker.com/compose/'
+)
+
+configure dockercompose (
+@begin
+    - name: Get Kernel name
+      command: uname -s
+      register: KERNEL_NAME
+
+    - name: Get Kernel machine
+      command: uname -m
+      register: KERNEL_MACHINE
+
+    - name: Download via curl the docker-compose tool
+      get_url: url=https://github.com/docker/compose/releases/download/1.21.2/docker-compose-{{KERNEL_NAME.stdout}}-{{KERNEL_MACHINE.stdout}} dest=/usr/local/bin/docker-compose force=no
+      register: result
+      until: result|success
+      retries: 5
+      delay: 2
+
+    - name: give execution details to docker-compose
+      file: path=/usr/local/bin/docker-compose mode=0755
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: dockercompose.yml
+@end
+)
+
+#configure wn (
+#@begin
+#  - tasks:
+#    - include: dockercompose.yml
+#@end
+#)
+

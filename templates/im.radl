@@ -1,5 +1,5 @@
 network public (
-    outports contains '8899/tcp'
+    outports contains '8800/tcp'
 )
 
 system front (

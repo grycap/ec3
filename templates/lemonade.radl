@@ -1,0 +1,51 @@
+description lemonade (
+    kind = 'component' and
+    short = 'Live Exploration and Mining Of Non-trivial Amount of Data from Everywhere' and
+    content = 'Lemonade is a visual platform for distributed computing, aimed to enable implementation, experimentation, test and deploying of data processing and machine learning applications.
+
+Webpage: https://github.com/eubr-bigsea/lemonade'
+)
+
+configure lemonade (
+@begin
+    - name: Download docker-lemonade repo
+      git:
+        repo: 'https://github.com/eubr-bigsea/docker-lemonade.git'
+        dest: /var/tmp/lemonade
+        recursive: yes
+        force: yes
+        version: master
+        #track_submodules: yes
+        
+    - name: configure Spark details in Juicer
+      lineinfile:
+          dest: /var/tmp/lemonade/config/juicer-config.yaml
+          regexp: 'libprocess_advertise_ip:'
+          line: "libprocess_advertise_ip: {{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}"
+          state: present
+    - lineinfile: 
+          dest: /var/tmp/lemonade/config/juicer-config.yaml 
+          regexp: 'spark.driver.host:' 
+          line: 'spark.driver.host: {{ hostvars[groups["front"][0]]["IM_NODE_FQDN"] }}' 
+          state: present
+
+    - name: Init git submodule 
+      command: git submodule init chdir=/var/tmp/lemonade
+      
+    - name: Checkout git submodule 
+      command: git submodule update --checkout chdir=/var/tmp/lemonade
+
+    - name: build docker images for the database
+      command: docker-compose up -d mysql redis chdir=/var/tmp/lemonade
+
+    - name: build and start the rest of the services
+      command: docker-compose up -d --build chdir=/var/tmp/lemonade
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: lemonade.yml
+@end
+)

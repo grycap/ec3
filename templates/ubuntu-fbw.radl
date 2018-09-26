@@ -1,0 +1,21 @@
+
+description ubuntu_fbw (
+    kind = 'images' and
+    short = 'Ubuntu 16.04 amd64 on FogBow.' and
+    content = 'Ubuntu 16.04 amd64 on FogBow.'
+)
+
+system front (
+    cpu.count>=1 and
+    memory.size>=1024m and
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'fbw://fogbow-ubuntu-no-apt-daily.service'
+)
+
+system wn (
+    cpu.count>=1 and
+    memory.size>=512m and
+    ec3_max_instances = 10 and # maximum number of working nodes in the cluster
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'fbw://fogbow-ubuntu-no-apt-daily.service'
+)

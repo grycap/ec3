@@ -1,0 +1,42 @@
+description jupyternotebook (
+    kind = 'component' and
+    short = 'A tool to share scientific documents.' and
+    content = 'The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations, visualizations and narrative text. 
+
+Webpage: http://jupyter.org/'
+)
+
+network public (
+    outbound = 'yes' and
+    outports contains '8888/tcp' and
+    outports contains '30040/tcp'
+)
+
+configure jupyternotebook (
+@begin
+    - name: wait for kubernetes to restart
+      wait_for: timeout=50
+      delegate_to: localhost
+
+    - name: Copy jupyter.yaml
+      get_url: url=https://raw.githubusercontent.com/amcaar/ansible-role-jupyter/master/jupyter.yaml dest=/tmp/jupyter-tensorflow-notebook.yaml
+
+    - name: Create Kubernetes jupyter namespace 
+      command: kubectl create namespace jupyter
+      
+    - name:  Apply deployment to jupyter namespace  
+      command: kubectl apply -f /tmp/jupyter-tensorflow-notebook.yaml --namespace jupyter
+
+    - name: Create Kubernetes jupyter service
+      command: kubectl create -f /tmp/jupyter-tensorflow-notebook.yaml
+      ignore_errors: yes
+
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: jupyternotebook.yml
+@end
+)
