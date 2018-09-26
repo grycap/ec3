@@ -132,6 +132,9 @@ machine.  The supported features are:
    string contains ``#N#`` they are replaced by a number that is distinct for
    every virtual machine deployed with this ``system`` description.
 
+``instance_type = <string>``
+   Set the instance type name of this VM.
+
 ``disk.<diskId>.<feature>``
    Features under this prefix refer to virtual storage devices attached to
    the virtual machine. ``disk.0`` refers to system boot device.
@@ -140,8 +143,15 @@ machine.  The supported features are:
    Set the source of the disk image. The URI designates the cloud provider:
 
    * ``one://<server>:<port>/<image-id>``, for OpenNebula;
-   * ``ost://<server>:<port>/<ami-id>``, for OpenStack; and
-   * ``aws://<region>/<ami-id>``, for Amazon Web Service.
+   * ``ost://<server>:<port>/<ami-id>``, for OpenStack;
+   * ``aws://<region>/<ami-id>``, for Amazon Web Service;
+   * ``gce://<region>/<image-id>``, for Google Cloud;
+   * ``azr://<image-id>``, for Microsoft Azure Clasic; and
+   * ``azr://<publisher>/<offer>/<sku>/<version>``, for Microsoft Azure; and
+   * ``<fedcloud_endpoint_url>/<image_id>``, for FedCloud OCCI connector.
+   * ``appdb://<site_name>/<apc_name>?<vo_name>``, for FedCloud OCCI connector using AppDB info (from ver. 1.6.0).
+   * ``docker://<docker_image>``, for Docker images.
+   * ``fbw://<fogbow_image>``, for FogBow images.
 
    Either ``disk.0.image.url`` or ``disk.0.image.name`` must be set.
 
