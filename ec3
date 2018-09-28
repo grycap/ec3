@@ -637,7 +637,7 @@ class CmdLaunch:
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
         parser.add_argument("-g", "--golden-images", action="store_true", dest="golden_image", default=False, help="generate a VMI from the first deployed node, to accelerate the contextualization process of next node deployments")
-	parser.set_defaults(func=CmdLaunch.run)
+        parser.set_defaults(func=CmdLaunch.run)
 
     @staticmethod
     def run(options):
@@ -1128,7 +1128,7 @@ class CmdReconfigure:
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
         parser.add_argument("-r", "--reload", action="store_true", dest="reload", default=False, help="reload templates used to launch the cluster and reconfigure the cluster with them (useful if templates changed)")
         parser.add_argument("--template", "-t",dest="new_template", help="add a new template/recipe of RADL to the cluster")
-	parser.set_defaults(func=CmdReconfigure.run)
+        parser.set_defaults(func=CmdReconfigure.run)
 
     @staticmethod
     def run(options):
@@ -1154,7 +1154,7 @@ class CmdReconfigure:
         # Instantiate templates
         if options.auth_file or options.reload or options.add or options.new_template:
             templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
-	    if options.new_template:
+            if options.new_template:
                 templates.append(options.new_template)
             radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
             for a in (radl.gets(deploy) + radl.gets(system)): radl.delete(a)
