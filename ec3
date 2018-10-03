@@ -1157,7 +1157,7 @@ class CmdReconfigure:
 	    if options.new_template:
                 templates.append(options.new_template)
             radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
-            for a in (radl.gets(deploy) + radl.gets(system)): radl.delete(a)
+            for a in radl.gets(deploy): radl.delete(a)
             radl = dump_radl(radl)
         else:
             radl = ""
