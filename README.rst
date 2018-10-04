@@ -20,12 +20,14 @@ This introduces a cost-efficient approach for Cluster-based computing.
 Installation
 ------------
 
-The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_ and an `IM`_ server, which is used to
+The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_, `Requests`_ and an `IM`_ server, which is used to
 launch virtual machines. By default `ec3` uses our public `IM`_ server in
 `servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server. See 
 `IM documentation <http://imdocs.readthedocs.io/en/latest/manual.html>`_ for more information.
 
-`PyYAML`_ and `PLY`_ are usually available in distribution repositories (``python-yaml``, ``python-ply`` in Debian; ``PyYAML``, ``python-ply`` in Red Hat; and ``PyYAML``, ``PLY`` in pip).
+`PyYAML`_, `PLY`_ and `Requests`_ are usually available in distribution repositories (``python-yaml``,
+``python-ply``, ``python-requests`` in Debian; ``PyYAML``, ``python-ply``, ``python-requests`` in Red Hat;
+and ``PyYAML``, ``PLY``, ``requests`` in pip).
 
 `ec3` can be download from `this <https://github.com/grycap/ec3>`_ git repository::
 
@@ -143,6 +145,7 @@ Additional information
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`PLY`: http://www.dabeaz.com/ply/
+.. _`Requests`: http://docs.python-requests.org/
 .. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/devel/ec3.html
 .. _`Command templates`: http://ec3.readthedocs.org/en/devel/ec3.html#command-templates
 .. _`Authorization file`: http://ec3.readthedocs.org/en/devel/ec3.html#authorization-file
