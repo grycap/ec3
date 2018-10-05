@@ -593,6 +593,7 @@ class CLI:
         parser.add_argument("-ll", "--log-level", dest="log_level", nargs=1, type=int, default=[5], help="log level. 1: debug; 2: info; 3: warning; 4: error")
         parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False, help="only print messages from front-end")
         subparsers = parser.add_subparsers(title="subcommands", description="valid subcommands", help="additional help")
+        parser.set_defaults(func=None)
         for cmd in commands:
             cmd.parse(subparsers)
         CLI.options = parser.parse_args()
@@ -603,7 +604,8 @@ class CLI:
         CLI.logger = logging.getLogger('ec3')
 
         # Run command
-        CLI.options.func(CLI.options)
+        if CLI.options.func:
+            CLI.options.func(CLI.options)
 
     @staticmethod
     def display(msg, alt=None, level=logging.INFO, exception=False):
