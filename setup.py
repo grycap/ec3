@@ -10,7 +10,7 @@ datafiles = [(os.path.join(install_path, root), [os.path.join(root, f) for f in 
 
 setup(
     name="ec3",
-    version="0.0.1",
+    version="2.0.0",
     author="Amanda Calatrava, Eloy Romero, Miguel Caballer",
     author_email="",
     description=("Tool to deploy virtual elastic clusters on the cloud."),
