@@ -665,7 +665,7 @@ class CmdLaunch:
             if not options.restapi: raise Exception("option is not set")
             if not options.dry_run and options.restapi[0].startswith("http:") and not options.restapi[0].startswith("http://localhost"):
                 CLI.display("WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.")
-                if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
+                if not options.yes and input("Continue [y/N]? ")[0:1].lower() != "y":
                     sys.exit(1)
         except Exception as e:
             CLI.display("Error in -u/--restapi-url: %s" % str(e), level=logging.ERROR)
@@ -1068,7 +1068,7 @@ class CmdDestroy:
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
-            if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
+            if not options.yes and input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
             new_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             if options.auth_file:
@@ -1641,7 +1641,7 @@ class CmdStop:
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to stop the infrastructure (including frontend and nodes).")
-            if not options.yes and raw_input("Continue [y/N]? ")[0:1].lower() != "y":
+            if not options.yes and input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
             cluster_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
 
