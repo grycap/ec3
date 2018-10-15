@@ -337,8 +337,8 @@ class Display:
                  '\033[1;32m _____          \033[m']
     # Make worm fatter
     if sys.stdout.encoding == "UTF-8":
-        ANIMATION = map(lambda s: s.replace("_", "▄").replace("/", "▟").replace("\\", "▙")
-                                   .replace('"', '¨'), ANIMATION)
+        ANIMATION = list(map(lambda s: s.replace("_", "▄").replace("/", "▟").replace("\\", "▙")
+                                   .replace('"', '¨'), ANIMATION))
 
     @staticmethod
     def _display_waiting_tty(msg, delay=0.):
