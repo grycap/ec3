@@ -416,8 +416,8 @@ def d_contextualize_sentence(a, enter, margin, indent):
 
 def d_contextualize_item(a, enter, margin, indent):
 	assert isinstance(a, contextualize_item)
-	return "{margin}system {sys} configure {conf} step {num}".format(
-		margin=margin, sys=a.system, conf=a.configure, num=" %d" % a.num if a.num else "")
+	return "{margin}system {sys} configure {conf}{num}".format(
+		margin=margin, sys=a.system, conf=a.configure, num=" step %d" % a.num if a.num else "")
 
 def d_cfeatures_sentence(a, enter, margin, indent):
 	assert isinstance(a, Features)
