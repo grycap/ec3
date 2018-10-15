@@ -204,7 +204,7 @@ class RADLParser:
 			recipe = "".join(t[5])
 			if yaml:
 				try:
-					yaml.safe_load(recipe)
+					recipe = yaml.safe_load(recipe)
 				except Exception as e:
 					raise RADLParseException("Error parsing YAML: %s" % str(e), line=t.lineno(5))
 			t[0] = configure(t[2], recipe, line=t.lineno(1))
