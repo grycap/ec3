@@ -416,7 +416,10 @@ deploy front 1
             res = CLI.run([CmdList])
             res = sys.stdout.getvalue()
             sys.stdout = old_stdout
-            self.assertIn("      name         state          IP        nodes \n", res)
+            self.assertIn(" name ", res)
+            self.assertIn(" state ", res)
+            self.assertIn(" IP ", res)
+            self.assertIn(" nodes \n", res)
 
     @patch('requests.request')
     @patch('ec3.ClusterStore')
