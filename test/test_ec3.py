@@ -21,6 +21,7 @@ import logging
 from mock import patch, MagicMock
 from collections import namedtuple
 from StringIO import StringIO
+from urlparse import urlparse
 
 sys.path.append("..")
 sys.path.append(".")
@@ -33,21 +34,60 @@ class TestEC3(unittest.TestCase):
     def __init__(self, *args):
         unittest.TestCase.__init__(self, *args)
 
+    def get_response(self, method, url, verify, headers, data=None):
+        resp = MagicMock()
+        resp.status_code = 400
+        parts = urlparse(url)
+        url = parts[2]
+        params = parts[4]
+
+        if method == "GET":
+            if url == "/infrastructures/infid" or url == "/infrastructures/newinfid":
+                resp.status_code = 200
+                resp.json.return_value = {"uri-list": [{ "uri": "http://server.com/infid/vms/0"},
+                                                       { "uri": "http://server.com/infid/vms/1"}]}
+            elif url == "/infrastructures/infid/state":
+                resp.status_code = 200
+                resp.json.return_value = {"state": {"state": "configured",
+                                                    "vm_states": {"0": "configured",
+                                                                  "1": "configured"}}}
+            elif url == "/infrastructures/infid/vms/0":
+                resp.status_code = 200
+                resp.text = "network public (outbound='yes')\n"
+                resp.text += "system front (net_interface.0.connection = 'public' and net_interface.0.ip = '8.8.8.8')"
+            elif url == "/infrastructures/infid/data":
+                resp.status_code = 200
+                resp.json.return_value = {"data": "data"}
+        elif method == "POST":
+            if url == "/infrastructures":
+                resp.status_code = 200
+                resp.text = 'http://server.com/infid'
+        elif method == "PUT":
+            if url == "/infrastructures":
+                resp.status_code = 200
+                resp.text = 'http://server.com/newinfid'
+        elif method == "DELETE":
+            if url == "/infrastructures/infid":
+                resp.status_code = 200
+
+        return resp
+
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
-    def test_launch(self, display, cluster_store):
+    @patch('requests.request')
+    def test_launch(self, requests, display, cluster_store):
         Options = namedtuple('Options', ['quiet'])
         cli_options = Options(quiet=False)
         CLI.logger = logging.getLogger('ec3')
         CLI.options = cli_options
         cluster_store.list.return_value = ["name"]
         Options = namedtuple('Options', ['not_store', 'clustername', 'auth_file', 'restapi', 'dry_run', 'templates',
-                                         'add', 'golden_image', 'print_radl', 'json'])
+                                         'add', 'golden_image', 'print_radl', 'json', 'yes', 'destroy'])
         auth_file = [MagicMock()]
         auth_file[0].readlines.return_value = ["type = InfrastructureManager; username = user; password = pass"]
-        options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi='http://server.com:8800',
+        options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
                           dry_run=True, templates=['ubuntu-ec2','kubernetes'], add=False, golden_image=False,
-                          print_radl=True, json=False)
+                          print_radl=True, json=False, yes=True, destroy=False)
         with self.assertRaises(SystemExit) as ex1:
             CmdLaunch.run(options)
         self.assertEquals("1" ,str(ex1.exception))
@@ -238,6 +278,20 @@ configure wn (
 deploy front 1
 """
         self.assertEquals(display.call_args_list[1][0][0], radl)
+
+        requests.side_effect = self.get_response
+        options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
+                          dry_run=False, templates=['ubuntu-ec2','kubernetes'], add=False, golden_image=False,
+                          print_radl=False, json=False, yes=True, destroy=False)
+
+        with self.assertRaises(SystemExit) as ex2:
+            CmdLaunch.run(options)
+        self.assertEquals("0" ,str(ex2.exception))
+
+        self.assertEquals(display.call_args_list[4][0][0], "Infrastructure successfully created with ID: infid")
+        self.assertEquals(display.call_args_list[5][0][0], "Front-end configured with IP 8.8.8.8")
+        self.assertEquals(display.call_args_list[6][0][0], "Transferring infrastructure")
+        self.assertEquals(display.call_args_list[7][0][0], "Front-end ready!")
 
 
 if __name__ == "__main__":
