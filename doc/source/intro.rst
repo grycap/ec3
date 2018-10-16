@@ -18,18 +18,22 @@ Installation
 Requisites
 ~~~~~~~~~~
 
-The program `ec3` requires Python 2.6+, `PyYAML`_, `Requests`_ and an `IM`_ server, which is used to
-launch virtual machines. By default `ec3` uses our public `IM`_ server in
-`appsgrycap.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
-next commands::
-
-    sudo pip install im
-    sudo service im start
+The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_, `Requests`_, `jsonschema`_ and an `IM`_ server,
+which is used to launch the virtual machines.
 
 `PyYAML`_ is usually available in distribution repositories (``python-yaml`` in Debian;
 ``PyYAML`` in Red Hat; and ``PyYAML`` in pip).
 
- ``sshpass`` is required to provide the user with ssh access to the cluster.
+`PLY`_ is usually available in distribution repositories (``python-ply`` and ``ply`` in pip).
+
+`Requests`_ is usually available in distribution repositories (``python-requests`` and ``requests`` in pip).
+
+`jsonschema`_ is usually available in distribution repositories (``python-jsonschema`` and ``jsonschema`` in pip).
+
+By default `ec3` uses our public `IM`_ server in `appsgrycap.i3m.upv.es`. *Optionally* you can deploy a 
+ local `IM`_ server following the instructions of the `IM manual`_.
+ 
+Also ``sshpass`` command is required to provide the user with ssh access to the cluster.
 
 Installing
 ~~~~~~~~~~
@@ -159,3 +163,4 @@ Additional information
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`sshpass`: https://gist.github.com/arunoda/7790979
 .. _`ubuntu-ec2`: https://github.com/grycap/ec3/blob/devel/templates/ubuntu-ec2.radl
+.. _`jsonschema`: https://github.com/Julian/jsonschema
