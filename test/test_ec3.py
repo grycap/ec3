@@ -20,13 +20,16 @@ import unittest
 import logging
 from mock import patch, MagicMock
 from collections import namedtuple
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 from urlparse import urlparse
 
 sys.path.append("..")
 sys.path.append(".")
 
-from ec3 import CmdLaunch, CLI
+from ec3 import CLI, CmdLaunch, CmdList 
 
 
 class TestEC3(unittest.TestCase):
@@ -71,6 +74,16 @@ class TestEC3(unittest.TestCase):
                 resp.status_code = 200
 
         return resp
+
+    def test_list(self):
+        Options = namedtuple('Options', ['json'])
+        options = Options(json=False)
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        CmdList.run(options)
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEquals(res, " name  state  IP  nodes \n------------------------\n")
 
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
