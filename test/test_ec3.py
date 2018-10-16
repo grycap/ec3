@@ -31,7 +31,8 @@ except ImportError:
 sys.path.append("..")
 sys.path.append(".")
 
-from ec3 import CLI, CmdLaunch, CmdList 
+from IM2.radl.radl import RADL, system, network
+from ec3 import CLI, CmdLaunch, CmdList, CmdTemplates
 
 
 class TestEC3(unittest.TestCase):
@@ -77,15 +78,28 @@ class TestEC3(unittest.TestCase):
 
         return resp
 
-    def test_list(self):
-        Options = namedtuple('Options', ['json'])
-        options = Options(json=False)
+    @patch('ec3.ClusterStore')
+    def test_list(self, cluster_store):
+        cluster_store.list.return_value = ["name"]
+        radl = RADL()
+        n = network("public")
+        n.setValue("outbound", "yes")
+        s = system("front")
+        s.setValue("ec3aas.username", "user")
+        s.setValue("state", "configured")
+        s.setValue("nodes", "1")
+        s.setValue("net_interface.0.connection", n)
+        s.setValue("net_interface.0.ip", "8.8.8.8")
+        radl.add(s)
+        cluster_store.load.return_value = radl
+        Options = namedtuple('Options', ['json', 'refresh', 'username'])
+        options = Options(json=False, refresh=False, username=['user'])
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         CmdList.run(options)
         res = sys.stdout.getvalue()
         sys.stdout = old_stdout
-        self.assertEquals(res, " name  state  IP  nodes \n------------------------\n")
+        self.assertEquals(res, " name    state       IP     nodes \n----------------------------------\n name  configured  8.8.8.8    1   \n")
 
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
@@ -309,6 +323,18 @@ deploy front 1
         self.assertEquals(display.call_args_list[5][0][0], "Front-end configured with IP 8.8.8.8")
         self.assertEquals(display.call_args_list[6][0][0], "Transferring infrastructure")
         self.assertEquals(display.call_args_list[7][0][0], "Front-end ready!")
+
+    def test_templates(self):
+        Options = namedtuple('Options', ['search', 'name', 'json', 'full'])
+        options = Options(search=[None], name=[None], json=False, full=False)
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        CmdTemplates.run(options)
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertIn("          name              kind                                         summary                                      \n", res)
+        self.assertIn("----------------------------------------------------------------------------------------------------------------------\n", res)
+        self.assertIn("         galaxy           component Galaxy is an open, web-based platform for data intensive biomedical research.     \n", res)
 
 
 if __name__ == "__main__":
