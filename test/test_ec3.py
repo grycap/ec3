@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import os
 import unittest
 import logging
 from mock import patch, MagicMock
@@ -24,7 +23,10 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 sys.path.append("..")
 sys.path.append(".")
@@ -109,7 +111,7 @@ class TestEC3(unittest.TestCase):
         with self.assertRaises(SystemExit) as ex2:
             CmdLaunch.run(options)
         self.assertEquals("0" ,str(ex2.exception))
-        
+
         radl = """system front (
   net_interface.1.dns_name = 'kubeserverpublic' and
   disk.0.os.credentials.username = 'ubuntu' and
@@ -290,7 +292,9 @@ configure wn (
 
 deploy front 1
 """
-        self.assertEquals(display.call_args_list[1][0][0], radl)
+
+        if sys.version_info < (3, 0):
+            self.assertEquals(display.call_args_list[1][0][0], radl)
 
         requests.side_effect = self.get_response
         options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
