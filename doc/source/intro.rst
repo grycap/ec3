@@ -15,22 +15,50 @@ This introduces a cost-efficient approach for Cluster-based computing.
 Installation
 ------------
 
-The program `ec3` requires Python 2.6+, `PyYAML`_ and an `IM`_ server, which is used to
-launch virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
-next commands::
+Requisites
+~~~~~~~~~~
 
-    sudo pip install im
-    sudo service im start
+The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_, `Requests`_, `jsonschema`_ and an `IM`_ server,
+which is used to launch the virtual machines.
 
 `PyYAML`_ is usually available in distribution repositories (``python-yaml`` in Debian;
 ``PyYAML`` in Red Hat; and ``PyYAML`` in pip).
-`ec3` can be download from `this <https://github.com/grycap/ec3>`_ git repository::
+
+`PLY`_ is usually available in distribution repositories (``python-ply`` and ``ply`` in pip).
+
+`Requests`_ is usually available in distribution repositories (``python-requests`` and ``requests`` in pip).
+
+`jsonschema`_ is usually available in distribution repositories (``python-jsonschema`` and ``jsonschema`` in pip).
+
+By default `ec3` uses our public `IM`_ server in `appsgrycap.i3m.upv.es`. *Optionally* you can deploy a
+local `IM`_ server following the instructions of the `IM manual`_.
+ 
+Also ``sshpass`` command is required to provide the user with ssh access to the cluster.
+
+Installing
+~~~~~~~~~~
+
+First you need to install pip tool. To install them in Debian and Ubuntu based distributions, do::
+
+	sudo apt update
+	sudo apt install python-pip
+
+In Red Hat based distributions (RHEL, CentOS, Amazon Linux, Oracle Linux, Fedora, etc.), do::
+	
+	sudo yum install epel-release
+	sudo yum install which python-pip
+	
+Then you only have to call the install command of the pip tool with the `ec3-cli` package::
+	
+    sudo pip install ec3-cli
+
+You can also download the last `ec3` version from `this <https://github.com/grycap/ec3>`_ git repository::
 
    git clone https://github.com/grycap/ec3
 
-In the created directory there is the python executable file ``ec3``, which provides the
-command-line interface described next.  ``sshpass`` is required to provide the user with ssh access to the cluster.
+Then you can install it calling the pip tool with the current ec3 directory::
+	
+    sudo pip install ./ec3
 
 Basic example with Amazon EC2
 -----------------------------
@@ -125,6 +153,7 @@ Additional information
 .. _`IM`: https://github.com/grycap/im
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`PLY`: http://www.dabeaz.com/ply/
+.. _`Requests`: http://docs.python-requests.org/
 .. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/devel/ec3.html
 .. _`Command templates`: http://ec3.readthedocs.org/en/devel/ec3.html#command-templates
 .. _`Authorization file`: http://ec3.readthedocs.org/en/devel/ec3.html#authorization-file
@@ -134,3 +163,4 @@ Additional information
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`sshpass`: https://gist.github.com/arunoda/7790979
 .. _`ubuntu-ec2`: https://github.com/grycap/ec3/blob/devel/templates/ubuntu-ec2.radl
+.. _`jsonschema`: https://github.com/Julian/jsonschema
