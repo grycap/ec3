@@ -1,2 +1,3 @@
 recursive-exclude test *
 recursive-include templates *
+include bash_completion/ec3

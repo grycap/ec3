@@ -49,7 +49,7 @@ First you need to install pip tool. To install them in Debian and Ubuntu based d
 	sudo apt install python-pip
 
 In Red Hat based distributions (RHEL, CentOS, Amazon Linux, Oracle Linux, Fedora, etc.), do::
-	
+
 	sudo yum install epel-release
 	sudo yum install which python-pip
 	
