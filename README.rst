@@ -36,7 +36,7 @@ which is used to launch the virtual machines.
 `jsonschema`_ is usually available in distribution repositories (``python-jsonschema`` and ``jsonschema`` in pip).
 
 By default `ec3` uses our public `IM`_ server in `appsgrycap.i3m.upv.es`. *Optionally* you can deploy a 
- local `IM`_ server following the instructions of the `IM manual`_.
+local `IM`_ server following the instructions of the `IM manual`_.
  
 Also ``sshpass`` command is required to provide the user with ssh access to the cluster.
 
@@ -186,3 +186,4 @@ Additional information
 .. _`sshpass`: https://gist.github.com/arunoda/7790979
 .. _`ubuntu-ec2`: https://github.com/grycap/ec3/blob/devel/templates/ubuntu-ec2.radl
 .. _`IM manual`: https://imdocs.readthedocs.io/en/latest/manual.html
+.. _`jsonschema`: https://github.com/Julian/jsonschema

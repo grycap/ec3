@@ -30,8 +30,8 @@ which is used to launch the virtual machines.
 
 `jsonschema`_ is usually available in distribution repositories (``python-jsonschema`` and ``jsonschema`` in pip).
 
-By default `ec3` uses our public `IM`_ server in `appsgrycap.i3m.upv.es`. *Optionally* you can deploy a 
- local `IM`_ server following the instructions of the `IM manual`_.
+By default `ec3` uses our public `IM`_ server in `appsgrycap.i3m.upv.es`. *Optionally* you can deploy a
+local `IM`_ server following the instructions of the `IM manual`_.
  
 Also ``sshpass`` command is required to provide the user with ssh access to the cluster.
 
