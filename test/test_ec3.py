@@ -17,7 +17,7 @@
 import sys
 import unittest
 import logging
-from mock import patch, MagicMock
+from mock import patch, MagicMock, mock_open
 from collections import namedtuple
 try:
     from StringIO import StringIO
@@ -32,8 +32,20 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import CLI, CmdLaunch, CmdList, CmdTemplates
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy
 
+cluster_data = """system front (
+                    state = 'configured' and
+                    __im_server = 'http://server.com:8800' and
+                    __infrastructure_id = 'infid' and
+                    __vm_id = '0' and
+                    auth = '[{"type": "InfrastructureManager", "username": "user", "password": "pass"}]'
+                    )"""
+
+if sys.version_info > (3, 0):
+    open_name = 'builtins.open'
+else:
+    open_name = '__builtin__.open'
 
 class TestEC3(unittest.TestCase):
 
@@ -64,6 +76,9 @@ class TestEC3(unittest.TestCase):
             elif url == "/infrastructures/infid/data":
                 resp.status_code = 200
                 resp.json.return_value = {"data": "data"}
+            elif url == "/infrastructures/infid/contmsg":
+                resp.status_code = 200
+                resp.text = "contmsg"
         elif method == "POST":
             if url == "/infrastructures":
                 resp.status_code = 200
@@ -336,6 +351,55 @@ deploy front 1
         self.assertIn("----------------------------------------------------------------------------------------------------------------------\n", res)
         self.assertIn("         galaxy           component Galaxy is an open, web-based platform for data intensive biomedical research.     \n", res)
 
+    @patch('requests.request')
+    @patch('ec3.ClusterStore')
+    @patch('ec3.CLI.display')
+    def test_destroy(self, display, cluster_store, requests):
+        cluster_store.list.return_value = []
+        Options = namedtuple('Options', ['restapi', 'json', 'clustername', 'force', 'yes', 'auth_file'])
+        options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', force=True, yes=True,
+                          auth_file=[])
+        with self.assertRaises(SystemExit) as ex:
+            CmdDestroy.run(options)
+        self.assertEquals("1" ,str(ex.exception))
+        
+        cluster_store.list.return_value = ["name"]
+        radl = RADL()
+        n = network("public")
+        n.setValue("outbound", "yes")
+        s = system("front")
+        s.setValue("ec3aas.username", "user")
+        s.setValue("state", "configured")
+        s.setValue("nodes", "1")
+        s.setValue("net_interface.0.connection", n)
+        s.setValue("net_interface.0.ip", "8.8.8.8")
+        radl.add(s)
+        cluster_store.load.return_value = radl
+        auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
+        cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "", auth
+        requests.side_effect = self.get_response
+
+        with self.assertRaises(SystemExit) as ex:
+            CmdDestroy.run(options)
+        self.assertEquals("0" ,str(ex.exception))
+
+    @patch('requests.request')
+    @patch('os.listdir')
+    @patch('os.makedirs')
+    @patch(open_name, new_callable=mock_open, read_data=cluster_data)
+    def test_cluster_store(self, mo, makedirs, listdirs, requests):
+        listdirs.return_value = ["cluster1"]
+        res = ClusterStore.list()
+        self.assertEqual(["cluster1"], res)
+
+        requests.side_effect = self.get_response
+        res = ClusterStore.load("cluster1", True)
+        s = res.get(system("front"))
+        self.assertEqual(s.getValue("__infrastructure_id"), "infid")
+        self.assertIn(".ec3/clusters/cluster1", mo.call_args_list[-1][0][0])
+        if sys.version_info < (3, 0):
+            expected_res = """network public (\n  outbound = \'yes\'\n)\n\nsystem front (\n  net_interface.0.ip = \'8.8.8.8\' and\n  __infrastructure_id = \'infid\' and\n  auth = \'[{"type": "InfrastructureManager", "username": "user", "password": "pass"}]\' and\n  __im_server = \'http://server.com:8800\' and\n  net_interface.0.connection = \'public\' and\n  nodes = 1 and\n  contextualization_output = \'contmsg\'\n)"""
+            self.assertEqual(mo.mock_calls[-2][1][0], expected_res)
 
 if __name__ == "__main__":
     unittest.main()
