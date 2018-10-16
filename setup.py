@@ -7,9 +7,10 @@ from setuptools import setup
 install_path = '/etc/ec3/'
 datafiles = [(os.path.join(install_path, root), [os.path.join(root, f) for f in files])
              for root, dirs, files in os.walk("templates")]
+datafiles.append(('/etc/bash_completion.d', ['bash_completion/ec3']))
 
 setup(
-    name="ec3",
+    name="ec3-cli",
     version="2.0.0",
     author="Amanda Calatrava, Eloy Romero, Miguel Caballer",
     author_email="",
