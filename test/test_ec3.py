@@ -32,7 +32,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone
 
 cluster_data = """system front (
                     state = 'configured' and
@@ -87,6 +87,9 @@ class TestEC3(unittest.TestCase):
             if url == "/infrastructures":
                 resp.status_code = 200
                 resp.text = 'http://server.com/newinfid'
+            elif url == "/infrastructures/infid/reconfigure":
+                resp.status_code = 200
+                resp.text = ''
         elif method == "DELETE":
             if url == "/infrastructures/infid":
                 resp.status_code = 200
@@ -400,6 +403,49 @@ deploy front 1
         if sys.version_info < (3, 0):
             expected_res = """network public (\n  outbound = \'yes\'\n)\n\nsystem front (\n  net_interface.0.ip = \'8.8.8.8\' and\n  __infrastructure_id = \'infid\' and\n  auth = \'[{"type": "InfrastructureManager", "username": "user", "password": "pass"}]\' and\n  __im_server = \'http://server.com:8800\' and\n  net_interface.0.connection = \'public\' and\n  nodes = 1 and\n  contextualization_output = \'contmsg\'\n)"""
             self.assertEqual(mo.mock_calls[-2][1][0], expected_res)
+
+    def test_cli(self):
+        testargs = ["ec3", "list"]
+        with patch.object(sys, 'argv', testargs):
+            old_stdout = sys.stdout
+            sys.stdout = StringIO()
+            res = CLI.run([CmdList])
+            res = sys.stdout.getvalue()
+            sys.stdout = old_stdout
+            self.assertIn("      name         state          IP        nodes \n", res)
+
+    @patch('requests.request')
+    @patch('ec3.ClusterStore')
+    @patch('ec3.CLI.display')
+    def test_reconf(self, display, cluster_store, requests):
+        cluster_store.list.return_value = []
+        Options = namedtuple('Options', ['restapi', 'json', 'clustername', 'reload', 'yes',
+                                         'auth_file', 'add', 'new_template', 'force'])
+        options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', reload=False, yes=True,
+                          auth_file=[], add=[], new_template=None, force=False)
+        with self.assertRaises(SystemExit) as ex:
+            CmdDestroy.run(options)
+        self.assertEquals("1" ,str(ex.exception))
+        
+        cluster_store.list.return_value = ["name"]
+        radl = RADL()
+        n = network("public")
+        n.setValue("outbound", "yes")
+        s = system("front")
+        s.setValue("ec3aas.username", "user")
+        s.setValue("state", "configured")
+        s.setValue("nodes", "1")
+        s.setValue("net_interface.0.connection", n)
+        s.setValue("net_interface.0.ip", "8.8.8.8")
+        radl.add(s)
+        cluster_store.load.return_value = radl
+        auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
+        cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
+        requests.side_effect = self.get_response
+
+        with self.assertRaises(SystemExit) as ex:
+            CmdReconfigure.run(options)
+        self.assertEquals("0" ,str(ex.exception))
 
 if __name__ == "__main__":
     unittest.main()
