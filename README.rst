@@ -48,12 +48,12 @@ First you need to install pip tool. To install them in Debian and Ubuntu based d
 	sudo apt update
 	sudo apt install python-pip
 
-In Red Hat based distributions (RHEL, CentOS, Amazon Linux, Oracle Linux, Fedora, etc.), do:
+In Red Hat based distributions (RHEL, CentOS, Amazon Linux, Oracle Linux, Fedora, etc.), do::
 	
 	sudo yum install epel-release
 	sudo yum install which python-pip
 	
-Then you only have to call the install command of the pip tool with the `ec3-cli` package:
+Then you only have to call the install command of the pip tool with the `ec3-cli` package::
 	
     sudo pip install ec3-cli
 
