@@ -32,7 +32,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart, CmdSsh
 
 cluster_data = """system front (
                     state = 'configured' and
@@ -51,6 +51,21 @@ class TestEC3(unittest.TestCase):
 
     def __init__(self, *args):
         unittest.TestCase.__init__(self, *args)
+
+    def gen_radl(self):
+        radl = RADL()
+        n = network("public")
+        n.setValue("outbound", "yes")
+        s = system("front")
+        s.setValue("ec3aas.username", "user")
+        s.setValue("state", "configured")
+        s.setValue("nodes", "1")
+        s.setValue("net_interface.0.connection", n)
+        s.setValue("net_interface.0.ip", "8.8.8.8")
+        s.setValue("disk.0.os.credentials.password", "pass")
+        s.setValue("disk.0.os.credentials.username", "user")
+        radl.add(s)
+        return radl, s
 
     def get_response(self, method, url, verify, headers, data=None):
         resp = MagicMock()
@@ -109,16 +124,7 @@ class TestEC3(unittest.TestCase):
     @patch('ec3.ClusterStore')
     def test_list(self, cluster_store):
         cluster_store.list.return_value = ["name"]
-        radl = RADL()
-        n = network("public")
-        n.setValue("outbound", "yes")
-        s = system("front")
-        s.setValue("ec3aas.username", "user")
-        s.setValue("state", "configured")
-        s.setValue("nodes", "1")
-        s.setValue("net_interface.0.connection", n)
-        s.setValue("net_interface.0.ip", "8.8.8.8")
-        radl.add(s)
+        radl, _ = self.gen_radl()
         cluster_store.load.return_value = radl
         Options = namedtuple('Options', ['json', 'refresh', 'username'])
         options = Options(json=False, refresh=False, username=['user'])
@@ -377,16 +383,7 @@ deploy front 1
         self.assertEquals("1" ,str(ex.exception))
         
         cluster_store.list.return_value = ["name"]
-        radl = RADL()
-        n = network("public")
-        n.setValue("outbound", "yes")
-        s = system("front")
-        s.setValue("ec3aas.username", "user")
-        s.setValue("state", "configured")
-        s.setValue("nodes", "1")
-        s.setValue("net_interface.0.connection", n)
-        s.setValue("net_interface.0.ip", "8.8.8.8")
-        radl.add(s)
+        radl, _ = self.gen_radl()
         cluster_store.load.return_value = radl
         auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
         cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "", auth
@@ -437,16 +434,7 @@ deploy front 1
                           auth_file=[], add=[], new_template=None, force=False)
 
         cluster_store.list.return_value = ["name"]
-        radl = RADL()
-        n = network("public")
-        n.setValue("outbound", "yes")
-        s = system("front")
-        s.setValue("ec3aas.username", "user")
-        s.setValue("state", "configured")
-        s.setValue("nodes", "1")
-        s.setValue("net_interface.0.connection", n)
-        s.setValue("net_interface.0.ip", "8.8.8.8")
-        radl.add(s)
+        radl, _ = self.gen_radl()
         cluster_store.load.return_value = radl
         auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
         cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
@@ -467,16 +455,7 @@ deploy front 1
                           destination=["http://server2.com:8800"], auth_file=auth_file, eliminate=True)
         
         cluster_store.list.return_value = ["name"]
-        radl = RADL()
-        n = network("public")
-        n.setValue("outbound", "yes")
-        s = system("front")
-        s.setValue("ec3aas.username", "user")
-        s.setValue("state", "configured")
-        s.setValue("nodes", "1")
-        s.setValue("net_interface.0.connection", n)
-        s.setValue("net_interface.0.ip", "8.8.8.8")
-        radl.add(s)
+        radl, _ = self.gen_radl()
         cluster_store.load.return_value = radl
         auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
         cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
@@ -496,16 +475,7 @@ deploy front 1
         options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', auth_file=auth_file, yes=True)
         
         cluster_store.list.return_value = ["name"]
-        radl = RADL()
-        n = network("public")
-        n.setValue("outbound", "yes")
-        s = system("front")
-        s.setValue("ec3aas.username", "user")
-        s.setValue("state", "configured")
-        s.setValue("nodes", "1")
-        s.setValue("net_interface.0.connection", n)
-        s.setValue("net_interface.0.ip", "8.8.8.8")
-        radl.add(s)
+        radl, _ = self.gen_radl()
         cluster_store.load.return_value = radl
         auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
         cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
@@ -525,16 +495,7 @@ deploy front 1
         options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', auth_file=auth_file, yes=True)
         
         cluster_store.list.return_value = ["name"]
-        radl = RADL()
-        n = network("public")
-        n.setValue("outbound", "yes")
-        s = system("front")
-        s.setValue("ec3aas.username", "user")
-        s.setValue("state", "configured")
-        s.setValue("nodes", "1")
-        s.setValue("net_interface.0.connection", n)
-        s.setValue("net_interface.0.ip", "8.8.8.8")
-        radl.add(s)
+        radl, _ = self.gen_radl()
         cluster_store.load.return_value = radl
         auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
         cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
@@ -543,6 +504,40 @@ deploy front 1
         with self.assertRaises(SystemExit) as ex:
             CmdRestart.run(options)
         self.assertEquals("0" ,str(ex.exception))
+
+    @patch('ec3.ClusterStore')
+    @patch('ec3.CLI.display')
+    def test_ssh(self, display, cluster_store):
+        Options = namedtuple('Options', ['json', 'clustername', 'show_only'])
+        options = Options(json=False, clustername='name', show_only=True)
+        
+        cluster_store.list.return_value = ["name"]
+        radl, s = self.gen_radl()
+        cluster_store.load.return_value = radl
+        auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
+        cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
+
+        with self.assertRaises(SystemExit) as ex:
+            CmdSsh.run(options)
+        self.assertEquals("0" ,str(ex.exception))
+
+        self.assertEquals(display.call_args_list[0][0][0], "sshpass -ppass ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no user@8.8.8.8 -p 22")
+
+        s.setValue("disk.0.os.credentials.private_key", "priv_key")
+
+        with self.assertRaises(SystemExit) as ex:
+            CmdSsh.run(options)
+        self.assertEquals("0" ,str(ex.exception))
+
+        self.assertIn("ssh -i /tmp/tmp", display.call_args_list[1][0][0])
+        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no user@8.8.8.8 -p 22", display.call_args_list[1][0][0])
+
+        if sys.version_info > (3, 0):
+            priv_key_file = display.call_args_list[1][0][0][7:23]
+        else:
+            priv_key_file = display.call_args_list[1][0][0][7:21]
+        with open(priv_key_file, "r") as f:
+            self.assertEquals(f.read(), "priv_key")
 
 
 if __name__ == "__main__":
