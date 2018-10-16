@@ -61,7 +61,7 @@ You can also download the last `ec3` version from `this <https://github.com/gryc
 
    git clone https://github.com/grycap/ec3
 
-Then you can install it calling the pip tool with the current ec3 directory:
+Then you can install it calling the pip tool with the current ec3 directory::
 	
     sudo pip install ./ec3
 
