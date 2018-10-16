@@ -20,21 +20,47 @@ This introduces a cost-efficient approach for Cluster-based computing.
 Installation
 ------------
 
-The program `ec3` requires Python 2.6+, `PLY`_, `PyYAML`_, `Requests`_ and an `IM`_ server, which is used to
+Requisites
+~~~~~~~~~~
+
+The program `ec3` requires Python 2.6+, `PyYAML`_, `Requests`_ and an `IM`_ server, which is used to
 launch virtual machines. By default `ec3` uses our public `IM`_ server in
-`servproject.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server. See 
-`IM documentation <http://imdocs.readthedocs.io/en/latest/manual.html>`_ for more information.
+`appsgrycap.i3m.upv.es`. *Optionally* you can deploy a local `IM`_ server executing the
+next commands::
 
-`PyYAML`_, `PLY`_ and `Requests`_ are usually available in distribution repositories (``python-yaml``,
-``python-ply``, ``python-requests`` in Debian; ``PyYAML``, ``python-ply``, ``python-requests`` in Red Hat;
-and ``PyYAML``, ``PLY``, ``requests`` in pip).
+    sudo pip install im
+    sudo service im start
 
-`ec3` can be download from `this <https://github.com/grycap/ec3>`_ git repository::
+`PyYAML`_ is usually available in distribution repositories (``python-yaml`` in Debian;
+``PyYAML`` in Red Hat; and ``PyYAML`` in pip).
+
+ ``sshpass`` is required to provide the user with ssh access to the cluster.
+
+Installing
+~~~~~~~~~~
+
+First you need to install pip tool. To install them in Debian and Ubuntu based distributions, do::
+
+	sudo apt update
+	sudo apt install python-pip
+
+In Red Hat based distributions (RHEL, CentOS, Amazon Linux, Oracle Linux, Fedora, etc.), do:
+	
+	sudo yum install epel-release
+	sudo yum install which python-pip
+	
+Then you only have to call the install command of the pip tool with the `ec3-cli` package:
+	
+    sudo pip install ec3-cli
+
+You can also download the last `ec3` version from `this <https://github.com/grycap/ec3>`_ git repository::
 
    git clone https://github.com/grycap/ec3
 
-In the created directory there is the python executable file ``ec3``, which provides the
-command-line interface described next.
+Then you can install it calling the pip tool with the current ec3 directory:
+	
+    sudo pip install ./ec3
+
 
 Basic example with Amazon EC2
 -----------------------------
