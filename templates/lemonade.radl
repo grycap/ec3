@@ -21,14 +21,24 @@ configure lemonade (
       lineinfile:
           dest: /var/tmp/lemonade/config/juicer-config.yaml
           regexp: 'libprocess_advertise_ip:'
-          line: "libprocess_advertise_ip: {{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}"
+          line: "        libprocess_advertise_ip: {{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}"
           state: present
     - lineinfile: 
           dest: /var/tmp/lemonade/config/juicer-config.yaml 
           regexp: 'spark.driver.host:' 
-          line: 'spark.driver.host: {{ hostvars[groups["front"][0]]["IM_NODE_FQDN"] }}' 
+          line: '        spark.driver.host: {{ hostvars[groups["front"][0]]["IM_NODE_FQDN"] }}' 
           state: present
-
+    - lineinfile: 
+          dest: /var/tmp/lemonade/config/juicer-config.yaml 
+          line: '        spark.hadoop.dfs.client.use.datanode.hostname: false'
+          
+    - name: disable DNS in Limonero
+      lineinfile:
+          dest: /var/tmp/lemonade/config/limonero-config.yaml
+          regexp: 'dfs.client.use.datanode.hostname:'
+          line: '        dfs.client.use.datanode.hostname: false'
+          state: present
+        
     - name: Init git submodule 
       command: git submodule init chdir=/var/tmp/lemonade
       
