@@ -9,7 +9,7 @@ system front (
     cpu.count>=1 and
     memory.size>=1024m and
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'fbw://fogbow-ubuntu-no-apt-daily.service'
+    disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/a09e8cd9-3b82-4adf-8ac7-b9cceedcacaa'
 )
 
 system wn (
@@ -17,5 +17,5 @@ system wn (
     memory.size>=512m and
     ec3_max_instances = 10 and # maximum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'fbw://fogbow-ubuntu-no-apt-daily.service'
+    disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/a09e8cd9-3b82-4adf-8ac7-b9cceedcacaa'
 )
