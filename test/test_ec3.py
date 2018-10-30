@@ -64,6 +64,7 @@ class TestEC3(unittest.TestCase):
         s.setValue("net_interface.0.ip", "8.8.8.8")
         s.setValue("disk.0.os.credentials.password", "pass")
         s.setValue("disk.0.os.credentials.username", "user")
+        s.setValue("provider.type", "OpenStack")
         radl.add(s)
         return radl, s
 
@@ -133,7 +134,7 @@ class TestEC3(unittest.TestCase):
         CmdList.run(options)
         res = sys.stdout.getvalue()
         sys.stdout = old_stdout
-        self.assertEquals(res, " name    state       IP     nodes \n----------------------------------\n name  configured  8.8.8.8    1   \n")
+        self.assertEquals(res, " name    state       IP     nodes  provider  \n---------------------------------------------\n name  configured  8.8.8.8    1    OpenStack \n")
 
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
@@ -422,7 +423,8 @@ deploy front 1
             self.assertIn(" name ", res)
             self.assertIn(" state ", res)
             self.assertIn(" IP ", res)
-            self.assertIn(" nodes \n", res)
+            self.assertIn(" nodes ", res)
+            self.assertIn(" provider \n", res)
 
     @patch('requests.request')
     @patch('ec3.ClusterStore')
