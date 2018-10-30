@@ -25,6 +25,9 @@ try:
     import urllib3
     urllib3.disable_warnings()
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except:
     pass
 
@@ -51,7 +54,7 @@ except:
     pass
 
 # EC3 client version
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
 # RADL template path
@@ -665,7 +668,7 @@ class CmdLaunch:
             if not options.restapi: raise Exception("option is not set")
             if not options.dry_run and options.restapi[0].startswith("http:") and not options.restapi[0].startswith("http://localhost"):
                 CLI.display("WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.")
-                if not options.yes and input("Continue [y/N]? ")[0:1].lower() != "y":
+                if not options.yes and get_input("Continue [y/N]? ")[0:1].lower() != "y":
                     sys.exit(1)
         except Exception as e:
             CLI.display("Error in -u/--restapi-url: %s" % str(e), level=logging.ERROR)
@@ -970,11 +973,11 @@ class CmdList:
                 cluster_username = s.getValue("ec3aas.username", "?")
                 if cluster_username == options.username[0]:
                     info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
-                                 "nodes": s.getValue("nodes", "?")})
+                                 "nodes": s.getValue("nodes", "?"), "provider": s.getValue("provider.type", "?")})
             else:            
                 info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
-                             "nodes": s.getValue("nodes", "?")})
-        output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes"])
+                             "nodes": s.getValue("nodes", "?"), "provider": s.getValue("provider.type", "?")})
+        output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes", "provider"])
         sys.stdout.write(output + "\n")
 
 class CmdShow:
@@ -1068,7 +1071,7 @@ class CmdDestroy:
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to delete the infrastructure (including frontend and nodes).")
-            if not options.yes and input("Continue [y/N]? ")[0:1].lower() != "y":
+            if not options.yes and get_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
             new_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
             if options.auth_file:
@@ -1641,7 +1644,7 @@ class CmdStop:
         try:
             r = ClusterStore.load(options.clustername)
             CLI.display("WARNING: you are going to stop the infrastructure (including frontend and nodes).")
-            if not options.yes and input("Continue [y/N]? ")[0:1].lower() != "y":
+            if not options.yes and get_input("Continue [y/N]? ")[0:1].lower() != "y":
                 sys.exit(1)
             cluster_im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
 
@@ -1758,6 +1761,11 @@ def run_command(command, shell=False):
         return output
 
 if __name__ == "__main__":
+    # Support Python 2 and 3 input
+    get_input = input
+    if sys.version_info[:2] <= (2, 7):
+        get_input = raw_input
+
     commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart]
     try:
         CLI.run(commands)

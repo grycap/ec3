@@ -11,7 +11,7 @@ datafiles.append(('/etc/bash_completion.d', ['bash_completion/ec3']))
 
 setup(
     name="ec3-cli",
-    version="2.0.0",
+    version="2.0.1",
     author="Amanda Calatrava, Eloy Romero, Miguel Caballer",
     author_email="",
     description=("Tool to deploy virtual elastic clusters on the cloud."),
