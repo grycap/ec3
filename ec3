@@ -25,6 +25,9 @@ try:
     import urllib3
     urllib3.disable_warnings()
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except:
     pass
 
@@ -970,11 +973,11 @@ class CmdList:
                 cluster_username = s.getValue("ec3aas.username", "?")
                 if cluster_username == options.username[0]:
                     info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
-                                 "nodes": s.getValue("nodes", "?")})
+                                 "nodes": s.getValue("nodes", "?"), "provider": s.getValue("provider.type", "?")})
             else:            
                 info.append({"name": clustername, "state": s.getValue("state", "?"), "IP": getPublicIP(s),
-                             "nodes": s.getValue("nodes", "?")})
-        output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes"])
+                             "nodes": s.getValue("nodes", "?"), "provider": s.getValue("provider.type", "?")})
+        output = dump_json(info) if options.json else dump_table(info, ["name", "state", "IP", "nodes", "provider"])
         sys.stdout.write(output + "\n")
 
 class CmdShow:

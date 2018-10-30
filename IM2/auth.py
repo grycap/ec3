@@ -125,7 +125,9 @@ class Authentication:
 
 		res = []
 
+		i = 0
 		for line in lines:
+			i += 1
 			line = line.strip()
 			if len(line) > 0 and not line.startswith("#"):
 				auth = {}
@@ -133,7 +135,7 @@ class Authentication:
 				for token in tokens:
 					key_value = token.split(" = ")
 					if len(key_value) != 2:
-						break
+						raise AuthenticationParserError(i)
 					else:
 						value = key_value[1].strip().replace("\\n", "\n")
 						# Enable to specify a filename and set the contents of
