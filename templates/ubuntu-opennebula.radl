@@ -1,0 +1,32 @@
+## Ubuntu 16.04 in an OpenNebula-based Cloud
+
+description ubuntu_one (
+    kind = 'images' and
+    short = 'Ubuntu 16.04 on OpenNebula' and
+    content = 'Ubuntu 16.04 on OpenNebula'
+)
+
+system front (
+    cpu.arch='x86_64' and
+    cpu.count>=1 and
+    memory.size>=3096m and
+    disk.0.os.name='linux' and
+    disk.0.os.flavour='ubuntu' and
+    disk.0.os.version='16.04' and
+    disk.0.image.url='one://opennebula-host/vm-id' and
+    disk.0.os.credentials.username = 'username' and
+    disk.0.os.credentials.password = 'password'
+)
+
+system wn (
+    ec3_max_instances = 5 and
+    cpu.arch='x86_64' and
+    cpu.count>=1 and
+    memory.size>=1024m and
+    disk.0.os.name='linux' and
+    disk.0.os.flavour='ubuntu' and
+    disk.0.os.version='16.04' and
+    disk.0.image.url='one://opennebula-host/vm-id' and
+    disk.0.os.credentials.username = 'username' and
+    disk.0.os.credentials.password = 'password'
+)
