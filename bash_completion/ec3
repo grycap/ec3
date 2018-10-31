@@ -36,7 +36,14 @@ _ec3()
     opt="${COMP_WORDS[1]}"
     case $opt in
     "launch")
-        EC3_TEMPLATES=$(ls /etc/ec3/templates/*.radl | xargs -n1 basename | cut -d. -f1)
+    	EC3_TEMPLATES=""
+    	if [ -d /etc/ec3/templates/ ]; then
+        	EC3_TEMPLATES+=$(ls /etc/ec3/templates/*.radl | xargs -n1 basename | cut -d. -f1)
+        fi
+        EC3_TEMPLATES+="\n"
+        if [ -d ./templates/ ]; then
+        	EC3_TEMPLATES+=$(ls ./templates/*.radl | xargs -n1 basename | cut -d. -f1)
+        fi
         COMPREPLY=( $(compgen -W '$EC3_TEMPLATES' -- $cur ) )
         return 0
         ;;
