@@ -510,8 +510,8 @@ deploy front 1
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
     def test_ssh(self, display, cluster_store):
-        Options = namedtuple('Options', ['json', 'clustername', 'show_only'])
-        options = Options(json=False, clustername='name', show_only=True)
+        Options = namedtuple('Options', ['json', 'clustername', 'show_only', 'sshcommand'])
+        options = Options(json=False, clustername='name', show_only=True, sshcommand=['ls','-l','/tmp'])
         
         cluster_store.list.return_value = ["name"]
         radl, s = self.gen_radl()
@@ -523,7 +523,7 @@ deploy front 1
             CmdSsh.run(options)
         self.assertEquals("0" ,str(ex.exception))
 
-        self.assertEquals(display.call_args_list[0][0][0], "sshpass -ppass ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no user@8.8.8.8 -p 22")
+        self.assertEquals(display.call_args_list[0][0][0], "sshpass -ppass ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no user@8.8.8.8 -p 22 ls -l /tmp")
 
         s.setValue("disk.0.os.credentials.private_key", "priv_key")
 
