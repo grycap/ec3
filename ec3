@@ -1004,6 +1004,7 @@ class CmdSsh:
     def parse(subparsers):
         parser = subparsers.add_parser("ssh", help="connect to cluster via SSH", config=False)
         parser.add_argument("clustername", help="name of the cluster to connect")
+        parser.add_argument("sshcommand", nargs="+", help="ssh command to be executed on the font-end", default=[])
         parser.add_argument("--show-only", action="store_true", dest="show_only", default=False, help="show the command line invoking SSH, but do nothing")
         parser.set_defaults(func=CmdSsh.run)
 
@@ -1017,6 +1018,8 @@ class CmdSsh:
                 ops = CmdSsh._connect_key(front_system, ssh_port)
             else:
                 ops = CmdSsh._connect_password(front_system, ssh_port)
+            if options.sshcommand:
+                ops.extend(options.sshcommand)
             if options.show_only:
                 CLI.display(" ".join(ops))
                 sys.exit(0)
