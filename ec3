@@ -56,13 +56,13 @@ except:
 # EC3 client version
 VERSION = '2.0.1'
 # Our public IM service
-IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
+IM_URL = 'https://servproject.i3m.upv.es:8800'
 # RADL template path
-TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
+TEMPLATE_PATHS = ["/var/www/html/ec3-atmosphere/command/templates", "./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
-CLUSTER_STORE_PATH = "~/.ec3/clusters"
+CLUSTER_STORE_PATH = "/var/www/html/ec3-atmosphere/.ec3/clusters"
 # Config file path
-FILENAME_CONFIG = "~/.ec3/config.yml"
+FILENAME_CONFIG = "/var/www/html/ec3-atmosphere/.ec3/config.yml"
 # Max time in seconds needed to deploy the front-end node
 TIMEOUT = 6000
 # Time in seconds between two consecutive requests to IM service
