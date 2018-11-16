@@ -18,9 +18,10 @@
 # limitations under the License.                                             #
 #--------------------------------------------------------------------------- #
 
-import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess
+import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess, copy
 import requests
-import toscaparser
+import yaml
+from toscaparser.tosca_template import ToscaTemplate
 try:
     # to avoid Warnings 
     import urllib3
@@ -43,6 +44,9 @@ except NameError:
     unicode = str
 
 from IM2.auth import Authentication
+from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
+import IM2.radl.radl as IM_RADL
+from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Features, Aspect, FeaturedAspect
 
 # Disable CERTIFICATE VERIFY
 try:
@@ -56,7 +60,6 @@ VERSION = '2.0.1'
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
 # RADL template path
-TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
 CLUSTER_STORE_PATH = "~/.ec3/clusters"
 # Config file path
@@ -101,116 +104,6 @@ def getPublicIP(s):
             return s.getValue("net_interface.%d.ip" % i)
     return None
 
-def get_content_from_template_file(filename):
-    t = [ os.path.join(os.path.expanduser(base_path), filename) for base_path in TEMPLATE_PATHS
-          if os.path.isfile(os.path.join(os.path.expanduser(base_path), filename)) ]
-    if not t: raise Exception("File not found in %s" % TEMPLATE_PATHS)
-    f = open(t[0], "r")
-    c = f.read()
-    f.close()
-    return c
-
-def ec3_xpath_radl(r, xpath, local_dump_radl=dump_radl, join_sets=True):
-    xpath0 = [ a.strip() for a in xpath.split("/") ]
-    if len(xpath0) < 3: raise Exception("Invalid path: minimum path /<aspect>/<aspect_id>!")
-    if len(xpath0.pop(0)) != 0: raise Exception("Invalid path: expected it stars with '/'")
-    class_name = xpath0.pop(0)
-    if not hasattr(IM_RADL, class_name):
-        raise Exception("Invalid path: '%s' is not an aspect!" % class_name)
-    if len(xpath0) == 1 and xpath0[0] == "*":
-        return local_dump_radl(RADL(r.gets(getattr(IM_RADL, class_name))))
-    aspect = r.get(getattr(IM_RADL, class_name)(xpath0.pop(0)))
-    if not aspect: raise Exception("Invalid path: no aspect with that path.")
-    if isinstance(aspect, Features): aspect = ec3_xpath_features(aspect, xpath0)
-    if isinstance(aspect, (list,set)) and join_sets: aspect = ",".join(map(str, aspect))
-    if isinstance(aspect, Aspect):
-        ast = len(xpath0) == 1 and xpath0[0] == "*"
-        aspect, aspect0 = local_dump_radl(RADL([aspect]), aspect=aspect if ast else None), aspect
-        if ast:
-            if isinstance(aspect, str):
-                s = slice(2, -2) if isinstance(aspect0, configure) else slice(1, -1)
-                return "\n".join(aspect.split("\n")[s])
-            elif isinstance(aspect, list):
-                return [ a for a in aspect if a["id"] == aspect0.getId() and a["class"] == aspect0.__class__.__name__ ][0]
-    if not xpath0: return aspect
-    raise Exception("Invalid path: attributes can get from featured aspects only")
-
-def ec3_xpath_features(features, xpath):
-    if len(xpath) == 0: return features
-    if not isinstance(features, Features):
-        raise Exception("Expected an aspect with features, not '%s'" % str(features))
-    if xpath[0] == "*": return features
-    elem = xpath.pop(0)
-    if features.hasFeature(elem):
-        return ec3_xpath_features(features.getValue(elem), xpath)
-    raise Exception("Invalid path: '%s' is not in '%s'" % (elem, str(features)))
-
-def apply_ec3_expressions(r):
-    def apply_ec3_append(i):
-        if not isinstance(i, dict) or "ec3_append" not in i: return [i]
-        try:
-            if not isinstance(r.get(configure(i["ec3_append"])).recipe, list): raise Exception
-            return r.get(configure(i["ec3_append"])).clone().recipe
-        except:
-            raise Exception("Configure '%s' does't exist or the recipe is not a list." % i["ec3_append"])
-    for conf in r.gets(configure):
-        if not isinstance(conf.recipe, list): continue
-        conf.recipe = [ l1 for l0 in map(apply_ec3_append, conf.recipe) for l1 in l0 ]
-    recipes_prio = [ conf for conf in r.gets(configure) if isinstance(conf.recipe, list) and
-                     any([ "ec3_prio" in d for d in conf.recipe if isinstance(d, dict) ]) ]
-    def rm_ec3_prio(t):
-        t[1].pop("ec3_prio", None); return t[1]
-    for conf in recipes_prio:
-        conf.recipe = list(map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ])))
-    def sanitize(cad):
-        return cad.replace("{", "\\x7b").replace("}", "\\x7d")
-        #return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
-    recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
-                     for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
-    def isrecursive(p):
-        p = p.split("/")
-        return len(p) < 3 or p[1] == "configure"
-    for conf, conf_vars in recipes_vars:
-        conf_vars0 = {}
-        for k, v in conf_vars.items():
-            if not isinstance(v, dict): continue
-            try:
-                if v.get("ec3_file"):
-                    conf_vars0[k] = sanitize(get_content_from_template_file(v["ec3_file"]))
-                elif v.get("ec3_xpath") and not isrecursive(v.get("ec3_xpath")):
-                    conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
-                elif v.get("ec3_jpath") and not isrecursive(v.get("ec3_jpath")):
-                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
-            except Exception as e:
-                CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
-                sys.exit(1)
-        conf_vars.update(conf_vars0)
-    recipes_vars = [ (conf, d["vars"]) for conf in r.gets(configure) if isinstance(conf.recipe, list)
-                     for d in conf.recipe if isinstance(d, dict) and "vars" in d and isinstance(d["vars"], dict) ]
-    for conf, conf_vars in recipes_vars:
-        conf_vars0 = {}
-        for k, v in conf_vars.items():
-            if not isinstance(v, dict): continue
-            try:
-                if v.get("ec3_xpath"):
-                    conf_vars0[k] = sanitize(ec3_xpath_radl(r, v["ec3_xpath"]))
-                elif v.get("ec3_jpath"):
-                    conf_vars0[k] = ec3_xpath_radl(r, v["ec3_jpath"], lambda *a,**_: dump_radl_simple(*a), False)
-            except Exception as e:
-                CLI.display("Error in configure '%s' in variable '%s': %s" % (conf.getId(), k, str(e)), level=logging.ERROR, exception=True)
-                sys.exit(1)
-        conf_vars.update(conf_vars0)
-
-def apply_ec3_features(r):
-    for a in list(r.aspects):
-        if not isinstance(a, FeaturedAspect) or not a.getValue("ec3_inherit_from"): continue
-        s = a.getValue("ec3_inherit_from").clone(); a.delValue("ec3_inherit_from")
-        if r.get(configure(s.getId())):
-            r.add(configure(a.getId(), [{"ec3_append": s.getId()}]), ifpresent="merge", conflict="me")
-        r.delete(a)
-        s.merge(a, conflict="other", missing="other")
-        s.setId(a.getId())
-        r.add(s, ifpresent="merge", conflict="other", missing="other")
 
 def format_rest_auth_data(auth_data):
     rest_auth_data = ""
@@ -364,7 +257,7 @@ class ClusterStore:
     def save(clustername, r):
         ClusterStore._check_dir()
         f = open(os.path.join(ClusterStore.DIR, clustername), "w")
-        f.write(dump_radl(r))
+        f.write(dump_radl_future(r))
         f.close()
      
     @staticmethod
@@ -594,19 +487,25 @@ class CmdLaunch:
     def parse(subparsers):
         parser = subparsers.add_parser("launch", help="launch a new cluster")
         parser.add_argument("clustername", help="name of the new cluster")
-        parser.add_argument("templates", nargs="+", help="filename in `templates` without extension")
+        parser.add_argument("template", help="Input TOSCA file")
         parser.add_argument("-n", "--not-store", action="store_true", default=False, help="don't store the cluster nor check the cluster name")
-        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="print final RADL description of the cluster")
         parser.add_argument("--json", action="store_true", default=False, help="print cluster information in JSON format")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
     #   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
     #   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
         parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service")
-        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster", config=False)
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
-        parser.add_argument("-g", "--golden-images", action="store_true", dest="golden_image", default=False, help="generate a VMI from the first deployed node, to accelerate the contextualization process of next node deployments")
         parser.set_defaults(func=CmdLaunch.run)
+
+    @staticmethod
+    def add_extra_data(yamlo, auth_data):
+        for _, node in yamlo["topology_template"]["node_templates"].items():
+            if node["type"] == "tosca.nodes.indigo.ElasticCluster":
+                if "properties" not in node:
+                    node["properties"] = {}
+                node["properties"]["im_auth"] = format_rest_auth_data(auth_data)
+                node["properties"]["powermanager_plugin"] = "im"
 
     @staticmethod
     def run(options):
@@ -628,7 +527,7 @@ class CmdLaunch:
             sys.exit(1)
         try:
             if not options.restapi: raise Exception("option is not set")
-            if not options.dry_run and options.restapi[0].startswith("http:") and not options.restapi[0].startswith("http://localhost"):
+            if options.restapi[0].startswith("http:") and not options.restapi[0].startswith("http://localhost"):
                 CLI.display("WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.")
                 if not options.yes and get_input("Continue [y/N]? ")[0:1].lower() != "y":
                     sys.exit(1)
@@ -638,29 +537,21 @@ class CmdLaunch:
 
         # Instantiate templates
         try:
-            radl = CmdLaunch.generate_tosca(options.templates, auth_content)
+            with open(options.template, "r") as f:
+                yaml_str = f.read()
+            yamlo = yaml.safe_load(yaml_str)
+            CmdLaunch.check_tosca(yamlo)
+            CmdLaunch.add_extra_data(yamlo, auth_data)
         except Exception as e:
-            CLI.display("Error generating RADL: %s Check the templates used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
+            CLI.display("Error parsing TOSCA: %s Check the template used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
             sys.exit(1)
-
-        # Consider the use of golden images
-        if options.golden_image:
-            if radl.get(system("wn")):
-                radl.get(system("wn")).setValue("ec3_golden_images", "true")
-
-        # Finish if dry run
-        if options.dry_run:
-            if options.print_radl:
-                output = dump_radl_json(radl) if options.json else dump_radl(radl)
-                CLI.display(output + "\n")
-            sys.exit(0)
 
         # Create infrastructure
         CLI.display("Creating infrastructure")
         try:
-            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
+            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*", "Content-Type": "text/yaml"}
             url = "%s/infrastructures" % options.restapi[0]
-            resp = requests.request("POST", url, verify=False, headers=headers, data=dump_radl(radl, order_deploys=True))
+            resp = requests.request("POST", url, verify=False, headers=headers, data=yaml.safe_dump(yamlo))
             if resp.status_code != 200:
                 raise Exception(resp.text)
             infrId = os.path.basename(resp.text)
@@ -670,9 +561,7 @@ class CmdLaunch:
             resp = requests.request("GET", url, verify=False, headers=headers)
             if resp.status_code != 200:
                 raise Exception(resp.text)
-            vm_ids = []
-            for elem in resp.json()["uri-list"]:
-                vm_ids.append(os.path.basename(list(elem.values())[0]))
+            vm_ids = [os.path.basename(vm_id['uri']) for vm_id in resp.json()["uri-list"]]
         except Exception as e:
             CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
@@ -681,7 +570,7 @@ class CmdLaunch:
         vm_id = CmdLaunch.get_front_vm_id(options.restapi[0], infrId, vm_ids, auth_data)
 
         CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, options.restapi[0], options.destroy,
-                                     options.not_store, options.clustername, options.print_radl, options.json)
+                                     options.not_store, options.clustername)
         sys.exit(0)
 
     @staticmethod
@@ -705,78 +594,40 @@ class CmdLaunch:
         return "0"
 
     @staticmethod
-    def generate_radl(template_names, pieces_radl, auth_content):
-        radl = RADL([system("front", [Feature("ec3_templates_cmd", "=", " ".join(template_names))])])
-        templates = set()
-        def add_template(r):
-            # Process every template only once
-            if r in templates: return
-            templates.add(r)
-            try:
-                file_content = get_content_from_template_file(r + ".radl")
-                radl.merge(parse_radl(file_content), ifpresent="merge", missing="other", conflict="other")
-            except Exception as e:
-                CLI.display("Error processing '%s.radl': %s" % (r, str(e)), level=logging.ERROR, exception=True)
-                sys.exit(1)
-        for r in template_names: add_template(r)
-        for r in pieces_radl:
-            try:
-                radl.merge(parse_radl(r), ifpresent="merge", missing="other", conflict="other")
-            except Exception as e:
-                CLI.display("Error processing '%s': %s" % (r, str(e)), level=logging.ERROR, exception=True)
-                sys.exit(1)
-        while radl.gets(include):
-            for a in radl.gets(include):
-                for r in a.getValue("template").split(" "):
-                    if r: add_template(r)
-                radl.delete(a)
-        for a in radl.gets(description): radl.delete(a)
-
-        # Set auth in system "front"
-        if radl.get(system("front")):
-            radl.get(system("front")).setValue("auth", "".join(auth_content).replace("'","\047"))
-
-        # Replace "ec3_*" expression in YAML recipes and systems
-        try:
-            apply_ec3_features(radl)
-            apply_ec3_expressions(radl)
-        except Exception as e:
-            CLI.display(str(e), level=logging.ERROR, exception=True)
-            sys.exit(1)
-
-        # Check if the generated RADL is correct
-        CmdLaunch.check_radl(radl)
-
-        return radl
-
-    @staticmethod
-    def check_radl(radl):
+    def check_tosca(tosca):
         """
-        Check that the RADL generated is "EC3 correct".
+        Check that the TOSCA received is "EC3 correct".
         """ 
-        radl.check()
-        
-        if not radl.get(system("front")):
-            raise Exception("There must be at least one system with name 'front'")
+        ToscaTemplate(yaml_dict_tpl=copy.deepcopy(tosca))
+
+        front = None
+        wn = None
+        for nname, node in tosca["topology_template"]["node_templates"].items():
+            if node["type"] in ["tosca.nodes.indigo.Compute", "tosca.nodes.Compute"]:
+                if nname == "front":
+                    front = node
+                elif nname == "wn":
+                    wn = node
+                
+        if not front:
+            raise Exception("There must be at least one Compute with name 'front'")
         else:
-            front = radl.get(system("front"))
-            if not front.getValue("disk.0.image.url"):
-                raise Exception("system 'front' has no image URL.")
+            try:
+                image = front["capabilities"]["os"]["properties"]["image"]
+            except:
+                image = None
+            if not image:
+                raise Exception("Compute 'front' has no image URL.")
 
-        if not radl.get(system("wn")):
-            raise Exception("There must be at least one system with name 'wn'")
+        if not wn:
+            raise Exception("There must be one Compute with name 'wn'")
         else:
-            wn = radl.get(system("wn"))
-            if not wn.getValue("disk.0.image.url"):
-                raise Exception("system 'wn' has no image URL.")
-
-        dep_front = None
-        for dep in radl.gets(deploy):
-            if dep.id == "front" and dep.vm_number == 1:
-                dep_front = dep
-
-        if not dep_front:
-            raise Exception("There must be at least one deploy with name 'front' and VM number 1")
+            try:
+                image = wn["capabilities"]["os"]["properties"]["image"]
+            except:
+                image = None
+            if not image:
+                raise Exception("Compute 'wn' has no image URL.")
 
         return True
 
@@ -808,7 +659,7 @@ class CmdLaunch:
 
     @staticmethod
     def wait_transfer_save(infrId, vmId, auth_data, im_server_url, options_destroy, options_not_store,
-                           options_clustername, options_print_radl, options_json):
+                           options_clustername):
         # Waiting for front-end configured
         vm_ip = None
         CLI.display_waiting("Front-end state: launching")
@@ -818,7 +669,7 @@ class CmdLaunch:
         radl = None
         try:
             while True:
-                success, info = CmdLaunch.get_vm_info(im_server_url, infrId, vmId, auth_data)
+                _, info = CmdLaunch.get_vm_info(im_server_url, infrId, vmId, auth_data)
                 CLI.logger.debug("Front-end info: %s" % info)
                 radl = parse_radl(info)
                 radl.check()
@@ -912,11 +763,6 @@ class CmdLaunch:
                 system_front.setValue("nodes", len(res if res else [0])-1)
                 ClusterStore.save(options_clustername, radl)
 
-            # Print cluster
-            if radl and options_print_radl:
-                output = dump_radl_json(radl) if options_json else dump_radl(radl)
-                CLI.display(output + "\n")
-
 class CmdList:
     @staticmethod
     def parse(subparsers):
@@ -955,7 +801,7 @@ class CmdShow:
     def run(options):
         try:
             r = ClusterStore.load(options.clustername, options.refresh)
-            output = dump_radl_json(r) if options.json else dump_radl(r)
+            output = dump_radl_json(r) if options.json else dump_radl_future(r)
             CLI.display(output + "\n")
         except Exception as e:
             CLI.display("Error showing cluster '%s': %s" % (options.clustername, str(e)),
@@ -1099,7 +945,6 @@ class CmdReconfigure:
         parser.add_argument("--add", action="append", help="add a piece of RADL")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
         parser.add_argument("-r", "--reload", action="store_true", dest="reload", default=False, help="reload templates used to launch the cluster and reconfigure the cluster with them (useful if templates changed)")
-        parser.add_argument("--template", "-t",dest="new_template", help="add a new template/recipe of RADL to the cluster")
         parser.set_defaults(func=CmdReconfigure.run)
 
     @staticmethod
@@ -1123,470 +968,21 @@ class CmdReconfigure:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
-        # Instantiate templates
-        if options.auth_file or options.reload or options.add or options.new_template:
-            templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
-            if options.new_template:
-                templates.append(options.new_template)
-            radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
-            for a in radl.gets(deploy): radl.delete(a)
-            radl = dump_radl(radl)
-        else:
-            radl = ""
-
         # Reconfigure infrastructure
         CLI.display("Reconfiguring infrastructure")
         try:
             headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s/reconfigure" % (im_server_url, infrId)
-            resp = requests.request("PUT", url, verify=False, headers=headers, data=radl)
+            resp = requests.request("PUT", url, verify=False, headers=headers, data="")
             if resp.status_code != 200:
                 raise Exception(resp.text)
         except Exception as e:
             CLI.display("Error reconfiguring front-end: %s" % str(e), level=logging.ERROR)
             sys.exit(1)
 
-        CmdLaunch.wait_transfer_save(infrId, vmId, auth_data, im_server_url, False, False,
-                                     options.clustername, False, False)
+        CmdLaunch.wait_transfer_save(infrId, vmId, auth_data, im_server_url, False, False, options.clustername)
         sys.exit(0)
 
-class CmdTemplates:
-    @staticmethod
-    def parse(subparsers):
-        parser = subparsers.add_parser("templates", help="list available templates")
-        parser.add_argument("-s", "--search", dest="search", nargs=1, default=[None], help="show only templates in which the expression appears", config=False)
-        parser.add_argument("-n", "--name", dest="name", nargs=1, default=[None], help="show only the template with this name", config=False)
-        parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
-        parser.add_argument("-f", "--full-description", dest="full", action="store_true", default=False, help="show full description for every template")
-        parser.set_defaults(func=CmdTemplates.run)
-
-    @staticmethod
-    def run(options):
-        info = []
-        templates = set()
-        search = re.compile(options.search[0], re.IGNORECASE) if options.search[0] else None
-        for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(os.path.expanduser(p)) for f in os.listdir(os.path.expanduser(p)) if os.path.isfile(os.path.join(os.path.expanduser(p), f)) and f.endswith("radl") ]:
-            if t in templates: continue
-            if options.name[0] and options.name[0] != t: continue
-            templates.add(t)
-            try:
-                r = parse_radl(get_content_from_template_file(t + ".radl"))
-            except Exception as e:
-                CLI.display("Error processing '%s': %s" % (t, str(e)), level=logging.ERROR, exception=True)
-                sys.exit(1)
-            for d in r.gets(description):
-                if (search and not re.search(search, " ".join([ t, d.getValue("kind", ""), d.getValue("short", ""),
-                                                                d.getValue("content", "") ]))): break
-                info.append(dict(name=t, kind=d.getValue("kind", ""), summary=d.getValue("short", "")[0:80],
-                                 description=d.getValue("content", "")))
-        info = sorted(info, key=lambda x: x["name"])
-        if options.json:
-            output = dump_json(info)
-        elif options.full:
-            output = dump_list(info, ["name", "kind", "summary", "description"])
-        else:
-            output = dump_table(info, ["name", "kind", "summary"], {"summary": "<"})
-        sys.stdout.write(output + "\n")
-
-class CmdClone:
-    @staticmethod
-    def parse(subparsers):
-        parser = subparsers.add_parser("clone", help="clone a launched cluster in another Cloud provider")
-        parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service. If not indicated, EC3 uses default value (%s)." % IM_URL)
-        parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
-        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
-        parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its clonation")
-        parser.set_defaults(func=CmdClone.run)
-
-    # TODO: De momento clonar la infraestructura y luego ver que pasa con las aplicaciones
-    @staticmethod
-    def run(options):
-        # If the user indicates an IM URL, we use it, if not we use the default value
-        if options.restapi:
-            im_server_url = options.restapi[0]
-        else:
-            im_server_url = IM_URL  
-
-        # Check cluster name, authentication and IM server
-        try:
-            r = ClusterStore.load(options.clustername)
-            im_server_url, infrId_old, _, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
-        except Exception as e:
-            CLI.display(str(e), level=logging.ERROR)
-            sys.exit(1)
-
-        # Para decirle al IM en que cloud lanzar el cluster, se usa la primera linea del auth file (a no ser que se indique lo contrario en el deploy).
-        # Si el usuario no nos da un nuevo auth file ya ordenado, reordenar el auth_data
-        try:
-            if options.auth_file:
-                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
-                auth_data = Authentication.read_auth_data(auth_content)
-                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
-                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
-                auth_data = Authentication.read_auth_data(auth_content)
-            elif options.destination:
-                for auth in auth_data:
-                    if auth.has_key('id') and auth['id'] == options.destination[0]:
-                        dest = auth_data.pop(auth_data.index(auth))
-                        auth_data.insert(0, dest)
-            else:
-                auth_data.reverse()
-        except Exception as e:
-            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
-            sys.exit(1)
-
-        # Recover RADL
-        radl = ""
-        try:
-            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "text/*"}
-            url = "%s/infrastructures/%s/radl" % (im_server_url, infrId_old)
-            resp = requests.request("GET", url, verify=False, headers=headers)
-            if resp.status_code != 200:
-                raise Exception(resp.text)
-            radl = resp.text
-        except Exception as e:
-            CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
-            sys.exit(1)
-
-        # Modificamos el deploy del RADL para no indique en que infraestructura lanzar (y lance en la primera del auth file)
-        radl_obj = parse_radl(radl)
-        for d in radl_obj.gets(deploy):
-                radl_obj.delete(d)
-        new_deploy = deploy('front', 1)
-        radl_obj.add(new_deploy)
-
-        # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
-        # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
-        for s in radl_obj.gets(system):
-            if s.getValue("ec3_class") is not None:
-                radl_obj.delete(s)
-                for c in radl_obj.gets(configure):
-                    if c.getId() == s.getId():
-                        radl_obj.delete(c)
-
-        radl = dump_radl(radl_obj)
-
-        # Clone infrastructure
-        CLI.display("Cloning infrastructure")
-
-        try:
-            #print auth_data
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
-            url = "%s/infrastructures" % im_server_url
-            resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
-            if resp.status_code != 200:
-                raise Exception(resp.text)
-            infrId = os.path.basename(resp.text)
-
-            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
-            CLI.display("Success creating infrastructure " + str(infrId))
-            url = "%s/infrastructures/%s" % (im_server_url, infrId)
-            resp = requests.request("GET", url, verify=False, headers=headers)
-            if resp.status_code != 200:
-                raise Exception(resp.text)
-            vm_ids = []
-            for elem in resp.json()["uri-list"]:
-                vm_ids.append(os.path.basename(list(elem.values())[0]))
-        except Exception as e:
-            CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
-            sys.exit(1)
-        new_clustername = options.clustername + "_cloned"
-
-        vm_id = CmdLaunch.get_front_vm_id(im_server_url, infrId, vm_ids, auth_data)
-
-        CmdLaunch.wait_transfer_save(infrId, vm_id, auth_data, im_server_url, False, False, new_clustername, False, False)
-        CLI.display("Infrastructure successfully cloned with ID: " + str(infrId) + ". The cluster name now is: " + new_clustername)
-
-        # Destroy the old cluster if the user has requested it
-        if options.eliminate:
-            CLI.display("Finally, let's delete the old cluster")
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
-            url = "%s/infrastructures/%s" % (im_server_url, infrId_old)
-            resp = requests.request("DELETE", url, verify=False, headers=headers)
-            ClusterStore.remove(options.clustername)
-            if resp.status_code != 200:
-                CLI.display("Error deleting the old cluster!")
-                raise Exception(resp.text)
-            else:
-                CLI.display("Success deleting the old cluster!")
-        
-        CLI.display("Clone process completed")
-        sys.exit(0)
-
-class CmdMigrate:
-    @staticmethod
-    def parse(subparsers):
-        parser = subparsers.add_parser("migrate", help="migrate a launched cluster together with its workload to another Cloud provider")
-        parser.add_argument("clustername", help="name of the cluster you want to clone")
-        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service. If not indicated, EC3 uses default value (%s)." % IM_URL)
-        parser.add_argument("-d", "--destination", dest="destination", nargs=1, help="Cloud infrastructure destination for the cloned cluster")
-        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="Authorization file")
-        parser.add_argument("-b", "--bucket", dest="bucket", nargs=1, help="Name of the already created bucket where to upload ckpt files")
-        parser.add_argument("-e", "--eliminate", action="store_true", dest="eliminate", default=False, help="Force to destroy the original cluster after its migration")
-        parser.set_defaults(func=CmdMigrate.run)
-
-    @staticmethod
-    def run(options):
-        # If the user indicates an IM URL, we use it, if not we use the default value
-        if options.restapi:
-            im_server_url = options.restapi[0]
-        else:
-            im_server_url = IM_URL  
-
-        # Check if the user has given a bucket name
-        if options.bucket:
-            CLI.display("The S3 bucket used to copy ckpt files is: " + str(options.bucket[0]))
-        else:
-            CLI.display("Error getting S3 bucket: please indicate an already created S3 bucket to perform the migration operation", level=logging.ERROR)
-            sys.exit(1)  
-
-        # Check cluster name, authentication and IM server
-        try:
-            r = ClusterStore.load(options.clustername)
-            im_server_url, infrId, _, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
-        except Exception as e:
-            CLI.display(str(e), level=logging.ERROR)
-            sys.exit(1)
-
-        # Para decirle al IM en que cloud lanzar el cluster, se usa la primera linea del auth file (a no ser que se indique lo contrario en el deploy).
-        # Si el usuario no nos da un nuevo auth file ya ordenado, reordenar el auth_data
-        access_key = ""
-        secret_key = ""
-        try:
-            if options.auth_file:
-                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
-                auth_data = Authentication.read_auth_data(auth_content)
-                if not any([ a.get("type", None) == "EC2" for a in auth_data ]):
-                    CLI.display("Error obtaining AWS credentials. Impossible to connect with S3 to upload ckpt files. Check your auth file", level=logging.ERROR)
-                    sys.exit(1)
-                else:
-                    for a in auth_data:
-                        if a.has_key('id'):
-                            if a['id'] == "ec2" or a['id'] == "s3":
-                                access_key = a['username']
-                                secret_key = a['password']
-                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
-                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
-                auth_data = Authentication.read_auth_data(auth_content)
-            elif options.destination:
-                for auth in auth_data:
-                    if auth.has_key('id') and auth['id'] == options.destination[0]:
-                        dest = auth_data.pop(auth_data.index(auth))
-                        auth_data.insert(0, dest)
-            else:
-                auth_data.reverse()
-        except Exception as e:
-            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
-            sys.exit(1)
-
-        # Recover RADL
-        radl = ""
-        try:
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
-            url = "%s/infrastructures/%s/radl" % (im_server_url, infrId)
-            resp = requests.request("GET", url, verify=False, headers=headers)
-            if resp.status_code != 200:
-                raise Exception(resp.text)
-            radl = resp.text
-        except Exception as e:
-            CLI.display("Error obtaining RADL info: %s" % str(e), level=logging.ERROR)
-            sys.exit(1)
-
-        # Comprobar que el cluster ha sido lanzado con blcr y slurm, en otro caso emitir un error y acabar ejecucion
-        radl_obj = parse_radl(radl)
-        for s in radl_obj.gets(system):
-            if s.getId() == "front":
-                if "blcr" not in s.getValue("ec3_templates_cmd") or "slurm" not in s.getValue("ec3_templates_cmd"):
-                    CLI.display("Error migrating the cluster: Cluster %s is not a SLURM cluster with BLCR installed, so the migration process can't be performed." % str(options.clustername), level=logging.ERROR)
-                    sys.exit(1)
-
-        # Modificamos el deploy del RADL para no indique en que infraestructura lanzar (y lance en la primera del auth file)
-        radl_obj = parse_radl(radl)
-        for d in radl_obj.gets(deploy):
-                radl_obj.delete(d)
-        new_deploy = deploy('front', 1)
-        radl_obj.add(new_deploy)
-
-        # Tambien hay que eliminar la informacion de deploys, configures y systems referente a posibles nodos desplegados en la infraestructura origen
-        # ec3 clone solo clona el frontend, los nodos se encargara CLUES de volver a encenderlos cuando migremos las tareas
-        for s in radl_obj.gets(system):
-            if s.getValue("ec3_class") is not None:
-                radl_obj.delete(s)
-                for c in radl_obj.gets(configure):
-                    if c.getId() == s.getId():
-                        radl_obj.delete(c)
-
-        radl = dump_radl(radl_obj)
-
-        # Clone infrastructure
-        CLI.display("Cloning infrastructure")
-
-        try:
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
-            url = "%s/infrastructures" % im_server_url
-            resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
-            if resp.status_code != 200:
-                raise Exception(resp.text)
-            infrId2 = os.path.basename(resp.text)
-            CLI.display("Success creating infrastructure " + str(infrId2))
-
-            headers = {"Authorization": format_rest_auth_data(auth_data), "Accept": "application/json"}
-            url = "%s/infrastructures/%s" % (im_server_url, infrId2)
-            resp = requests.request("GET", url, verify=False, headers=headers)
-            if resp.status_code != 200:
-                raise Exception(resp.text)
-            vm_ids = []
-            for elem in resp.json()["uri-list"]:
-                vm_ids.append(os.path.basename(list(elem.values())[0]))
-        except Exception as e:
-            CLI.display("Error cloning front-end: %s" % str(e), level=logging.ERROR)
-            sys.exit(1)
-        new_clustername = options.clustername + "_cloned"
-
-        vm_id = CmdLaunch.get_front_vm_id(im_server_url, infrId2, vm_ids, auth_data)
-
-        CmdLaunch.wait_transfer_save(infrId2, vm_id, auth_data, im_server_url, False, False, new_clustername, False, False)
-        CLI.display("Infrastructure successfully cloned with ID: " + str(infrId2) + ". The cluster name now is: " + new_clustername)
-
-        # Obtain the job list running in the cluster
-        front_system = ClusterStore.load(options.clustername).get(system("front"))
-        ip = getPublicIP(front_system)
-        user = front_system.getValue("disk.0.os.credentials.username")
-        key_pem = ""
-        if front_system.getValue("disk.0.os.credentials.private_key"):
-            f = tempfile.NamedTemporaryFile(mode="w", delete=False)
-            f.write(front_system.getValue("disk.0.os.credentials.private_key"))
-            f.close()
-            key_pem = f.name
-        else:
-            passwd = front_system.getValue("disk.0.os.credentials.password")
-        
-        job_list = CmdMigrate.get_job_info(ip, user, passwd, key_pem)
-        
-        if len(job_list) > 0:
-            # Checkpoint all the jobs running in the cluster
-            for key in job_list.keys():
-                try:
-                    CLI.display("Performing a checkpoint to the job "+ key)
-                    if key_pem == "":
-                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol checkpoint create " + key)
-                    else:
-                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol checkpoint create " + key)
-                    CLI.display("Checkpointing performed successfully.")
-                except: 
-                    CLI.display("Error checkpointing the job: %s" % str(key), level=logging.ERROR)
-            
-            # Create the credentials file with the credentials of the user to connect with S3
-            try:
-                if key_pem == "":
-                    run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
-                else:
-                    run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
-            except: 
-                CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
-
-            # Copy the checkpoint files to a bucket in Amazon S3
-            for key in job_list.keys():
-                try:
-                    CLI.display("Uploading checkpoint files to S3")
-                    if key_pem == "":
-                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'sudo aws s3 cp /var/slurm/checkpoint/" + key + ".ckpt s3://" + str(options.bucket[0]) + "/" + key + ".ckpt'")
-                    else:
-                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " sudo aws s3 cp /var/slurm/checkpoint/" + key + ".ckpt s3://" + str(options.bucket[0]) + "/" + key + ".ckpt")
-                    CLI.display("Upload performed succesfully")
-                except:
-                    CLI.display("Error while uploading checkpoint files to S3", level=logging.ERROR)
-
-            # Obtain the IP of the front-end of the cloned cluster
-            front_system_cloned = ClusterStore.load(new_clustername).get(system("front"))
-            ip_cloned = getPublicIP(front_system_cloned)
-            
-            # Create the credentials file with the credentials of the user to connect with S3
-            try:
-                if key_pem == "":
-                    run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
-                else:
-                    run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
-            except: 
-                CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
-            
-            # Download checkpoint files from the bucket in Amazon S3 to the cloned cluster
-            for key in job_list.keys():
-                try:
-                    CLI.display("Downloading checkpoint files to S3")
-                    if key_pem == "":
-                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'sudo aws s3 cp s3://" + str(options.bucket[0]) + "/" + key + ".ckpt /var/slurm/checkpoint/" + key + ".ckpt'")
-                    else:
-                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'sudo aws s3 cp s3://" + str(options.bucket[0]) + "/" + key + ".ckpt /var/slurm/checkpoint/" + key + ".ckpt'")
-                    CLI.display("Download performed succesfully")
-                except:
-                    CLI.display("Error while downloading checkpoint files to S3", level=logging.ERROR)
-                
-            # Restart the jobs in the cloned cluster
-            for key in job_list.keys():
-                try:
-                    CLI.display("Restarting the job "+ key)
-                    if key_pem == "":
-                        run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " scontrol checkpoint restart " + key)
-                    else:
-                        run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " scontrol checkpoint restart " + key)
-                    CLI.display("Restart performed successfully.")
-                except DownNodeError: 
-                    CLI.display("Success restarting the job %s from the checkpointing file" % str(key))
-                except CommandError: 
-                    CLI.display("Error restarting the job: %s" % str(key), level=logging.ERROR)
-        else:
-            CLI.display("There are no jobs running in the cluster.")
-    
-        # Destroy the old cluster if the user has requested it
-        if options.eliminate:
-            CLI.display("Finally, let's delete the old cluster")
-            headers = {"Authorization": format_rest_auth_data(auth_data)}
-            url = "%s/infrastructures/%s" % (im_server_url, infrId)
-            resp = requests.request("DELETE", url, verify=False, headers=headers)
-            ClusterStore.remove(options.clustername)
-            if resp.status_code != 200:
-                CLI.display("Error deleting the old cluster!")
-                raise Exception(resp.text)
-                sys.exit(1)
-            CLI.display("Success deleting the old cluster!")
-        
-        CLI.display("Migration process completed")
-        sys.exit(0)
-
-
-    # Parse the exit of the scontrol SLURM command
-    @staticmethod
-    def parse_scontrol(out):
-    #and exit != "No jobs in the system"
-        if out.find("=") < 0: return []
-        r = []
-        for line in out.split("\n"):
-            line = line.strip()
-            if not line: continue
-            d = {}; r.append(d); s = False; f = None
-            for k in [ j for i in line.split("=") for j in i.rsplit(" ", 1) ]:
-                if s: d[f] = k
-                else: f = k
-                s = not s
-        return r
-
-    # Obtains the list of jobs that are in execution in SLURM
-    @staticmethod
-    def get_job_info(ip, user, passwd, key_pem):
-        if key_pem == "":
-            output = CmdMigrate.parse_scontrol(run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
-        else:
-            output = CmdMigrate.parse_scontrol(run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol -o show jobs -a"))
-        job_list = {}
-        if output:
-            for key in output:
-                if key["JobState"] == "RUNNING": 
-                    job_list [str(key["JobId"])] = str(key["BatchHost"])
-        return job_list
 
 class CmdStop:
     @staticmethod
@@ -1731,7 +1127,7 @@ if __name__ == "__main__":
     if sys.version_info[:2] <= (2, 7):
         get_input = raw_input
 
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy, CmdStop, CmdRestart]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
