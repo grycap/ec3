@@ -20,6 +20,7 @@
 
 import sys, time, logging, os, argparse, tempfile, random, re, io, subprocess
 import requests
+import toscaparser
 try:
     # to avoid Warnings 
     import urllib3
@@ -42,9 +43,6 @@ except NameError:
     unicode = str
 
 from IM2.auth import Authentication
-from IM2.radl import parse_radl, dump_radl as dump_radl_future, dump_radl_json, dump_radl_simple
-import IM2.radl.radl as IM_RADL
-from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Features, Aspect, FeaturedAspect
 
 # Disable CERTIFICATE VERIFY
 try:
@@ -70,41 +68,6 @@ DELAY = 5
 # Max number of errors permitted in the VM status check
 STATE_CHECK_RETRIES = 3
 
-def dump_radl(rin, aspect=None, order_deploys=False):
-    r = rin.clone()
-
-    if order_deploys:
-        # Delete the deploys to add it now in correct order
-        for a in (r.gets(deploy)):
-            r.delete(a)
-
-        dep_front = None
-        other_deps = []
-        for dep in rin.gets(deploy):
-            if dep.id == "front" and dep.vm_number == 1:
-                dep_front = dep
-            else:
-                other_deps.append(dep)
-        if not dep_front:
-            raise Exception("There must be at least one deploy with name 'front' and VM number 1")
-        else:
-            r.add(dep_front)
-            for dep in other_deps:
-                r.add(dep)
-
-    for a in r.aspects:
-        if not isinstance(a, FeaturedAspect): continue
-        for p in a.props:
-            v = a.getValue(p, iftuple="default")
-            # Replace references by their ids
-            if isinstance(v, FeaturedAspect):
-                a.setValue(p, v.getId())
-            # Replace list of strings and numbers by strings
-            elif isinstance(v, (list, set)) and v and isinstance(list(v)[0], (str, int, float)):
-                a.setValue(p, ",".join(map(str, v)))
-    if aspect:
-        r = RADL([r.get(aspect)], addaspects=False, check=False)
-    return dump_radl_future(r)
 
 def dump_json(d):
     if json:
@@ -632,7 +595,6 @@ class CmdLaunch:
         parser = subparsers.add_parser("launch", help="launch a new cluster")
         parser.add_argument("clustername", help="name of the new cluster")
         parser.add_argument("templates", nargs="+", help="filename in `templates` without extension")
-        parser.add_argument("--add", action="append", help="add a piece of RADL")
         parser.add_argument("-n", "--not-store", action="store_true", default=False, help="don't store the cluster nor check the cluster name")
         parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_radl", help="print final RADL description of the cluster")
         parser.add_argument("--json", action="store_true", default=False, help="print cluster information in JSON format")
@@ -676,7 +638,7 @@ class CmdLaunch:
 
         # Instantiate templates
         try:
-            radl = CmdLaunch.generate_radl(options.templates, options.add if options.add else [], auth_content)
+            radl = CmdLaunch.generate_tosca(options.templates, auth_content)
         except Exception as e:
             CLI.display("Error generating RADL: %s Check the templates used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
             sys.exit(1)
