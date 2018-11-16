@@ -1735,6 +1735,44 @@ class CmdRestart:
                         level=logging.ERROR)
             sys.exit(1)
 
+
+class CmdTransfer:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("transfer", help="transfer a previously launched cluster")
+        parser.add_argument("clustername", help="name of the cluster to restart")
+        parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service that is outside the cluster")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file")
+        parser.set_defaults(func=CmdTransfer.run)
+
+    @staticmethod
+    def run(options):
+        # If the user indicates an IM URL, we use it, if not we use the default IM
+        if options.restapi:
+            im_server_url = options.restapi[0]
+        else:
+            im_server_url = IM_URL
+        try:
+            r = ClusterStore.load(options.clustername)
+            new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            state = r.get(system("front")).getValue("state", default=system.UNKNOWN)
+
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth = Authentication.read_auth_data(auth_content)
+
+            if state == system.CONFIGURED and new_im_server_url and new_im_server_url != im_server_url:
+                CLI.display("Cluster olready transferred.")
+                sys.exit(0)
+            else:
+                CmdLaunch.wait_transfer_save(infrId, vmId, auth, im_server_url, False, False,
+                                             options.clustername, False, False)
+        except Exception as e:
+            CLI.display("Error transfering cluster '%s': %s" % (options.clustername, str(e)),
+                        level=logging.ERROR)
+            sys.exit(1)
+
+
 # TODO: muy probablemente no haga falta esto del run_command y se pueda hacer como hace eloy con os.execlp
 class CommandError(Exception):pass
 
@@ -1769,7 +1807,7 @@ if __name__ == "__main__":
     if sys.version_info[:2] <= (2, 7):
         get_input = raw_input
 
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart, CmdTransfer]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
