@@ -1762,7 +1762,7 @@ class CmdTransfer:
                 auth = Authentication.read_auth_data(auth_content)
 
             if state == system.CONFIGURED and new_im_server_url and new_im_server_url != im_server_url:
-                CLI.display("Cluster olready transferred.")
+                CLI.display("Cluster already transferred.")
                 sys.exit(0)
             else:
                 CmdLaunch.wait_transfer_save(infrId, vmId, auth, im_server_url, False, False,
