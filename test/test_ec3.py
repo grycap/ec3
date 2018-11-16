@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os
 import unittest
 import logging
 from mock import patch, MagicMock, mock_open
@@ -32,7 +33,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart, CmdSsh
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdDestroy, CmdReconfigure, CmdStop, CmdRestart, CmdSsh
 
 cluster_data = """system front (
                     state = 'configured' and
@@ -145,231 +146,29 @@ class TestEC3(unittest.TestCase):
         CLI.logger = logging.getLogger('ec3')
         CLI.options = cli_options
         cluster_store.list.return_value = ["name"]
-        Options = namedtuple('Options', ['not_store', 'clustername', 'auth_file', 'restapi', 'dry_run', 'templates',
-                                         'add', 'golden_image', 'print_radl', 'json', 'yes', 'destroy'])
+        Options = namedtuple('Options', ['not_store', 'clustername', 'auth_file', 'restapi', 'template',
+                                         'yes', 'destroy'])
         auth_file = [MagicMock()]
+        tests_path = os.path.dirname(os.path.abspath(__file__))
+        abs_file_path = os.path.join(tests_path, "files/tosca.yaml")
         auth_file[0].readlines.return_value = ["type = InfrastructureManager; username = user; password = pass"]
         options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
-                          dry_run=True, templates=['ubuntu-ec2','kubernetes'], add=False, golden_image=False,
-                          print_radl=True, json=False, yes=True, destroy=False)
+                          template=abs_file_path, yes=True, destroy=False)
+
         with self.assertRaises(SystemExit) as ex1:
             CmdLaunch.run(options)
         self.assertEquals("1" ,str(ex1.exception))
 
+        requests.side_effect = self.get_response
         cluster_store.list.return_value = []
         with self.assertRaises(SystemExit) as ex2:
             CmdLaunch.run(options)
         self.assertEquals("0" ,str(ex2.exception))
 
-        radl = """system front (
-  net_interface.1.dns_name = 'kubeserverpublic' and
-  disk.0.os.credentials.username = 'ubuntu' and
-  disk.0.applications contains (
-    name = 'ansible.modules.grycap.kubernetes'
-  ) and
-  disk.0.applications contains (
-    name = 'ansible.modules.grycap.clues'
-  ) and
-  disk.0.applications contains (
-    name = 'ansible.modules.grycap.im'
-  ) and
-  cpu.count >= 2 and
-  net_interface.1.connection = 'public' and
-  queue_system = 'kubernetes' and
-  net_interface.0.dns_name = 'kubeserver' and
-  instance_type = 't1.micro' and
-  ec3_templates = 'im,clues2,kubernetes' and
-  disk.0.image.url = 'aws://us-east-1/ami-30519058' and
-  auth = 'username = user ; password = pass ; type = InfrastructureManager
-' and
-  net_interface.0.connection = 'private' and
-  memory.size >= 2048m and
-  disk.0.os.name = 'linux' and
-  ec3_templates_cmd = 'ubuntu-ec2 kubernetes'
-)
-
-system wn (
-  disk.0.image.url = 'aws://us-east-1/ami-30519058' and
-  instance_type = 't1.micro' and
-  ec3_max_instances = 10 and
-  memory.size >= 2048m and
-  net_interface.0.connection = 'private' and
-  disk.0.os.name = 'linux' and
-  disk.0.os.credentials.username = 'ubuntu'
-)
-
-network public (
-  outbound = 'yes' and
-  outports = '6443/tcp,8800/tcp'
-)
-
-network private (
-
-)
-
-configure front (
-@begin
-- tasks:
-  - iptables:
-      action: insert
-      chain: INPUT
-      destination_port: '{{item|dirname}}'
-      jump: ACCEPT
-      protocol: '{{item|basename}}'
-    when: ansible_os_family == "RedHat"
-    with_items: '{{OUTPORTS.split('','')}}'
-  - firewalld:
-      immediate: true
-      permanent: true
-      port: '{{item}}'
-      state: enabled
-    ignore_errors: true
-    when: ansible_os_family == "RedHat"
-    with_items: '{{OUTPORTS.split('','')}}'
-  vars:
-    OUTPORTS: 6443/tcp,8800/tcp
-- roles:
-  - kube_api_server: '{{ IM_NODE_PRIVATE_IP }}'
-    kube_apiserver_options:
-    - option: --insecure-port
-      value: '8080'
-    kube_server: kubeserver
-    role: grycap.kubernetes
-- roles:
-  - role: grycap.im
-- roles:
-  - auth: '{{AUTH}}'
-    clues_queue_system: '{{QUEUE_SYSTEM}}'
-    max_number_of_nodes: '{{ NNODES }}'
-    role: grycap.clues
-    vnode_prefix: wn
-  vars:
-    AUTH: 'username = user ; password = pass ; type = InfrastructureManager
-
-      '
-    NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max")
-      }}'
-    QUEUE_SYSTEM: kubernetes
-    SYSTEMS:
-    - auth: 'username = user ; password = pass ; type = InfrastructureManager
-
-        '
-      class: system
-      cpu.count_max: inf
-      cpu.count_min: 2
-      disk.0.applications:
-      - name: ansible.modules.grycap.kubernetes
-      - name: ansible.modules.grycap.clues
-      - name: ansible.modules.grycap.im
-      disk.0.image.url: aws://us-east-1/ami-30519058
-      disk.0.os.credentials.username: ubuntu
-      disk.0.os.name: linux
-      ec3_templates:
-      - im
-      - clues2
-      - kubernetes
-      ec3_templates_cmd: ubuntu-ec2 kubernetes
-      id: front
-      instance_type: t1.micro
-      memory.size_max: inf
-      memory.size_min: 2048
-      net_interface.0.connection:
-        class: network
-        id: private
-        reference: true
-      net_interface.0.dns_name: kubeserver
-      net_interface.1.connection:
-        class: network
-        id: public
-        reference: true
-      net_interface.1.dns_name: kubeserverpublic
-      queue_system: kubernetes
-    - class: network
-      id: public
-      outbound: 'yes'
-      outports:
-      - 6443/tcp
-      - 8800/tcp
-    - class: network
-      id: private
-    - class: system
-      disk.0.image.url: aws://us-east-1/ami-30519058
-      disk.0.os.credentials.username: ubuntu
-      disk.0.os.name: linux
-      ec3_max_instances_max: 10
-      ec3_max_instances_min: 10
-      id: wn
-      instance_type: t1.micro
-      memory.size_max: inf
-      memory.size_min: 2048
-      net_interface.0.connection:
-        class: network
-        id: private
-        reference: true
-
-@end
-)
-
-configure wn (
-@begin
-- tasks:
-  - iptables:
-      action: insert
-      chain: INPUT
-      destination_port: '{{item|dirname}}'
-      jump: ACCEPT
-      protocol: '{{item|basename}}'
-    when: ansible_os_family == "RedHat"
-    with_items: '{{OUTPORTS.split('','')}}'
-  - firewalld:
-      immediate: true
-      permanent: true
-      port: '{{item}}'
-      state: enabled
-    ignore_errors: true
-    when: ansible_os_family == "RedHat"
-    with_items: '{{OUTPORTS.split('','')}}'
-  vars:
-    OUTPORTS: 6443/tcp,8800/tcp
-- roles:
-  - kube_server: kubeserver
-    kube_type_of_node: wn
-    role: grycap.kubernetes
-
-@end
-)
-
-deploy front 1
-"""
-
-        if sys.version_info < (3, 0):
-            self.assertEquals(display.call_args_list[1][0][0], radl)
-
-        requests.side_effect = self.get_response
-        options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
-                          dry_run=False, templates=['ubuntu-ec2','kubernetes'], add=False, golden_image=False,
-                          print_radl=False, json=False, yes=True, destroy=False)
-
-        with self.assertRaises(SystemExit) as ex2:
-            CmdLaunch.run(options)
-        self.assertEquals("0" ,str(ex2.exception))
-
-        self.assertEquals(display.call_args_list[4][0][0], "Infrastructure successfully created with ID: infid")
-        self.assertEquals(display.call_args_list[5][0][0], "Front-end configured with IP 8.8.8.8")
-        self.assertEquals(display.call_args_list[6][0][0], "Transferring infrastructure")
-        self.assertEquals(display.call_args_list[7][0][0], "Front-end ready!")
-
-    def test_templates(self):
-        Options = namedtuple('Options', ['search', 'name', 'json', 'full'])
-        options = Options(search=[None], name=[None], json=False, full=False)
-        old_stdout = sys.stdout
-        sys.stdout = StringIO()
-        CmdTemplates.run(options)
-        res = sys.stdout.getvalue()
-        sys.stdout = old_stdout
-        self.assertIn("          name              kind                                         summary                                      \n", res)
-        self.assertIn("----------------------------------------------------------------------------------------------------------------------\n", res)
-        self.assertIn("         galaxy           component Galaxy is an open, web-based platform for data intensive biomedical research.     \n", res)
+        self.assertEquals(display.call_args_list[3][0][0], "Infrastructure successfully created with ID: infid")
+        self.assertEquals(display.call_args_list[4][0][0], "Front-end configured with IP 8.8.8.8")
+        self.assertEquals(display.call_args_list[5][0][0], "Transferring infrastructure")
+        self.assertEquals(display.call_args_list[6][0][0], "Front-end ready!")
 
     @patch('requests.request')
     @patch('ec3.ClusterStore')
@@ -444,27 +243,6 @@ deploy front 1
 
         with self.assertRaises(SystemExit) as ex:
             CmdReconfigure.run(options)
-        self.assertEquals("0" ,str(ex.exception))
-
-    @patch('requests.request')
-    @patch('ec3.ClusterStore')
-    @patch('ec3.CLI.display')
-    def test_clone(self, display, cluster_store, requests):
-        auth_file = [MagicMock()]
-        auth_file[0].readlines.return_value = ["type = InfrastructureManager; username = user; password = pass"]
-        Options = namedtuple('Options', ['restapi', 'json', 'clustername', 'destination', 'auth_file', 'eliminate'])
-        options = Options(restapi=['http://server.com:8800'], json=False, clustername='name',
-                          destination=["http://server2.com:8800"], auth_file=auth_file, eliminate=True)
-        
-        cluster_store.list.return_value = ["name"]
-        radl, _ = self.gen_radl()
-        cluster_store.load.return_value = radl
-        auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
-        cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
-        requests.side_effect = self.get_response
-
-        with self.assertRaises(SystemExit) as ex:
-            CmdClone.run(options)
         self.assertEquals("0" ,str(ex.exception))
 
     @patch('requests.request')

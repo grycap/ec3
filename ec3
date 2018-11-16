@@ -72,6 +72,23 @@ DELAY = 5
 STATE_CHECK_RETRIES = 3
 
 
+def dump_radl(rin):
+    r = rin.clone()
+
+    for a in r.aspects:
+        if not isinstance(a, FeaturedAspect): continue
+        for p in a.props:
+            v = a.getValue(p, iftuple="default")
+            # Replace references by their ids
+            if isinstance(v, FeaturedAspect):
+                a.setValue(p, v.getId())
+            # Replace list of strings and numbers by strings
+            elif isinstance(v, (list, set)) and v and isinstance(list(v)[0], (str, int, float)):
+                a.setValue(p, ",".join(map(str, v)))
+
+    return dump_radl_future(r)
+
+
 def dump_json(d):
     if json:
         return json.dumps(d, indent=4, separators=(",", ": "))
@@ -257,7 +274,7 @@ class ClusterStore:
     def save(clustername, r):
         ClusterStore._check_dir()
         f = open(os.path.join(ClusterStore.DIR, clustername), "w")
-        f.write(dump_radl_future(r))
+        f.write(dump_radl(r))
         f.close()
      
     @staticmethod
@@ -801,7 +818,7 @@ class CmdShow:
     def run(options):
         try:
             r = ClusterStore.load(options.clustername, options.refresh)
-            output = dump_radl_json(r) if options.json else dump_radl_future(r)
+            output = dump_radl_json(r) if options.json else dump_radl(r)
             CLI.display(output + "\n")
         except Exception as e:
             CLI.display("Error showing cluster '%s': %s" % (options.clustername, str(e)),
