@@ -947,6 +947,10 @@ class CmdLaunch:
         finally:
             # Save cluster
             if system_front and not options_not_store:
+                system_front.setValue("__im_server", im_server_url)
+                system_front.setValue("__infrastructure_id", infrId)
+                system_front.setValue("__vm_id", vmId)
+                system_front.setValue("auth", json.dumps(auth_data))
                 system_front.setValue("nodes", len(res if res else [0])-1)
                 ClusterStore.save(options_clustername, radl)
 
