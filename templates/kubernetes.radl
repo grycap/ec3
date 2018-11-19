@@ -36,6 +36,7 @@ configure front (
       kube_server: 'kubeserver'
       kube_apiserver_options: [{option: "--insecure-port", value: "8080"}]
       kube_api_server: '{{ IM_NODE_PRIVATE_IP }}'
+      kube_apply_repos: []
 @end
 )
 
