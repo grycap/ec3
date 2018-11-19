@@ -721,8 +721,6 @@ class CmdLaunch:
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
                                         DELAY)
         except Exception as e:
-            import traceback
-            traceback.print_exc(file=sys.stdout)
             CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
@@ -779,6 +777,10 @@ class CmdLaunch:
         finally:
             # Save cluster
             if system_front and not options_not_store:
+                system_front.setValue("__im_server", im_server_url)
+                system_front.setValue("__infrastructure_id", infrId)
+                system_front.setValue("__vm_id", vmId)
+                system_front.setValue("auth", json.dumps(auth_data))
                 system_front.setValue("nodes", len(res if res else [0])-1)
                 ClusterStore.save(options_clustername, radl)
 
