@@ -31,6 +31,8 @@ def UnitToValue(unit):
 	if not unit or unit.upper() in frozenset(["ECU", "GCEU", "HRZ"]):
 		return 1
 	unit = unit[0].upper()
+	if unit == "B":
+		return 1
 	if unit == "K":
 		return 1024
 	if unit == "M":

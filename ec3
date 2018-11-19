@@ -721,6 +721,8 @@ class CmdLaunch:
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
                                         DELAY)
         except Exception as e:
+            import traceback
+            traceback.print_exc(file=sys.stdout)
             CLI.display("Error while configuring the infrastructure: %s" % str(e), level=logging.ERROR, exception=True)
             if options_destroy:
                 try:
@@ -1141,7 +1143,7 @@ class CmdTransfer:
                 sys.exit(0)
             else:
                 CmdLaunch.wait_transfer_save(infrId, vmId, auth, im_server_url, False, False,
-                                             options.clustername, False, False)
+                                             options.clustername)
         except Exception as e:
             CLI.display("Error transfering cluster '%s': %s" % (options.clustername, str(e)),
                         level=logging.ERROR)
