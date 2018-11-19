@@ -233,6 +233,7 @@ configure front (
     kube_apiserver_options:
     - option: --insecure-port
       value: '8080'
+    kube_apply_repos: []
     kube_server: kubeserver
     role: grycap.kubernetes
 - roles:
