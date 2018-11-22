@@ -59,7 +59,8 @@ except:
 VERSION = '2.0.1'
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
-# RADL template path
+# TOSCA files template path
+TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates", "/home/micafer/codigo/ec3/templates"]
 # Path where to store launched clusters
 CLUSTER_STORE_PATH = "~/.ec3/clusters"
 # Config file path
@@ -120,6 +121,16 @@ def getPublicIP(s):
         if s.getValue("net_interface.%d.connection" % i, default=network("")).getValue("outbound") == "yes":
             return s.getValue("net_interface.%d.ip" % i)
     return None
+
+
+def get_content_from_template_file(filename):
+    t = [ os.path.join(os.path.expanduser(base_path), filename) for base_path in TEMPLATE_PATHS
+          if os.path.isfile(os.path.join(os.path.expanduser(base_path), filename)) ]
+    if not t: raise Exception("File not found in %s" % TEMPLATE_PATHS)
+    f = open(t[0], "r")
+    c = f.read()
+    f.close()
+    return c
 
 
 def format_rest_auth_data(auth_data):
@@ -504,25 +515,81 @@ class CmdLaunch:
     def parse(subparsers):
         parser = subparsers.add_parser("launch", help="launch a new cluster")
         parser.add_argument("clustername", help="name of the new cluster")
-        parser.add_argument("template", help="Input TOSCA file")
+        parser.add_argument("templates", nargs="+", help="filename in `templates` without extension")
         parser.add_argument("-n", "--not-store", action="store_true", default=False, help="don't store the cluster nor check the cluster name")
-        parser.add_argument("--json", action="store_true", default=False, help="print cluster information in JSON format")
+        parser.add_argument("-p", "--print", action="store_true", default=False, dest="print_tosca", help="print final RADL description of the cluster")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
     #   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
     #   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
         parser.add_argument("-u", "--restapi-url", dest="restapi", nargs=1, default=[IM_URL], help="URL to IM REST API service")
+        parser.add_argument("--dry-run", action="store_true", dest="dry_run", default=False, help="don't launch any cluster", config=False)
         parser.add_argument("--on-error-destroy", action="store_true", dest="destroy", default=False, help="on error try to destroy the infrastructure")
         parser.add_argument("-y", "--yes", action="store_true", dest="yes", default=False, help="say yes to the warning about insecure connections")
         parser.set_defaults(func=CmdLaunch.run)
 
     @staticmethod
-    def add_extra_data(yamlo, auth_data):
-        for _, node in yamlo["topology_template"]["node_templates"].items():
+    def generate_tosca(templates, auth_data):
+        merged_yaml = {}
+        for template in templates:
+            yamlo = yaml.safe_load(get_content_from_template_file("%s.yaml" % template))
+
+            if merged_yaml:
+                for item in ["inputs", "node_templates", "outputs"]:
+                    if item in yamlo["topology_template"]:
+                        if item not in merged_yaml["topology_template"]:
+                            merged_yaml["topology_template"][item] = {}
+                        merged_yaml["topology_template"][item].update(yamlo["topology_template"][item])
+            else:
+                merged_yaml = yamlo
+        
+        CmdLaunch.check_tosca(merged_yaml)
+        
+        for _, node in merged_yaml["topology_template"]["node_templates"].items():
             if node["type"] == "tosca.nodes.indigo.ElasticCluster":
                 if "properties" not in node:
                     node["properties"] = {}
                 node["properties"]["im_auth"] = format_rest_auth_data(auth_data)
                 node["properties"]["powermanager_plugin"] = "im"
+        
+        return merged_yaml
+
+    @staticmethod
+    def check_tosca(tosca):
+        """
+        Check that the TOSCA received is "EC3 correct".
+        """ 
+        ToscaTemplate(yaml_dict_tpl=copy.deepcopy(tosca))
+
+        front = None
+        wn = None
+        for nname, node in tosca["topology_template"]["node_templates"].items():
+            if node["type"] in ["tosca.nodes.indigo.Compute", "tosca.nodes.Compute"]:
+                if nname == "front":
+                    front = node
+                elif nname == "wn":
+                    wn = node
+                
+        if not front:
+            raise Exception("There must be at least one Compute with name 'front'")
+        else:
+            try:
+                image = front["capabilities"]["os"]["properties"]["image"]
+            except:
+                image = None
+            if not image:
+                raise Exception("Compute 'front' has no image URL.")
+
+        if not wn:
+            raise Exception("There must be one Compute with name 'wn'")
+        else:
+            try:
+                image = wn["capabilities"]["os"]["properties"]["image"]
+            except:
+                image = None
+            if not image:
+                raise Exception("Compute 'wn' has no image URL.")
+
+        return True
 
     @staticmethod
     def run(options):
@@ -554,14 +621,17 @@ class CmdLaunch:
 
         # Instantiate templates
         try:
-            with open(options.template, "r") as f:
-                yaml_str = f.read()
-            yamlo = yaml.safe_load(yaml_str)
-            CmdLaunch.check_tosca(yamlo)
-            CmdLaunch.add_extra_data(yamlo, auth_data)
+            yamlo = CmdLaunch.generate_tosca(options.templates, auth_data)
         except Exception as e:
-            CLI.display("Error parsing TOSCA: %s Check the template used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
+            CLI.display("Error generating TOSCA: %s Check the templates used. Have you provided a name for the cluster?." % str(e), level=logging.ERROR)
             sys.exit(1)
+
+        # Finish if dry run
+        if options.dry_run:
+            if options.print_tosca:
+                output = yaml.safe_dump(yamlo, indent=2)
+                CLI.display(output + "\n")
+            sys.exit(0)
 
         # Create infrastructure
         CLI.display("Creating infrastructure")
@@ -609,44 +679,6 @@ class CmdLaunch:
         except Exception as e:
             CLI.display("Error getting front-end VM ID: %s. Assuming 0." % str(e), level=logging.WARNING)
         return "0"
-
-    @staticmethod
-    def check_tosca(tosca):
-        """
-        Check that the TOSCA received is "EC3 correct".
-        """ 
-        ToscaTemplate(yaml_dict_tpl=copy.deepcopy(tosca))
-
-        front = None
-        wn = None
-        for nname, node in tosca["topology_template"]["node_templates"].items():
-            if node["type"] in ["tosca.nodes.indigo.Compute", "tosca.nodes.Compute"]:
-                if nname == "front":
-                    front = node
-                elif nname == "wn":
-                    wn = node
-                
-        if not front:
-            raise Exception("There must be at least one Compute with name 'front'")
-        else:
-            try:
-                image = front["capabilities"]["os"]["properties"]["image"]
-            except:
-                image = None
-            if not image:
-                raise Exception("Compute 'front' has no image URL.")
-
-        if not wn:
-            raise Exception("There must be one Compute with name 'wn'")
-        else:
-            try:
-                image = wn["capabilities"]["os"]["properties"]["image"]
-            except:
-                image = None
-            if not image:
-                raise Exception("Compute 'wn' has no image URL.")
-
-        return True
 
     @staticmethod
     def get_vm_info(im_server_url, infrId, vmId, auth_data):
@@ -997,6 +1029,52 @@ class CmdReconfigure:
         sys.exit(0)
 
 
+class CmdTemplates:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("templates", help="list available templates")
+        parser.add_argument("-s", "--search", dest="search", nargs=1, default=[None], help="show only templates in which the expression appears", config=False)
+        parser.add_argument("-n", "--name", dest="name", nargs=1, default=[None], help="show only the template with this name", config=False)
+        parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
+        parser.add_argument("-f", "--full-description", dest="full", action="store_true", default=False, help="show full description for every template")
+        parser.set_defaults(func=CmdTemplates.run)
+
+    @staticmethod
+    def run(options):
+        info = []
+        templates = set()
+        search = re.compile(options.search[0], re.IGNORECASE) if options.search[0] else None
+        for t in [ f.rsplit(".")[0] for p in TEMPLATE_PATHS if os.path.isdir(os.path.expanduser(p)) for f in os.listdir(os.path.expanduser(p)) if os.path.isfile(os.path.join(os.path.expanduser(p), f)) and f.endswith("yaml") ]:
+            if t in templates: continue
+            if options.name[0] and options.name[0] != t: continue
+            templates.add(t)
+            try:
+                r = yaml.safe_load(get_content_from_template_file(t + ".yaml"))
+            except Exception as e:
+                CLI.display("Error processing '%s': %s" % (t, str(e)), level=logging.ERROR, exception=True)
+                sys.exit(1)
+            kind = ""
+            short = "" 
+            desc = ""
+            if "metadata" in r:
+                if "kind" in r["metadata"]:
+                    kind = r["metadata"]["kind"]
+                if "short" in r["metadata"]:
+                    short = r["metadata"]["short"]
+                if "desc" in r["metadata"]: 
+                    desc = r["metadata"]["desc"]
+            if (search and not re.search(search, " ".join([ t, kind, short, desc ]))): continue
+            info.append(dict(name=t, kind=kind, summary=short[0:80], description=desc))
+        info = sorted(info, key=lambda x: x["name"])
+        if options.json:
+            output = dump_json(info)
+        elif options.full:
+            output = dump_list(info, ["name", "kind", "summary", "description"])
+        else:
+            output = dump_table(info, ["name", "kind", "summary"], {"summary": "<"})
+        sys.stdout.write(output + "\n")
+
+
 class CmdStop:
     @staticmethod
     def parse(subparsers):
@@ -1178,7 +1256,7 @@ if __name__ == "__main__":
     if sys.version_info[:2] <= (2, 7):
         get_input = raw_input
 
-    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy, CmdStop, CmdRestart, CmdTransfer]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy, CmdStop, CmdRestart, CmdTransfer, CmdTemplates]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:

@@ -1,0 +1,25 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - indigo_custom_types: https://raw.githubusercontent.com/indigo-dc/tosca-types/master/custom_types.yaml
+
+metadata:
+  kind: application
+  short: JupyterHub
+
+description: >
+  TOSCA test for launching a Virtual Elastic Cluster. It will launch
+  a single front-end that will be in change of managing the elasticity
+  using the specified LRMS (torque, sge, slurm and condor) workload.
+
+topology_template:
+
+  node_templates:
+
+    jupyterhub:
+      type: tosca.nodes.indigo.JupyterHub
+      properties:
+        spawner: kubernetes
+      requirements:
+        - host: front
+        - dependency: lrms_front_end

@@ -1,0 +1,121 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - indigo_custom_types: https://raw.githubusercontent.com/indigo-dc/tosca-types/clues_powermanager_plugin/custom_types.yaml
+ 
+metadata:
+  kind: base
+  short: Kubernetes Cluster
+
+description: >
+  TOSCA test for launching a Virtual Elastic Cluster. It will launch
+  a single front-end that will be in change of managing the elasticity
+  using the specified LRMS (torque, sge, slurm and condor) workload.
+
+topology_template:
+  inputs:
+    wn_num:
+      type: integer
+      description: Maximum number of WNs in the elastic cluster
+      default: 5
+      required: yes
+
+    fe_cpus:
+      type: integer
+      description: Numer of CPUs for the front-end node
+      default: 1
+      required: yes
+
+    fe_mem:
+      type: scalar-unit.size
+      description: Amount of Memory for the front-end node
+      default: 1 GB
+      required: yes
+
+    wn_cpus:
+      type: integer
+      description: Numer of CPUs for the WNs
+      default: 1
+      required: yes
+
+    wn_mem:
+      type: scalar-unit.size
+      description: Amount of Memory for the WNs
+      default: 1 GB
+      required: yes
+
+    admin_username:
+      type: string
+      description: Username of the admin user
+      default: kubeuser
+    admin_token:
+      type: string
+      description: Access Token for the admin user
+      default: not_very_secret_token
+
+  node_templates:
+
+    elastic_cluster_front_end:
+      type: tosca.nodes.indigo.ElasticCluster
+      requirements:
+        - lrms: lrms_front_end
+        - wn: wn_node
+
+    lrms_front_end:
+      type: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+      properties:
+        admin_username:  { get_input: admin_username }
+        admin_token: { get_input: admin_token }
+      requirements:
+        - host: front
+
+    front:
+      type: tosca.nodes.indigo.Compute
+      capabilities:
+        endpoint:
+          properties:
+            dns_name: kubeserver
+            network_name: PUBLIC
+            port: 30443
+            protocol: tcp
+        host:
+          properties:
+            num_cpus: { get_input: fe_cpus }
+            mem_size: { get_input: fe_mem }
+        os:
+          properties:
+              image: one://onecloud.i3m.upv.es/847
+
+    wn_node:
+      type: tosca.nodes.indigo.LRMS.WorkerNode.Kubernetes
+      properties:
+        front_end_ip: { get_attribute: [ front, private_address, 0 ] }
+      capabilities:
+        wn:
+          properties:
+            max_instances: { get_input: wn_num }
+            min_instances: 0
+      requirements:
+        - host: wn
+            
+    wn:
+      type: tosca.nodes.indigo.Compute
+      capabilities:
+        scalable:
+          properties:
+            count: 0
+        host:
+          properties:
+            num_cpus: { get_input: wn_cpus }
+            mem_size: { get_input: wn_mem }
+        os:
+          properties:
+              image: one://onecloud.i3m.upv.es/847
+
+  outputs:
+    cluster_ip:
+      value: { get_attribute: [ front, public_address, 0 ] }
+    cluster_creds:
+      value: { get_attribute: [ front, endpoint, credential, 0 ] }
+
+

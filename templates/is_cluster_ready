@@ -1,9 +1,0 @@
-#!/bin/bash
-
-LINES=`ps aux | grep "ansible" | wc -l`
-if [ $LINES -gt 1 -o ! -f /etc/init.d/im ]
-then
-        echo "Cluster is still configuring."
-else
-        echo "Cluster configured!"
-fi

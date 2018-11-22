@@ -33,7 +33,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdDestroy, CmdReconfigure, CmdStop, CmdRestart, CmdSsh
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdDestroy, CmdReconfigure, CmdStop, CmdRestart, CmdSsh, CmdTemplates
 
 cluster_data = """system front (
                     state = 'configured' and
@@ -146,21 +146,22 @@ class TestEC3(unittest.TestCase):
         CLI.logger = logging.getLogger('ec3')
         CLI.options = cli_options
         cluster_store.list.return_value = ["name"]
-        Options = namedtuple('Options', ['not_store', 'clustername', 'auth_file', 'restapi', 'template',
-                                         'yes', 'destroy'])
+        Options = namedtuple('Options', ['not_store', 'clustername', 'auth_file', 'restapi', 'templates',
+                                         'yes', 'destroy', 'dry_run', 'print_tosca'])
+        requests.side_effect = self.get_response
         auth_file = [MagicMock()]
-        tests_path = os.path.dirname(os.path.abspath(__file__))
-        abs_file_path = os.path.join(tests_path, "files/tosca.yaml")
         auth_file[0].readlines.return_value = ["type = InfrastructureManager; username = user; password = pass"]
         options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
-                          template=abs_file_path, yes=True, destroy=False)
+                          templates=['slurm', 'galaxy'], yes=True, destroy=False, dry_run=True, print_tosca=True)
 
         with self.assertRaises(SystemExit) as ex1:
             CmdLaunch.run(options)
         self.assertEquals("1" ,str(ex1.exception))
 
-        requests.side_effect = self.get_response
         cluster_store.list.return_value = []
+        options = Options(not_store=False, clustername="name", auth_file=auth_file, restapi=['http://server.com:8800'],
+                          templates=['slurm', 'galaxy'], yes=True, destroy=False, dry_run=False, print_tosca=False)
+
         with self.assertRaises(SystemExit) as ex2:
             CmdLaunch.run(options)
         self.assertEquals("0" ,str(ex2.exception))
@@ -318,6 +319,16 @@ class TestEC3(unittest.TestCase):
             priv_key_file = display.call_args_list[1][0][0][7:21]
         with open(priv_key_file, "r") as f:
             self.assertEquals(f.read(), "priv_key")
+
+    def test_templates(self):
+        Options = namedtuple('Options', ['search', 'name', 'json', 'full'])
+        options = Options(search=['slurm'], name=[None], json=False, full=False)
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        CmdTemplates.run(options)
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEquals(res, " name   kind     summary    \n----------------------------\n slurm  base SLURM Cluster  \n")
 
 
 if __name__ == "__main__":
