@@ -7,10 +7,7 @@ metadata:
   kind: base
   short: SLURM Cluster
 
-description: >
-  TOSCA test for launching a Virtual Elastic Cluster. It will launch
-  a single front-end that will be in change of managing the elasticity
-  using the specified LRMS (torque, sge, slurm and condor) workload.
+description: TOSCA template for launching a SLURM Virtual Elastic Cluster.
 
 topology_template:
   inputs:

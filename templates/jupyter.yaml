@@ -7,10 +7,7 @@ metadata:
   kind: application
   short: JupyterHub
 
-description: >
-  TOSCA test for launching a Virtual Elastic Cluster. It will launch
-  a single front-end that will be in change of managing the elasticity
-  using the specified LRMS (torque, sge, slurm and condor) workload.
+description: Launches JupyterHub application on top of a kubernetes cluster.
 
 topology_template:
 
