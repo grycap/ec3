@@ -33,7 +33,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdDestroy, CmdReconfigure, CmdStop, CmdRestart, CmdSsh, CmdTemplates
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdDestroy, CmdReconfigure, CmdStop, CmdRestart, CmdSsh, CmdTemplates, CmdOutputs
 
 cluster_data = """system front (
                     state = 'configured' and
@@ -100,6 +100,9 @@ class TestEC3(unittest.TestCase):
                 resp.status_code = 200
                 resp.text = "network public (outbound='yes')\n"
                 resp.text += "system front (net_interface.0.connection = 'public' and net_interface.0.ip = '8.8.8.8')"
+            elif url == "/infrastructures/infid/outputs":
+                resp.status_code = 200
+                resp.json.return_value = {"outputs": "outputs"}
         elif method == "POST":
             if url == "/infrastructures":
                 resp.status_code = 200
@@ -329,6 +332,26 @@ class TestEC3(unittest.TestCase):
         res = sys.stdout.getvalue()
         sys.stdout = old_stdout
         self.assertEquals(res, " name   kind     summary    \n----------------------------\n slurm  base SLURM Cluster  \n")
+
+    @patch('requests.request')
+    @patch('ec3.ClusterStore')
+    def test_outputs(self, cluster_store, requests):
+        Options = namedtuple('Options', ['clustername'])
+        options = Options(clustername=['name'])
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+
+        cluster_store.list.return_value = ["name"]
+        radl, _ = self.gen_radl()
+        cluster_store.load.return_value = radl
+        auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
+        cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "", auth
+        requests.side_effect = self.get_response
+
+        CmdOutputs.run(options)
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEquals(res, 'Outputs: "outputs"\n')
 
 
 if __name__ == "__main__":

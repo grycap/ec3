@@ -808,6 +808,30 @@ class CmdLaunch:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
             CLI.display("Front-end ready!")
 
+class CmdOutputs:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("outputs", help="print RADL")
+        parser.add_argument("clustername", help="name of the cluster to show")
+        parser.set_defaults(func=CmdOutputs.run)
+
+    @staticmethod
+    def run(options):
+        try:
+            r = ClusterStore.load(options.clustername, False)
+            im_server_url, infrId, _, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+
+            headers = {"Authorization": format_rest_auth_data(auth), "Accept": "application/json"}
+            url = "%s/infrastructures/%s/outputs" % (im_server_url, infrId)
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            if resp.status_code != 200:
+                raise Exception(resp.text)
+            outputs = json.dumps(resp.json()["outputs"], sort_keys=True, indent=4, separators=(',', ': '))
+            CLI.display("Outputs: %s" % outputs.replace("\\n","\n"))
+        except Exception as e:
+            CLI.display("Error getting Outputs: %s" % str(e), level=logging.ERROR)
+
+
 class CmdList:
     @staticmethod
     def parse(subparsers):
@@ -1256,7 +1280,7 @@ if __name__ == "__main__":
     if sys.version_info[:2] <= (2, 7):
         get_input = raw_input
 
-    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy, CmdStop, CmdRestart, CmdTransfer, CmdTemplates]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdSsh, CmdReconfigure, CmdDestroy, CmdStop, CmdRestart, CmdTransfer, CmdTemplates, CmdOutputs]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
