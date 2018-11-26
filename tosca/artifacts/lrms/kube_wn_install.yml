@@ -2,18 +2,9 @@
 - hosts: localhost
   connection: local
   roles:
-  - role: indigo-dc.openvpn
-    openvpn_type_of_node: 'wn'
-    openvpn_frontname: 'kubeserver'
-    when: wn_hybrid_cluster
-  - role: indigo-dc.nfs
-    nfs_mode: 'client'
-    nfs_client_imports: [{ local: "/pv", remote: "/pv", server_host: "10.8.0.1" }]
-    when: wn_hybrid_cluster
-  - role: indigo-dc.nfs
+  - role: grycap.nfs
     nfs_mode: 'client'
     nfs_client_imports: [{ local: "/pv", remote: "/pv", server_host: "{{ kube_front_end_ip }}" }]
-    when: not wn_hybrid_cluster
   - role: 'grycap.kubernetes'
     kube_type_of_node: 'wn'
     kube_server: '{{kube_front_end_ip}}'
