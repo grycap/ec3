@@ -91,7 +91,6 @@ automatically install the dependence. You can also contact us by using the conta
 .. _`SGE`: http://sourceforge.net/projects/gridscheduler/
 .. _`Apache Mesos`: http://mesos.apache.org/
 .. _`AppDB portal`: https://appdb.egi.eu
-.. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
 .. _`HTCondor`: https://research.cs.wisc.edu/htcondor/
 .. _`Fogbow`: http://www.fogbowcloud.org/
 .. _`EGI FedCloud`: https://www.egi.eu/services/cloud-compute/
