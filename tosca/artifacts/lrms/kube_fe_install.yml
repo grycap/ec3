@@ -13,7 +13,7 @@
 
   roles:
   - role: grycap.nfs
-    nfs_mode: 'server'
+    nfs_mode: 'front'
     nfs_exports: [{path: "/pv", export: "{{ vnode_prefix }}*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"}]
   - role: grycap.kubernetes
     kube_server: '{{ kube_front_end_ip }}'
