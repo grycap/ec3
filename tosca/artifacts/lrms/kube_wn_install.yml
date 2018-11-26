@@ -6,7 +6,6 @@
   roles:
   - role: grycap.nfs
     nfs_mode: 'wn'
-    nfs_client_imports: [{ local: "/pv", remote: "/pv", server_host: "{{ kube_front_end_ip }}" }]
   - role: 'grycap.kubernetes'
     kube_type_of_node: 'wn'
     kube_server: '{{kube_front_end_ip}}'
