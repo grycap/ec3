@@ -1,7 +1,7 @@
 tosca_definitions_version: tosca_simple_yaml_1_0
 
 imports:
-  - indigo_custom_types: https://raw.githubusercontent.com/indigo-dc/tosca-types/master/custom_types.yaml
+  - ec3_custom_types: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/custom_types.yaml
 
 metadata:
   kind: application
@@ -17,26 +17,10 @@ topology_template:
       type: string
       description: email of the admin user
       default: admin@admin.com
-    admin_api_key:
+    admin_password:
       type: string
-      description: key to access the API with admin role
-      default: not_very_secret_api_key
-    version:
-      type: string
-      description: galaxy version to install
-      default: v17.09
-    instance_description:
-      type: string
-      description: galaxy instance description
-      default: INDIGO Galaxy test
-    instance_key_pub:
-      type: string
-      description: galaxy instance ssh public key
-      default: your_ssh_public_key
-    export_dir:
-      type: string
-      description: path to store galaxy data
-      default: /export
+      description: Password of the admin user
+      default: adminpass
 
   node_templates:
 
@@ -44,10 +28,7 @@ topology_template:
       type: tosca.nodes.indigo.GalaxyPortal
       properties:
         admin_email: { get_input: admin_email }
-        admin_api_key: { get_input: admin_api_key }
-        version: { get_input: version }
-        instance_description: { get_input: instance_description }
-        instance_key_pub: { get_input: instance_key_pub }
+        admin_password: { get_input: admin_password }
       requirements:
         - lrms: lrms_front_end
 
@@ -55,7 +36,6 @@ topology_template:
     galaxy_wn:
       type: tosca.nodes.indigo.GalaxyWN
       properties:
-        export_dir: { get_input: export_dir }
         front_end_ip: { get_attribute: [ front, private_address, 0 ] }
       requirements:
         - host: wn
