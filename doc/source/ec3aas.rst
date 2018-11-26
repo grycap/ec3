@@ -125,6 +125,7 @@ Additional information
 ----------------------
 
 You can find interesting reading also:
+
 * `EC3 Command-line Interface`_.
 * `EC3 Architecture`_.
 * `FAQs`_.
