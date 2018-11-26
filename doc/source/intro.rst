@@ -71,7 +71,7 @@ for the Fogbow account where the cluster will be deployed.  This file is the aut
 
    id = im; type = InfrastructureManager; username = user; password = pass
 
-Now we are going to deploy a cluster in Fogbow with a limit number of nodes = 10. The parameter to indicate the maximum size of the cluster is called ``ec3_max_instances`` and it has to be indicated in the RADL file that describes the infrastructure to deploy. In our case, we are going to use the `ubuntu-fbw`_ recipe, available in our github repo. The next command deploys a `PBS TORQUE`_ cluster based on an `Ubuntu`_ image::
+Now we are going to deploy a cluster in Fogbow with a limit number of nodes = 10. The parameter to indicate the maximum size of the cluster is called ``ec3_max_instances`` and it has to be indicated in the RADL file that describes the infrastructure to deploy. In our case, we are going to use the `ubuntu-fbw`_ recipe, available in our github repo. The next command deploys a Kubernetes cluster based on an `Ubuntu`_ image::
 
    $ ec3 launch mycluster kubernetes ubuntu-fbw -a auth.txt -y
    WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
@@ -165,6 +165,6 @@ Next steps to know better the EC3 tool:
 .. _`Docker Hub`: https://hub.docker.com/r/grycap/ec3/
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`sshpass`: https://gist.github.com/arunoda/7790979
-.. _`ubuntu-ec2`: https://github.com/grycap/ec3/blob/devel/templates/ubuntu-ec2.radl
+.. _`ubuntu-fbw`: https://github.com/grycap/ec3/blob/atmosphere/templates/ubuntu-fbw.radl
 .. _`jsonschema`: https://github.com/Julian/jsonschema
 .. _`GRyCAP Youtube Channel`: https://www.youtube.com/channel/UCQD6RJBs57Giz4Xm8dhDczQ
