@@ -26,7 +26,7 @@ topology_template:
     fe_mem:
       type: scalar-unit.size
       description: Amount of Memory for the front-end node
-      default: 1 GB
+      default: 3 GB
       required: yes
 
     wn_cpus:
@@ -38,7 +38,7 @@ topology_template:
     wn_mem:
       type: scalar-unit.size
       description: Amount of Memory for the WNs
-      default: 1 GB
+      default: 3 GB
       required: yes
 
     admin_username:
