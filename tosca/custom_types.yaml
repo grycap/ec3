@@ -1,0 +1,301 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+capability_types:
+
+  tosca.capabilities.indigo.OperatingSystem:
+    derived_from: tosca.capabilities.OperatingSystem
+    properties:
+      gpu_driver:
+        type: boolean
+        required: no
+      cuda_support:
+        type: boolean
+        required: no
+      cuda_min_version:
+        type: string
+        required: no
+      cuDNN_version:
+        type: string
+        required: no
+      image:
+        type: string
+        required: no
+      credential:
+        type: tosca.datatypes.Credential
+        required: no
+
+  tosca.capabilities.indigo.Scalable:
+    derived_from: tosca.capabilities.Scalable
+    properties:
+      min_instances:
+        type: integer
+        default: 1
+        required: no
+      max_instances:
+        type: integer
+        default: 1
+        required: no
+      count:
+        type: integer
+        description: the number of resources
+        required: no
+        default: 1
+      removal_list:
+        type: list
+        description: list of IDs of the resources to be removed
+        required: no
+        entry_schema:
+          type: string
+
+  tosca.capabilities.indigo.Container:
+    derived_from: tosca.capabilities.Container
+    properties:
+      preemtible_instance:
+        type: boolean
+        required: no
+      instance_type:
+        type: string
+        required: no
+      num_gpus:
+        type: integer
+        required: false
+      gpu_vendor:
+        type: string
+        required: false
+      gpu_model:
+        type: string
+        required: false
+      sgx:
+        type: boolean
+        required: no
+
+  tosca.capabilities.indigo.LRMS:
+    derived_from: tosca.capabilities.Container
+    properties:
+      type:
+        type: string
+        required: true
+        constraints:
+        - valid_values: [ local, torque, slurm, sge, condor, mesos, kubernetes ]
+
+  tosca.capabilities.indigo.LRMS.Torque:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: torque
+        constraints:
+          - equal: torque
+
+  tosca.capabilities.indigo.LRMS.Slurm:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: slurm
+        constraints:
+          - equal: slurm
+
+  tosca.capabilities.indigo.LRMS.Kubernetes:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: kubernetes
+        constraints:
+          - equal: kubernetes
+
+  tosca.capabilities.indigo.LRMS.Local:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: local
+        constraints:
+          - equal: local
+
+  tosca.capabilities.indigo.LRMS.Mesos:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: mesos
+        constraints:
+          - equal: mesos
+
+  tosca.capabilities.indigo.Endpoint:
+    derived_from: tosca.capabilities.Endpoint
+    properties:
+      dns_name:
+        description: The optional name to register with DNS
+        type: string
+        required: false
+      private_ip:
+        description: Flag used to specify that this endpoint will require also a private IP although it is a public one.
+        type: boolean
+        required: false
+        default: true
+    attributes:
+      credential:
+        type: list
+        entry_schema:
+          type: tosca.datatypes.Credential
+
+artifact_types:
+
+  tosca.artifacts.Implementation.YAML:
+    derived_from: tosca.artifacts.Implementation
+    description: YAML Ansible recipe artifact
+    mime_type: text/yaml
+    file_ext: [ yaml, yml ]
+
+  tosca.artifacts.AnsibleGalaxy.role:
+    derived_from: tosca.artifacts.Root
+    description: Ansible Galaxy role to be deployed in the target node
+
+relationship_types:
+
+  tosca.relationships.indigo.Manages:
+    derived_from: tosca.relationships.Root
+
+  tosca.relationships.indigo.AttachesTo:
+    derived_from: tosca.relationships.AttachesTo
+    properties:
+      fs_type:
+        type: string
+        required: false
+        default:
+
+node_types:
+
+  tosca.nodes.indigo.Compute:
+    derived_from: tosca.nodes.Compute
+    attributes:
+      private_address:
+        type: list
+        entry_schema:
+          type: string
+      public_address:
+        type: list
+        entry_schema:
+          type: string
+      ctxt_log:
+        type: string
+    capabilities:
+      scalable:
+        type: tosca.capabilities.indigo.Scalable
+      os:
+         type: tosca.capabilities.indigo.OperatingSystem
+      endpoint:
+        type: tosca.capabilities.indigo.Endpoint
+      host:
+        type: tosca.capabilities.indigo.Container
+        valid_source_types: [tosca.nodes.SoftwareComponent]
+
+  tosca.nodes.indigo.ElasticCluster:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      secret_token:
+        type: string
+        description: Token to access CLUES web interface
+        default: not_very_secret_token
+        required: false
+      powermanager_plugin:
+        type: string
+        description: Plugin that will manage the VMs (indigo_orchestrator or im)
+        default: indigo_orchestrator
+        required: false
+      im_auth:
+        type: string
+        description: IM auth data
+        default: ""
+        required: false
+    artifacts:
+      clues_role:
+        file: grycap.clues
+        type: tosca.artifacts.AnsibleGalaxy.role
+      im_role:
+        file: grycap.im
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        create:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/ec3_install.yml
+          inputs:
+            clues_secret_token: { get_property: [ SELF, secret_token ] }
+            clues_queue_system: { get_property: [ SELF, lrms, type ] }
+            max_number_of_nodes: { get_property: [ SELF, wn, max_instances] }
+            clues_powermanager_plugin: { get_property: [ SELF, powermanager_plugin] }
+            auth: { get_property: [ SELF, im_auth] }
+            clues_git_branch: im_rest
+    requirements:
+      - wn:
+          capability: tosca.capabilities.Scalable
+          node: tosca.nodes.indigo.LRMS.WorkerNode
+          relationship: tosca.relationships.indigo.Manages
+      - lrms:
+          capability: tosca.capabilities.indigo.LRMS
+          node: tosca.nodes.indigo.LRMS.FrontEnd
+          relationship: tosca.relationships.HostedOn
+
+  tosca.nodes.indigo.LRMS.WorkerNode:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      front_end_ip:
+        type: string
+        description: IP of the Front-End node
+        required: true
+      hybrid:
+        type: boolean
+        description: Flag to specify that this WorkerNode will work in a hybrid environment
+        default: false
+        required: false
+      public_front_end_ip:
+        type: string
+        description: Public IP of the Front-End node
+        required: false
+        default: ''
+    capabilities:
+        wn:
+          type: tosca.capabilities.Scalable
+          valid_source_types: [tosca.nodes.indigo.ElasticCluster]
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.Compute
+          relationship: tosca.relationships.HostedOn
+
+  tosca.nodes.indigo.LRMS.FrontEnd:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      wn_ips:
+        type: list
+        entry_schema:
+          type: string
+        description: List of IPs of the WNs
+        required: false
+        default: []
+      hybrid:
+        type: boolean
+        description: Flag to specify that this FrontEnd will work in a hybrid environment
+        default: false
+        required: false
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.Compute
+          relationship: tosca.relationships.HostedOn
+
+  tosca.nodes.indigo.LRMS.FrontEnd.Local:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Local
