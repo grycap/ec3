@@ -154,6 +154,7 @@ Next steps to know better the EC3 tool:
 .. _`Google Cloud`: http://cloud.google.com/
 .. _`Microsoft Azure`: http://azure.microsoft.com/
 .. _`IM`: https://github.com/grycap/im
+.. _`IM manual`: http://www.grycap.upv.es/im/documentation.php
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`PLY`: http://www.dabeaz.com/ply/
 .. _`Requests`: http://docs.python-requests.org/
