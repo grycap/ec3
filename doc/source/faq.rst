@@ -94,7 +94,7 @@ automatically install the dependence. You can also contact us by using the conta
 .. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
 .. _`HTCondor`: https://research.cs.wisc.edu/htcondor/
 .. _`Fogbow`: http://www.fogbowcloud.org/
-.. _`EGI Fedcloud`: https://www.egi.eu/services/cloud-compute/
+.. _`EGI FedCloud`: https://www.egi.eu/services/cloud-compute/
 .. _`Kubernetes`: https://kubernetes.io/
 .. _`Nomad`: https://www.nomadproject.io/
 .. _`ATMOSPHERE`: https://www.atmosphere-eubrazil.eu/
