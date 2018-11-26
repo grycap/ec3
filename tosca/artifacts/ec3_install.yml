@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+     vnode_prefix: vnode-
   roles:
   - role: grycap.im
   - role: grycap.clues
