@@ -7,6 +7,6 @@
     - role: 'grycap.nfs'
       nfs_mode: 'front'
       nfs_exports: [{path: "/mnt", export: "{{ vnode_prefix }}*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}]
-      when: galaxy_lrms != local
+      when: galaxy_lrms != 'local'
     - role: grycap.galaxy
       galaxy_slurm_server_name: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'

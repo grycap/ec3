@@ -410,10 +410,10 @@ node_types:
           relationship: tosca.relationships.HostedOn
     artifacts:
       nfs_role:
-        file: indigo-dc.nfs
+        file: grycap.nfs
         type: tosca.artifacts.AnsibleGalaxy.role
       galaxy_role:
-        file: indigo-dc.galaxycloud
+        file: grycap.galaxy
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
@@ -431,6 +431,13 @@ node_types:
         type: string
         description: IP of the Front-End node
         required: true
+    artifacts:
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+      galaxy_role:
+        file: grycap.galaxy
+        type: tosca.artifacts.AnsibleGalaxy.role
     requirements:
       - host:
           capability: tosca.capabilities.Container
