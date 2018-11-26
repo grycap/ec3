@@ -3,7 +3,7 @@
   connection: local
   roles:
   - role: grycap.nfs
-    nfs_mode: 'client'
+    nfs_mode: 'wn'
     nfs_client_imports: [{ local: "/home", remote: "/home", server_host: "{{ slurm_front_end_ip }}" }]
   - role: grycap.slurm
     slurm_type_of_node: 'wn'

@@ -299,3 +299,95 @@ node_types:
     capabilities:
         lrms:
           type: tosca.capabilities.indigo.LRMS.Local
+
+  tosca.nodes.indigo.LRMS.WorkerNode.Kubernetes:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    artifacts:
+      kube_role:
+        file: grycap.kubernetes
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_wn_install.yml
+          inputs:
+            kube_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+            kube_version: { get_input: kube_version }
+
+  tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    properties:
+      admin_username:
+        required: no
+        type: string
+        default: kubeuser
+      admin_token:
+        required: no
+        type: string
+        value: some_insecure_token
+    artifacts:
+      kube_role:
+        file: grycap.kubernetes
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Kubernetes
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_fe_install.yml
+          inputs:
+            kube_front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
+            kube_admin_username:  { get_property: [ SELF, admin_username ] }
+            kube_admin_token:  { get_property: [ SELF, admin_token ] }
+            kube_version: { get_input: kube_version }
+
+  tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    artifacts:
+      slurm_role:
+        file: grycap.slurm
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/slurm_wn_install.yml
+          inputs:
+            slurm_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+            slurm_public_front_end_ip: { get_property: [ SELF, public_front_end_ip ] }
+
+  tosca.nodes.indigo.LRMS.FrontEnd.Slurm:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    properties:
+      wn_num:
+        type: integer
+        description: Number of WNs
+        required: false
+        default: -1
+    artifacts:
+      slurm_role:
+        file: grycap.slurm
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Slurm
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/slurm_fe_install.yml
+          inputs:
+            wn_num: { get_property: [ SELF, wn_num ] }
+            wn_ips: { get_property: [ SELF, wn_ips ] }
+            front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
