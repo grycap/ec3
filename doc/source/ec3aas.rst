@@ -50,6 +50,7 @@ packages.
    Fig 3. Wizard to configure and deploy a virtual cluster in Fogbow.
 
 Specifically, the wizard steps are:
+
 #. **Cluster Type**: the user first selects the type of cluster he/she wants to deploy.
    Currently, there are two different options: Kubernetes + Jupyter Notebook or Mesos + Spark + Lemonade.
    Moreover, on the bottom of this step, there is an option to indicate the github URL where deployments of
