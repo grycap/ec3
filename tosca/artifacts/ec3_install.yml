@@ -4,3 +4,8 @@
   roles:
   - role: grycap.im
   - role: grycap.clues
+  tasks:
+  - name: Set IM plugin IM_VIRTUAL_CLUSTER_TOSCA to True
+    ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option=IM_VIRTUAL_CLUSTER_TOSCA value="True"
+    notify: restart cluesd
+
