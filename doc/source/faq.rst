@@ -9,7 +9,7 @@ General FAQs
 
 **What Cloud Providers are supported by EC3 (Elastic Cloud Computing Cluster)?**
 
-Currently, EC3 supports `EGI Fedcloud`_, `Fogbow`_, `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
+Currently, EC3 supports `EGI FedCloud`_, `Fogbow`_, `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
 All providers and interfaces are supported by the `CLI`_ interface.
 However, from the `EC3aaS`_ ATMOSPHERE interface, only support for Fogbow is provided. 
 
@@ -60,7 +60,7 @@ If you want to deploy a hybrid cluster, we encourage you to use the `CLI`_ inter
 **Why can I only access to Fogbow cloud provider while other Cloud providers are supported by EC3?**
 
 Because this website is specifically developed for the `ATMOSPHERE`_ project.
-Other Cloud providers such as `OpenNebula`_, `Amazon EC2`_, `OpenStack`_ and `EGI Fedcloud`_ are supported in the general `EC3aaS website`_.
+Other Cloud providers such as `OpenNebula`_, `Amazon EC2`_, `OpenStack`_ and `EGI FedCloud`_ are supported in the general `EC3aaS website`_.
 If you want to use another supported Cloud provider, like `Microsoft Azure`_ or `Google Cloud Engine`_, we encourage you to use the `CLI`_ interface.
 
 **Why can't I download the private key of my cluster?**
