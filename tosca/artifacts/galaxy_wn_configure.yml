@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+     vnode_prefix: vnode-
+  roles:
+    - role: 'grycap.nfs'
+      nfs_mode: 'wn'
+      nfs_client_imports: [{ local: "/mnt", remote: "/mnt", server_host: '{{ galaxy_front_end_ip }}' }]
+    - role: grycap.galaxy
+      galaxy_node_type: wn
