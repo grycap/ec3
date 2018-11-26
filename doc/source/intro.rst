@@ -4,9 +4,8 @@ Introduction
 
 Elastic Cloud Computing Cluster (EC3) is a tool to create elastic virtual clusters on top
 of Infrastructure as a Service (IaaS) providers, either public (such as `Amazon Web Services`_,
-`Google Cloud`_ or `Microsoft Azure`_)
-or on-premises (such as `OpenNebula`_ and `OpenStack`_). We offer recipes to deploy `TORQUE`_
-(optionally with `MAUI`_), `SLURM`_, `SGE`_, `HTCondor`_, `Mesos`_, `Nomad`_ and `Kubernetes`_ clusters that can be self-managed with `CLUES`_:
+`Google Cloud`_ or `Microsoft Azure`_), on-premises (such as `OpenNebula`_ and `OpenStack`_) or federated (such as `EGI Fedcloud`_ and `Fogbow`_). We offer recipes to deploy `PBS TORQUE`_,
+`SLURM`_, `SGE`_, `HTCondor`_, `Mesos`_, `Nomad`_ and `Kubernetes`_ clusters that can be self-managed with `CLUES`_:
 it starts with a single-node cluster and working nodes will be dynamically deployed and provisioned
 to fit increasing load (number of jobs at the LRMS). Working nodes will be undeployed when they are idle.
 This introduces a cost-efficient approach for Cluster-based computing.
@@ -60,22 +59,21 @@ Then you can install it calling the pip tool with the current ec3 directory::
 	
     sudo pip install ./ec3
 
-Basic example with Amazon EC2
------------------------------
+Basic example with Fogbow
+-------------------------
 
 First create a file ``auth.txt`` with a single line like this::
 
-   id = provider ; type = EC2 ; username = <<Access Key ID>> ; password = <<Secret Access Key>>
+   id = fogbow; type = FogBow; host = <<Fogbow Endpoint>>; token = <<Fogbow Access Token>>
 
-Replace ``<<Access Key ID>>`` and ``<<Secret Access Key>>`` with the corresponding values
-for the AWS account where the cluster will be deployed. It is safer to use the credentials
-of an IAM user created within your AWS account.
+Replace ``<<Fogbow Endpoint>>`` and ``<<Fogbow Access Token>>`` with the corresponding values
+for the Fogbow account where the cluster will be deployed.  This file is the authorization file (see `Authorization file`_), and can have more than one set of credentials. You also need to add the IM credentials::
 
-This file is the authorization file (see `Authorization file`_), and can have more than one set of credentials.
+   id = im; type = InfrastructureManager; username = user; password = pass
 
-Now we are going to deploy a cluster in Amazon EC2 with a limit number of nodes = 10. The parameter to indicate the maximum size of the cluster is called ``ec3_max_instances`` and it has to be indicated in the RADL file that describes the infrastructure to deploy. In our case, we are going to use the `ubuntu-ec2`_ recipe, available in our github repo. The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
+Now we are going to deploy a cluster in Fogbow with a limit number of nodes = 10. The parameter to indicate the maximum size of the cluster is called ``ec3_max_instances`` and it has to be indicated in the RADL file that describes the infrastructure to deploy. In our case, we are going to use the `ubuntu-fbw`_ recipe, available in our github repo. The next command deploys a `TORQUE`_ cluster based on an `Ubuntu`_ image::
 
-   $ ec3 launch mycluster torque ubuntu-ec2 -a auth.txt -y
+   $ ec3 launch mycluster kubernetes ubuntu-fbw -a auth.txt -y
    WARNING: you are not using a secure connection and this can compromise the secrecy of the passwords and private keys available in the authorization file.
    Creating infrastructure
    Infrastructure successfully created with ID: 60
@@ -83,15 +81,15 @@ Now we are going to deploy a cluster in Amazon EC2 with a limit number of nodes 
 
 If you deployed a local `IM`_ server, use the next command instead::
 
-   $ ec3 launch mycluster torque ubuntu-ec2 -a auth.txt -u http://localhost:8899
+   $ ec3 launch mycluster kubernetes ubuntu-fbw -a auth.txt -u http://localhost:8899
 
 This can take several minutes. After that, open a ssh session to the front-end::
 
    $ ec3 ssh mycluster
-   Welcome to Ubuntu 14.04.1 LTS (GNU/Linux 3.13.0-24-generic x86_64)
+   Welcome to Ubuntu 16.04.2 LTS (GNU/Linux 4.4.0-62-generic x86_64)
     * Documentation:  https://help.ubuntu.com/
 
-   ubuntu@torqueserver:~$
+   ubuntu@kubeserver:~$
 
 Also you can show basic information about the deployed clusters by executing::
 
@@ -129,14 +127,16 @@ Later on, when you need to destroy the cluster, you can type::
 Additional information
 ----------------------
 
+You can find a list of videotutorials that demonstrates some functionalities of EC3 in the official `GRyCAP Youtube Channel`_ .
+
+Next steps to know better the EC3 tool:
 * `EC3 Command-line Interface`_.
 * `Templates`_.
-* Information about available templates: ``ec3 templates [--search <topic>] [--full-description]``.
+* `EC3 Architecture`_.
 
 .. _`CLUES`: http://www.grycap.upv.es/clues/
 .. _`RADL`: http://www.grycap.upv.es/im/doc/radl.html
-.. _`TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
-.. _`MAUI`: http://www.adaptivecomputing.com/products/open-source/maui/
+.. _`PBS TORQUE`: http://www.adaptivecomputing.com/products/open-source/torque
 .. _`SLURM`: http://slurm.schedmd.com/
 .. _`SGE`: http://gridscheduler.sourceforge.net/
 .. _`Mesos`: http://mesos.apache.org/
@@ -145,6 +145,8 @@ Additional information
 .. _`Kubernetes`: https://kubernetes.io/
 .. _`Scientific Linux`: https://www.scientificlinux.org/
 .. _`Ubuntu`: http://www.ubuntu.com/
+.. _`EGI Fedcloud`: https://www.egi.eu/services/cloud-compute/
+.. _`Fogbow`: http://www.fogbowcloud.org/
 .. _`OpenNebula`: http://www.opennebula.org/
 .. _`OpenStack`: http://www.openstack.org/
 .. _`Amazon Web Services`: https://aws.amazon.com/
@@ -154,13 +156,15 @@ Additional information
 .. _`PyYAML`: http://pyyaml.org/wiki/PyYAML
 .. _`PLY`: http://www.dabeaz.com/ply/
 .. _`Requests`: http://docs.python-requests.org/
-.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/devel/ec3.html
-.. _`Command templates`: http://ec3.readthedocs.org/en/devel/ec3.html#command-templates
-.. _`Authorization file`: http://ec3.readthedocs.org/en/devel/ec3.html#authorization-file
-.. _`Templates`: http://ec3.readthedocs.org/en/devel/templates.html
-.. _`templates documentation`: http://ec3.readthedocs.org/en/devel/templates.html#ec3-types-of-templates
+.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/atmosphere/ec3.html
+.. _`Command templates`: http://ec3.readthedocs.org/en/atmosphere/ec3.html#command-templates
+.. _`Authorization file`: http://ec3.readthedocs.org/en/atmosphere/ec3.html#authorization-file
+.. _`EC3 Architecture`: https://ec3.readthedocs.io/en/atmosphere/arch.html
+.. _`Templates`: http://ec3.readthedocs.org/en/atmosphere/templates.html
+.. _`templates documentation`: http://ec3.readthedocs.org/en/atmosphere/templates.html#ec3-types-of-templates
 .. _`Docker Hub`: https://hub.docker.com/r/grycap/ec3/
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`sshpass`: https://gist.github.com/arunoda/7790979
 .. _`ubuntu-ec2`: https://github.com/grycap/ec3/blob/devel/templates/ubuntu-ec2.radl
 .. _`jsonschema`: https://github.com/Julian/jsonschema
+.. _`GRyCAP Youtube Channel`: https://www.youtube.com/channel/UCQD6RJBs57Giz4Xm8dhDczQ

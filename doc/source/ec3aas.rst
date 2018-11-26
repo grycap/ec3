@@ -36,10 +36,9 @@ deployed (:ref:`Fig. 2 <figure_providers>`).
 .. _figure_providers:
 .. figure:: images/providers.png
 
-   Fig 2. List of Cloud providers supported by EC3aaS.
+   Fig 2. Deploy and Manage section of the website.
 
-When the user chooses one of the offered providers (Amazon
-EC2, OpenNebula, OpenStack or EGI FedCloud), a wizard pops up (:ref:`Fig. 3 <figure_wizard>`).
+When the user chooses the deployment of a new infrastructure, a wizard pops up (:ref:`Fig. 3 <figure_wizard>`).
 This wizard will guide the user during the configuration process of the cluster,
 allowing to configure details like the operating system, the characteristics of the
 nodes, the maximum number of nodes of the cluster or the pre-installed software
@@ -48,50 +47,30 @@ packages.
 .. _figure_wizard:
 .. figure:: images/wizard.png
 
-   Fig 3. Wizard to configure and deploy a virtual cluster in Amazon EC2.
+   Fig 3. Wizard to configure and deploy a virtual cluster in Fogbow.
 
-Specifically, the general wizard steps are:
-
+Specifically, the wizard steps are:
+#. **Cluster Type**: the user first selects the type of cluster he/she wants to deploy.
+   Currently, there are two different options: Kubernetes + Jupyter Notebook or Mesos + Spark + Lemonade.
+   Moreover, on the bottom of this step, there is an option to indicate the github URL where deployments of
+   the user apps are. This only works together with the Kubernetes option.
 #. **Provider account**: Valid user credentials are required to access to the
-   resources of the Cloud provider chosen. Additionally, in the OpenNebula,
-   OpenStack and EGI FedCloud wizards, the endpoint of the server is also
-   required. The use of temporary credentials is recommended.
+   resources of Fogbow. The wizard then is able to contact with Fogbow to generate the token by using the user credentials.
 #. **Operating System**: the user can choose the OS of the cluster, by using a
-   select box where the most common OS are available or by indicating a valid
-   AMI/VMI identifier for the Cloud selected.
+   select box where the available images of Fogbow for its credentials are listed. 
+   It takes some seconds to appear, because a call to the Fogbow's API is performed.
 #. **Instance details**: the user must indicate the instance details, like the number
    of CPUs or the RAM memory, for the front-end and also the working
-   nodes of the cluster. In case of using Amazon EC2, a select box is provided
-   with the instance types offered by this provider. In case of using EGI
-   FedCloud, the user must indicate the instance type desired from the ones
-   available in the endpoint selected.
-#. **LRMS Selection**: the user can choose the Local Resource Management
-   System preferred to be automatically installed and configured by EC3. Currently,
-   SLURM, Torque, Grid Engine and Mesos are supported.
-#. **Software Packages**: a set of common software packages is available to be
-   installed in the cluster, such as Docker Engine, Spark, Galaxy, OpenVPN,
-   BLCR, GNUPlot, Tomcat or Octave. EC3 can install and configure them
-   automatically in the contextualization process. If the user needs another
-   software to be installed in his cluster, a new Ansible recipe can be developed
-   and added to EC3 by using the CLI interface.
-#. **Cluster's size**: the user can introduce the maximum number of nodes of
+   nodes of the cluster. 
+#. **Cluster's size & Name**: the user can introduce the maximum number of nodes of
    the cluster, without including the front-end node. This value indicates the
    maximum number of working nodes that the cluster can scale. Remember that, initially
    the cluster only is created with the front-end, and the nodes are powered on on-demand.
+   Also, a unique name is required by the user for the cluster.
 #. **Resume and Launch**: a summary of the chosen configuration of the cluster
    is showed to the user at the last step of the wizard, and the deployment
    process can start by clicking the Submit button.
 
-Notice that not all the Cloud providers need or allow to configure the same data.
-Because of that, the wizards are customized for each Cloud provider. For example,
-in the EGI FedCloud, a new wizard step appears, in order to collect the data
-about the MyProxy account of the user, a particularity of this Cloud provider. At
-the same time, the credentials needed to contact with the Cloud providers have
-different formats, depending on the provider selected. This is another reason why
-the wizards are customized for each one. Moreover, the instance options (CPU,
-RAM and disk) are presented different for each provider. Since Amazon EC2 and
-EGI FedCloud offer a predefined list of instance types, OpenNebula and OpenStack
-let the user indicate the values of CPU and RAM for the instance.
 
 Finally, when all the steps of the wizard are filled correctly, the submit button
 starts the deployment process of the cluster. Only the front-end will be deployed,
@@ -105,8 +84,11 @@ The cluster may not be configured when the IP of the front-end is returned by th
 web page, because the process of configuring the cluster is a batch process that
 takes several minutes, depending on the chosen configuration. However, the user
 is allowed to log in the front-end machine of the cluster since the moment it is
-deployed. To know if the cluster is configured, the command is cluster ready can
-be used. It will check if the configuration process of cluster has finished.
+deployed. To know if the cluster is configured, the command is_cluster_ready can
+be used. It will check if the configuration process of cluster has finished::
+
+  ubuntu@kubeserverpublic:~$ is_cluster_ready
+  Cluster configured!
 
 .. _figure_data:
 .. figure:: images/data.png
@@ -114,21 +96,18 @@ be used. It will check if the configuration process of cluster has finished.
    Fig 4. Information received by the user when a deployment succeeds.
 
 Notice that EC3aaS does not offer all the capabilities of EC3, like hybrid clusters
-or the usage of spot instances. Those capabilities are considered advanced aspects
+or heterogeneous nodes. Those capabilities are considered advanced aspects
 of the tool and are only available via the `EC3 Command-line Interface`_.
 
 Termination of a Cluster
 ------------------------
 
 To delete a cluster the user only needs to access the EC3aaS webpage, and click on
-the trash icon (situated underneath the provider buttons in the deployment section
-of the website) and indicate in the wizard (:ref:`Fig. 5 <figure_delete>`) the cluster name provided
-to the user in the deployment phase. The cluster name is a string composed by
-the word cluster followed by a random string of five characters (including numbers
-and letters). This cluster name is unique and allows EC3 to identify the cluster of
-the user without using an user account. Moreover, in case the user has developed
-the cluster in the EGI FedCloud, a valid proxy will be required in order to destroy
-the cluster.
+the "Delete your cluster" button. He/she must indicate in the wizard (:ref:`Fig. 5 <figure_delete>`) the cluster name provided
+in the deployment phase and the Fogbow credentials again, to generate the token in order to destroy the resources. 
+The cluster name is a string composed by the name given to the cluster in the deployment process 
+followed by a random string of five characters (including numbers and letters). 
+This cluster name is unique and allows EC3 to identify the cluster of the user without using an user account. 
 
 When the process finishes successfully, the front-end of the cluster and all the
 working nodes had been destroyed and a message is shown to the user informing
@@ -141,5 +120,15 @@ to the user.
 
    Fig 5. Wizard to delete a cluster.
 
+Additional information
+----------------------
 
-.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/latest/ec3.html
+You can find interesting reading also:
+* `EC3 Command-line Interface`_.
+* `EC3 Architecture`_.
+* `FAQs`_.
+
+
+.. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/atmosphere/ec3.html
+.. _`EC3 Architecture`: https://ec3.readthedocs.io/en/atmosphere/arch.html
+.. _`FAQs`: https://ec3.readthedocs.io/en/atmosphere/faq.html
