@@ -130,6 +130,7 @@ Additional information
 You can find a list of videotutorials that demonstrates some functionalities of EC3 in the official `GRyCAP Youtube Channel`_ .
 
 Next steps to know better the EC3 tool:
+
 * `EC3 Command-line Interface`_.
 * `Templates`_.
 * `EC3 Architecture`_.
