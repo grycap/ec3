@@ -26,6 +26,11 @@ topology_template:
 
     galaxy_portal:
       type: tosca.nodes.indigo.GalaxyPortal
+      capabilities:
+        endpoint:
+          properties:
+            port: 8080
+            protocol: tcp
       properties:
         admin_email: { get_input: admin_email }
         admin_password: { get_input: admin_password }
@@ -42,4 +47,4 @@ topology_template:
 
   outputs:
     galaxy_url:
-      value: { concat: [ 'http://', get_attribute: [ front, public_address, 0 ], '/galaxy' ] }
+      value: { concat: [ 'http://', get_attribute: [ front, public_address, 0 ], ':8080/' ] }

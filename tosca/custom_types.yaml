@@ -197,6 +197,12 @@ node_types:
         type: tosca.capabilities.indigo.Container
         valid_source_types: [tosca.nodes.SoftwareComponent]
 
+  tosca.nodes.ec3.Application:
+    derived_from: tosca.nodes.SoftwareComponent
+    capabilities:
+      endpoint:
+        type: tosca.capabilities.Endpoint
+
   tosca.nodes.indigo.ElasticCluster:
     derived_from: tosca.nodes.SoftwareComponent
     properties:
@@ -408,6 +414,9 @@ node_types:
           capability: tosca.capabilities.indigo.LRMS
           node: tosca.nodes.indigo.LRMS.FrontEnd
           relationship: tosca.relationships.HostedOn
+    capabilities:
+      endpoint:
+        type: tosca.capabilities.Endpoint
     artifacts:
       nfs_role:
         file: grycap.nfs

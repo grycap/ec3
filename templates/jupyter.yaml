@@ -14,10 +14,9 @@ topology_template:
   node_templates:
 
     jupyter:
-      type: tosca.nodes.SoftwareComponent
+      type: tosca.nodes.ec3.Application
       capabilities:
         endpoint:
-          type: tosca.capabilities.Endpoint
           properties:
             port: 30040
             protocol: tcp

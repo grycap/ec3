@@ -14,14 +14,13 @@ topology_template:
   node_templates:
 
     jupyterhub:
-      type: tosca.nodes.SoftwareComponent
+      type: tosca.nodes.ec3.Application
       artifacts:
         jupyterhub_role:
           file: indigo-dc.jupyterhub
           type: tosca.artifacts.AnsibleGalaxy.role
       capabilities:
         endpoint:
-          type: tosca.capabilities.Endpoint
           properties:
             port: 8000
             protocol: tcp
