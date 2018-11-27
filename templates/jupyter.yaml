@@ -25,9 +25,6 @@ topology_template:
         Standard:
           configure:
             implementation:  https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/jupyter/jupyter_install.yml
-            inputs:
-              jupyterhub_spawner: kubernetes # local or kubernetes
-              jupyterhub_authenticator: local # local or dummy
       requirements:
         - host: front
         - dependency: lrms_front_end
