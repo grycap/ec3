@@ -385,6 +385,7 @@ node_types:
             wn_num: { get_property: [ SELF, wn_num ] }
             wn_ips: { get_property: [ SELF, wn_ips ] }
             front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
+            max_number_of_nodes: { get_property: [ wn_node, wn, max_instances] }
 
   tosca.nodes.indigo.GalaxyPortal:
     derived_from: tosca.nodes.WebServer
@@ -475,3 +476,5 @@ node_types:
       Standard:
         configure:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/mesos_fe_install.yml
+          inputs:
+            max_number_of_nodes: { get_property: [ wn_node, wn, max_instances] }
