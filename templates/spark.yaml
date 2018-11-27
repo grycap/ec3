@@ -1,0 +1,23 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - indigo_custom_types: https://raw.githubusercontent.com/indigo-dc/tosca-types/master/custom_types.yaml
+
+metadata:
+  kind: application
+  short: Spark
+
+description: Installs Spark
+
+topology_template:
+
+  node_templates:
+
+    spark:
+      type: tosca.nodes.SoftwareComponent
+      interfaces:
+        Standard:
+          configure:
+            implementation:  https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/spark/spark_install.yml
+      requirements:
+        - host: front
