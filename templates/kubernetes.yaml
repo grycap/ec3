@@ -65,6 +65,11 @@ topology_template:
 
     lrms_front_end:
       type: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+      capabilities:
+        endpoint:
+          properties:
+            port: 30443
+            protocol: tcp
       properties:
         admin_username:  { get_input: admin_username }
         admin_token: { get_input: admin_token }
@@ -78,8 +83,6 @@ topology_template:
           properties:
             dns_name: kubeserver
             network_name: PUBLIC
-            port: 30443
-            protocol: tcp
         host:
           properties:
             num_cpus: { get_input: fe_cpus }

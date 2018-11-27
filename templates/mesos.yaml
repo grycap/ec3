@@ -56,6 +56,28 @@ topology_template:
 
     lrms_front_end:
       type: tosca.nodes.indigo.LRMS.FrontEnd.Mesos
+      capabilities:
+        endpoint:
+          properties:
+            ports:
+              mesos_port:
+                protocol: tcp
+                source: 5050
+              zookeeper_port:
+                protocol: tcp
+                source: 2181
+              zookeeper1_port:
+                protocol: tcp
+                source: 2888
+              zookeeper2_port:
+                protocol: tcp
+                source: 3888
+              marathon_port:
+                protocol: tcp
+                source: 8080
+              chronos_port:
+                protocol: tcp
+                source: 4400
       requirements:
         - host: front
 

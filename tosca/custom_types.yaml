@@ -333,6 +333,8 @@ node_types:
     capabilities:
         lrms:
           type: tosca.capabilities.indigo.LRMS.Kubernetes
+        endpoint:
+          type: tosca.capabilities.Endpoint
     interfaces:
       Standard:
         configure:
@@ -472,6 +474,8 @@ node_types:
     capabilities:
         lrms:
           type: tosca.capabilities.indigo.LRMS.Mesos
+        endpoint:
+          type: tosca.capabilities.Endpoint
     interfaces:
       Standard:
         configure:
