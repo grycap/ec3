@@ -1,0 +1,154 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - ec3_custom_types: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/custom_types.yaml
+ 
+metadata:
+  kind: base
+  short: Kubernetes Cluster
+
+description: TOSCA template for launching a Kubernetes Virtual Elastic Cluster.
+
+topology_template:
+  inputs:
+    wn_num:
+      type: integer
+      description: Maximum number of WNs in the elastic cluster
+      default: 5
+      required: yes
+
+    fe_cpus:
+      type: integer
+      description: Numer of CPUs for the front-end node
+      default: 1
+      required: yes
+
+    fe_mem:
+      type: scalar-unit.size
+      description: Amount of Memory for the front-end node
+      default: 3 GB
+      required: yes
+
+    wn_cpus:
+      type: integer
+      description: Numer of CPUs for the WNs
+      default: 1
+      required: yes
+
+    wn_mem:
+      type: scalar-unit.size
+      description: Amount of Memory for the WNs
+      default: 2 GB
+      required: yes
+
+    admin_username:
+      type: string
+      description: Username of the admin user
+      default: kubeuser
+    admin_token:
+      type: string
+      description: Access Token for the admin user
+      default: not_very_secret_token
+    kube_version:
+      type: string
+      description: Kubernetes version to install
+      default: 1.12.2
+
+  node_templates:
+
+    elastic_cluster_front_end:
+      type: tosca.nodes.indigo.ElasticCluster
+      requirements:
+        - lrms: lrms_front_end
+        - wn: wn_node
+
+    lrms_front_end:
+      type: tosca.nodes.indigo.LRMS.FrontEnd
+      requirements:
+        - host: front
+      artifacts:
+        kube_role:
+          file: grycap.kubernetes
+          type: tosca.artifacts.AnsibleGalaxy.role
+        nfs_role:
+          file: grycap.nfs
+          type: tosca.artifacts.AnsibleGalaxy.role
+      capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Slurm
+          properties:
+            type: kubernetes
+      interfaces:
+        Standard:
+          configure:
+            implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_fe_install.yml
+            inputs:
+              kube_front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
+              kube_admin_username:  { get_input: admin_username }
+              kube_admin_token:  { get_input: admin_token }
+              kube_version: { get_input: kube_version }
+
+    front:
+      type: tosca.nodes.indigo.Compute
+      capabilities:
+        endpoint:
+          properties:
+            dns_name: kubeserver
+            network_name: PUBLIC
+            port: 30443
+            protocol: tcp
+        host:
+          properties:
+            num_cpus: { get_input: fe_cpus }
+            mem_size: { get_input: fe_mem }
+        os:
+          properties:
+              image: one://onecloud.i3m.upv.es/847
+
+    wn_node:
+      type: tosca.nodes.indigo.LRMS.WorkerNode
+      artifacts:
+        kube_role:
+          file: grycap.kubernetes
+          type: tosca.artifacts.AnsibleGalaxy.role
+        nfs_role:
+          file: grycap.nfs
+          type: tosca.artifacts.AnsibleGalaxy.role
+      properties:
+        front_end_ip: { get_attribute: [ front, private_address, 0 ] }
+      capabilities:
+        wn:
+          properties:
+            max_instances: { get_input: wn_num }
+            min_instances: 0
+      requirements:
+        - host: wn
+      interfaces:
+        Standard:
+          configure:
+            implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_wn_install.yml
+            inputs:
+              kube_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+              kube_version: { get_input: kube_version }
+            
+    wn:
+      type: tosca.nodes.indigo.Compute
+      capabilities:
+        scalable:
+          properties:
+            count: 0
+        host:
+          properties:
+            num_cpus: { get_input: wn_cpus }
+            mem_size: { get_input: wn_mem }
+        os:
+          properties:
+              image: one://onecloud.i3m.upv.es/847
+
+  outputs:
+    cluster_ip:
+      value: { get_attribute: [ front, public_address, 0 ] }
+    cluster_creds:
+      value: { get_attribute: [ front, endpoint, credential, 0 ] }
+
+

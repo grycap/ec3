@@ -418,7 +418,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/galaxy_portal_install.yml
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/galaxy/galaxy_portal_install.yml
           inputs:
             galaxy_admin: { get_property: [ SELF, admin_email ] }
             galaxy_admin_password: { get_property: [ SELF, admin_password ] }
@@ -446,6 +446,6 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/galaxy_wn_configure.yml
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/galaxy/galaxy_wn_configure.yml
           inputs:
             galaxy_front_end_ip: { get_property: [ SELF, front_end_ip ] }
