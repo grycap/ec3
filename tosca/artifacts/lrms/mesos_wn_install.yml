@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+     vnode_prefix: vnode-
+  roles:
+  - role: grycap.mesos
+    mesos_type_of_node: 'wn'

@@ -256,11 +256,6 @@ node_types:
         type: string
         description: IP of the Front-End node
         required: true
-      hybrid:
-        type: boolean
-        description: Flag to specify that this WorkerNode will work in a hybrid environment
-        default: false
-        required: false
       public_front_end_ip:
         type: string
         description: Public IP of the Front-End node
@@ -286,11 +281,6 @@ node_types:
         description: List of IPs of the WNs
         required: false
         default: []
-      hybrid:
-        type: boolean
-        description: Flag to specify that this FrontEnd will work in a hybrid environment
-        default: false
-        required: false
     capabilities:
         lrms:
           type: tosca.capabilities.indigo.LRMS
@@ -458,3 +448,30 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/galaxy/galaxy_wn_configure.yml
           inputs:
             galaxy_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+
+  tosca.nodes.indigo.LRMS.WorkerNode.Mesos:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    artifacts:
+      mesos_role:
+        file: grycap.mesos
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/mesos_wn_install.yml
+          inputs:
+            mesos_front_private_ip: { get_property: [ SELF, front_end_ip ] }
+
+  tosca.nodes.indigo.LRMS.FrontEnd.Mesos:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    artifacts:
+      slurm_role:
+        file: grycap.mesos
+        type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Mesos
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/mesos_fe_install.yml
