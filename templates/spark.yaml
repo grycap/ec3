@@ -15,6 +15,10 @@ topology_template:
 
     spark:
       type: tosca.nodes.SoftwareComponent
+      artifacts:
+        jupyterhub_role:
+          file: grycap.spark
+          type: tosca.artifacts.AnsibleGalaxy.role
       interfaces:
         Standard:
           configure:
