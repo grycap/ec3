@@ -12,7 +12,7 @@
     notify: restart cluesd
   - name: Download is_cluster_ready
     get_url:
-      url: https://raw.githubusercontent.com/grycap/ec3/tosca/artifacts/is_cluster_ready
-      dest: /usr/bin/is_cluster_ready
+      url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/is_cluster_ready
+      dest: /bin/is_cluster_ready
       mode: 0755
 
