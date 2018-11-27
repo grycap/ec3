@@ -545,7 +545,7 @@ class CmdLaunch:
         CmdLaunch.check_tosca(merged_yaml)
         
         for _, node in merged_yaml["topology_template"]["node_templates"].items():
-            if node["type"] == "tosca.nodes.indigo.ElasticCluster":
+            if node["type"] == "tosca.nodes.ec3.ElasticCluster":
                 if "properties" not in node:
                     node["properties"] = {}
                 node["properties"]["im_auth"] = format_rest_auth_data(auth_data)

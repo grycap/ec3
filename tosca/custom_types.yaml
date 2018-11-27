@@ -203,8 +203,8 @@ node_types:
       endpoint:
         type: tosca.capabilities.Endpoint
 
-  tosca.nodes.indigo.ElasticCluster:
-    derived_from: tosca.nodes.SoftwareComponent
+  tosca.nodes.ec3.ElasticCluster:
+    derived_from: tosca.nodes.ec3.Application
     properties:
       secret_token:
         type: string

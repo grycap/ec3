@@ -44,7 +44,12 @@ topology_template:
   node_templates:
 
     elastic_cluster_front_end:
-      type: tosca.nodes.indigo.ElasticCluster
+      type: tosca.nodes.ec3.ElasticCluster
+      capabilities:
+        endpoint:
+          properties:
+            port: 8800
+            protocol: tcp
       requirements:
         - lrms: lrms_front_end
         - wn: wn_node
