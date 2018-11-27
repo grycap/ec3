@@ -2,8 +2,11 @@
 - hosts: localhost
   connection: local
   tasks:
-    - name: Install docker-compose
-      package: name=docker-compose state=present
+    - name: Download docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 0755
 
     - name: Download docker-lemonade repo
       git:
@@ -13,7 +16,7 @@
         force: yes
         version: master
         #track_submodules: yes
-        
+
     - name: configure Spark details in Juicer
       lineinfile:
           dest: /var/tmp/lemonade/config/juicer-config.yaml
