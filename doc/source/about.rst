@@ -32,3 +32,5 @@ The following publications summarise both the development and integration in lar
 * Calatrava, A,; Romero, E.; Caballer, M.; Moltó, G.; and Alonso, J.M.; "Self-managed cost-efficient virtual elastic clusters on hybrid Cloud infrastructures". Future Generation Computer Systems, 2016. doi:10.1016/j.future.2016.01.018.
 
 Preprints are available `here <http://www.grycap.upv.es/gmolto/publications.php>`_.
+
+Also, EC3 has been integrated in the EGI Platform for the long-tail of science (acess available though  `here <https://marketplace.egi.eu/42-applications-on-demand-beta>`_), and it is available as one of the services of the European Open Science Cloud `Marketplace <https://marketplace.egi.eu/42-applications-on-demand-beta>`_
