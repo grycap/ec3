@@ -1,4 +1,3 @@
-
 .. _ec3-cli:
 
 Command-line Interface
@@ -48,9 +47,9 @@ To deploy a cluster issue this command::
 
       ./ec3 launch mycluster torque ubuntu-ec2 --add "system wn ( ec3_max_instances = 4 )"
 
-.. option:: -u <url>, --xmlrpc-url <url>
+.. option:: -u <url>, --restapi-url <url>
 
-   URL to the IM XML-RPC service.
+   URL to the IM REST API service.
 
 .. option:: -a <file>, --auth-file <file>
 
@@ -224,9 +223,9 @@ The command clones an infrastructure front-end previously deployed from one prov
 
    Provider ID, it must match with the id provided in the auth file. See :ref:`auth-file`.
 
-.. option:: -u <url>, --xmlrpc-url <url>
+.. option:: -u <url>, --restapi-url <url>
 
-   URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+   URL to the IM REST API service. If not indicated, EC3 uses the default value.
 
 .. option:: -e, --eliminate
 
@@ -253,9 +252,9 @@ The command migrates a previously deployed cluster and its running tasks from on
 
    Provider ID, it must match with the id provided in the auth file. See :ref:`auth-file`.
 
-.. option:: -u <url>, --xmlrpc-url <url>
+.. option:: -u <url>, --restapi-url <url>
 
-   URL to the IM XML-RPC service. If not indicated, EC3 uses the default value.
+   URL to the IM REST API service. If not indicated, EC3 uses the default value.
 
 .. option:: -e, --eliminate
 
@@ -277,9 +276,9 @@ To stop a cluster to later continue using it, issue this command::
 
    Path to the authorization file, see :ref:`auth-file`. 
 
-.. option:: -u <url>, --xmlrpc-url <url>
+.. option:: -u <url>, --restapi-url <url>
 
-   URL to the IM XML-RPC external service.
+   URL to the IM REST API external service.
 
 .. option:: -y, --yes
 
@@ -292,7 +291,7 @@ To restart an already stopped cluster, use this command::
 
    ec3 restart <clustername> [-a <file>] [-u <url>]
 
-.. program:: ec3 stop
+.. program:: ec3 restart
 .. option:: clustername
 
    Name of the new cluster to restart.
@@ -301,10 +300,30 @@ To restart an already stopped cluster, use this command::
 
    Path to the authorization file, see :ref:`auth-file`. 
 
-.. option:: -u <url>, --xmlrpc-url <url>
+.. option:: -u <url>, --restapi-url <url>
 
-   URL to the IM XML-RPC external service.
+   URL to the IM REST API external service.
 
+Command ``transfer``
+---------------------
+
+To transfers an already launched cluster that has not been transfered
+to the internal IM, use this command::
+
+   ec3 transfer <clustername> [-a <file>] [-u <url>]
+
+.. program:: ec3 transfer
+.. option:: clustername
+
+   Name of the new cluster to transfer.
+
+.. option:: -a <file>, --auth-file <file>
+
+   Path to the authorization file, see :ref:`auth-file`. 
+
+.. option:: -u <url>, --restapi-url <url>
+
+   URL to the IM REST API external service.
 
 Configuration file
 ------------------
@@ -398,6 +417,7 @@ An example of the auth file::
    id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
    id = azure; type = Azure; username = subscription-id; public_key = file(cert.pem); private_key = file(key.pem)
    id = kub; type = Kubernetes; host = http://server:8080; username = user; password = pass
+   id = fogbow; type = FogBow; host = http://server:8182; token = token
 
 Notice that the user credentials that you specify are *only* employed to provision the resources
 (Virtual Machines, security groups, keypairs, etc.) on your behalf.
@@ -449,4 +469,3 @@ Currently this feature is only available in the command-line interface for `Open
 .. _`VMRC`: http://www.grycap.upv.es/vmrc
 .. _`IAM`: http://aws.amazon.com/iam/
 .. _`Templates`: http://ec3.readthedocs.org/en/latest/templates.html
-
