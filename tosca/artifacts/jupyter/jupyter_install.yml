@@ -7,10 +7,6 @@
 
     - name: Create Kubernetes jupyter namespace 
       command: kubectl create namespace jupyter
-      
+
     - name:  Apply deployment to jupyter namespace  
       command: kubectl apply -f /tmp/jupyter-tensorflow-notebook.yaml --namespace jupyter
-
-    - name: Create Kubernetes jupyter service
-      command: kubectl create -f /tmp/jupyter-tensorflow-notebook.yaml
-      ignore_errors: yes
