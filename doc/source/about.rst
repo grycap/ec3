@@ -33,4 +33,4 @@ The following publications summarise both the development and integration in lar
 
 Preprints are available `here <http://www.grycap.upv.es/gmolto/publications.php>`_.
 
-Also, EC3 has been integrated in the EGI Platform for the long-tail of science (acess available though  `here <https://marketplace.egi.eu/42-applications-on-demand-beta>`_), and it is available as one of the services of the European Open Science Cloud `Marketplace <https://marketplace.egi.eu/42-applications-on-demand-beta>`_
+Also, EC3 has been integrated in the EGI Platform for the long-tail of science (access available through  `here <https://marketplace.egi.eu/42-applications-on-demand-beta>`_), and it is available as one of the services of the European Open Science Cloud `Marketplace <https://marketplace.egi.eu/42-applications-on-demand-beta>`_
