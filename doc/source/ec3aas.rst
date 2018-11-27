@@ -58,7 +58,7 @@ Specifically, the wizard steps are:
 #. **Provider account**: Valid user credentials are required to access to the
    resources of Fogbow. The wizard then is able to contact with Fogbow to generate the token by using the user credentials.
 #. **Operating System**: the user can choose the OS of the cluster, by using a
-   select box where the available images of Fogbow for its credentials are listed. 
+   select box where the available images of Fogbow for its credentials are listed (:ref:`Fig. 4 <figure_images>`) . 
    It takes some seconds to appear, because a call to the Fogbow's API is performed.
 #. **Instance details**: the user must indicate the instance details, like the number
    of CPUs or the RAM memory, for the front-end and also the working
@@ -72,6 +72,11 @@ Specifically, the wizard steps are:
    is showed to the user at the last step of the wizard, and the deployment
    process can start by clicking the Submit button.
 
+
+.. _figure_images:
+.. figure:: images/images.png
+
+   Fig 4. List of available OS in Fogbow.
 
 Finally, when all the steps of the wizard are filled correctly, the submit button
 starts the deployment process of the cluster. Only the front-end will be deployed,
@@ -94,7 +99,7 @@ be used. It will check if the configuration process of cluster has finished::
 .. _figure_data:
 .. figure:: images/data.png
 
-   Fig 4. Information received by the user when a deployment succeeds.
+   Fig 5. Information received by the user when a deployment succeeds.
 
 Notice that EC3aaS does not offer all the capabilities of EC3, like hybrid clusters
 or heterogeneous nodes. Those capabilities are considered advanced aspects
@@ -119,7 +124,7 @@ to the user.
 .. _figure_delete:
 .. figure:: images/delete.png
 
-   Fig 5. Wizard to delete a cluster.
+   Fig 6. Wizard to delete a cluster.
 
 Additional information
 ----------------------
