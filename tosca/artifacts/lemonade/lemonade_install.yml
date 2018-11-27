@@ -2,6 +2,9 @@
 - hosts: localhost
   connection: local
   tasks:
+    - name: Install docker-compose
+      package: name=docker-compose state=present
+
     - name: Download docker-lemonade repo
       git:
         repo: 'https://github.com/eubr-bigsea/docker-lemonade.git'

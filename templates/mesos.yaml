@@ -86,7 +86,7 @@ topology_template:
       capabilities:
         endpoint:
           properties:
-            dns_name: slurmserver
+            dns_name: mesosserver
             network_name: PUBLIC
         host:
           properties:
