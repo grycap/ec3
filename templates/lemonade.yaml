@@ -13,7 +13,7 @@ topology_template:
 
   node_templates:
 
-    spark:
+    lemonade:
       type: tosca.nodes.ec3.Application
       capabilities:
         endpoint:
@@ -27,3 +27,7 @@ topology_template:
       requirements:
         - host: front
         - dependency: lrms_front_end
+
+  outputs:
+    lemonade_url:
+      value: { concat: [ 'http://', get_attribute: [ front, public_address, 0 ], ':23450/' ] }
