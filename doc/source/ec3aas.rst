@@ -67,7 +67,7 @@ Specifically, the general wizard steps are:
    available in the endpoint selected.
 #. **LRMS Selection**: the user can choose the Local Resource Management
    System preferred to be automatically installed and configured by EC3. Currently,
-   SLURM, Torque, Grid Engine, Mesos, Kubernetes and OSCAR (just in Opennebula and EGI Fedcloud) are supported.
+   SLURM, Torque, Grid Engine, Mesos, Kubernetes and `OSCAR`_ (just in Opennebula and EGI Fedcloud) are supported.
 #. **Software Packages**: a set of common software packages is available to be
    installed in the cluster, such as Docker Engine, Spark, Galaxy, OpenVPN,
    BLCR, GNUPlot, Tomcat or Octave. EC3 can install and configure them
@@ -143,3 +143,4 @@ to the user.
 
 
 .. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/latest/ec3.html
+.. _`OSCAR`: https://github.com/grycap/oscar
