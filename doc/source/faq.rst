@@ -15,7 +15,9 @@ However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, O
 
 **What Local Resource Management Systems (LRMS) are supported by EC3?**
 
-Currently, EC3 supports `SLURM`_, `Torque`_, `Apache Mesos`_  and `SGE`_. Support for `HTCondor`_ is comming soon, stay tunned!
+Currently, EC3 supports `SLURM`_, `Torque`_, `Apache Mesos`_, `SGE`_, `HTCondor`_ and `Kubernetes`_. 
+
+In OpenNebula and EGI Fedcloud there is also an option to deploy as an LRMS the `OSCAR`_ (Open Source Serverless Computing for Data-Processing Applications ) framework, that is an open-source platform to support the Functions as a Service (FaaS) computing model for file-processing applications.
 
 **Is it necessary to indicate a LRMS recipe in the deployment?**
 
@@ -117,4 +119,6 @@ automatically install the dependence. You can also contact us by using the conta
 .. _`AppDB portal`: https://appdb.egi.eu
 .. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
 .. _`HTCondor`: https://research.cs.wisc.edu/htcondor/
+.. _`Kubernetes`: https://kubernetes.io/
+.. _`OSCAR`: https://github.com/grycap/oscar
 
