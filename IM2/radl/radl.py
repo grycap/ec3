@@ -1084,7 +1084,7 @@ class _system(Features):
 			"disk": {
 				"image.url": (str, system._check_disk_image_url),
 				"image.name": (str, None),
-				"type": (str, ["SWAP", "ISO", "FILESYSTEM"]),
+				"type": (str, None),
 				"device": (str, None),
 				"size": (int, positive, mem_units),
 				"free_size": (int, positive, mem_units),
