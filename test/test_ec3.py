@@ -273,7 +273,7 @@ configure front (
       id: front
       instance_type: t1.micro
       memory.size_max: inf
-      memory.size_min: 2048
+      memory.size_min: 2147483648
       net_interface.0.connection:
         class: network
         id: private
@@ -302,7 +302,7 @@ configure front (
       id: wn
       instance_type: t1.micro
       memory.size_max: inf
-      memory.size_min: 2048
+      memory.size_min: 2147483648
       net_interface.0.connection:
         class: network
         id: private
