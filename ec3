@@ -929,6 +929,7 @@ class CmdLaunch:
                     newInfrId = infrId
                 system_front.delValue("__im_server")
                 system_front.setValue("__infrastructure_id", newInfrId)
+                ClusterStore.save(options_clustername, radl)
                 if new_im_server_url != im_server_url:
                     headers = {"Authorization": format_rest_auth_data(auth_data)}
                     url = "%s/infrastructures/%s/data?delete=yes" % (im_server_url, infrId)
@@ -945,6 +946,7 @@ class CmdLaunch:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
             CLI.display("Front-end ready!")
         finally:
+<<<<<<< HEAD
             # Save cluster
             if system_front and not options_not_store:
                 system_front.setValue("nodes", len(res if res else [0])-1)
@@ -952,6 +954,8 @@ class CmdLaunch:
                 system_front.setValue("__infrastructure_id", infrId)
                 ClusterStore.save(options_clustername, radl)
 
+=======
+>>>>>>> a1ca4be9d7550ec19468f572a4ee43ec46c74550
             # Print cluster
             if radl and options_print_radl:
                 output = dump_radl_json(radl) if options_json else dump_radl(radl)
