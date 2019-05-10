@@ -41,6 +41,24 @@ topology_template:
       default: 2 GB
       required: yes
 
+    fe_instance_type:
+      type: string
+      description: Name of the FE instance type
+      default: null
+      required: yes
+
+    wn_instance_type:
+      type: string
+      description: Name of the WN instance type
+      default: null
+      required: yes
+
+    os_image:
+      type: string
+      description: URI of the VMI
+      default: null
+      required: yes
+
   node_templates:
 
     elastic_cluster_front_end:
@@ -90,11 +108,12 @@ topology_template:
             network_name: PUBLIC
         host:
           properties:
+            instance_type: { get_input: fe_instance_type }
             num_cpus: { get_input: fe_cpus }
             mem_size: { get_input: fe_mem }
         os:
           properties:
-              image: one://onecloud.i3m.upv.es/847
+              image: { get_input: os_image }
 
     wn_node:
       type: tosca.nodes.indigo.LRMS.WorkerNode.Mesos
@@ -116,11 +135,12 @@ topology_template:
             count: 0
         host:
           properties:
+            instance_type: { get_input: wn_instance_type }
             num_cpus: { get_input: wn_cpus }
             mem_size: { get_input: wn_mem }
         os:
           properties:
-              image: one://onecloud.i3m.upv.es/847
+              image: { get_input: os_image }
 
   outputs:
     cluster_ip:
