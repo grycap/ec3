@@ -384,7 +384,7 @@ class argparse_configyaml:
         configfilename = os.path.expanduser(FILENAME_CONFIG)
         if os.path.isfile(configfilename):
             try:
-                self._defaults = yaml.load(open(configfilename, "r").read())
+                self._defaults = yaml.safe_load(open(configfilename, "r").read())
             except Exception as e:
                 #CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)), level=logging.ERROR, exception=True)
                 sys.stderr.write("ERROR: Error reading configuration file '%s': %s. Delete it and try again.\n" % (configfilename, str(e)))
@@ -443,7 +443,7 @@ default:
                 default = kw["default"][0] if isinstance(kw["default"], list) else kw["default"]
                 if default == sys.stderr or default == sys.stdout:
                     default = dict(stream="stderr" if default == sys.stderr else "stdout")
-                r = "\n".join(yaml.dump(dict(a={prop: default}), default_flow_style=False, indent=4).splitlines()[1:])
+                r = "\n".join(yaml.safe_dump(dict(a={prop: default}), default_flow_style=False, indent=4).splitlines()[1:])
                 self._configfile.write(r + "\n\n")
         elif (self._defaults and prop in self._defaults and kw.get("config", True) and args[0][0] == "-" and
               kw.get("action", None) != "append"):
