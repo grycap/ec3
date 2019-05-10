@@ -1,0 +1,22 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+topology_template:
+  inputs:
+
+    fe_instance_type:
+      type: string
+      description: Name of the FE instance type
+      default: "8"
+      required: yes
+
+    wn_instance_type:
+      type: string
+      description: Name of the WN instance type
+      default: "8"
+      required: yes
+
+    os_image:
+      type: string
+      description: URI of the VMI
+      default: appdb://RECAS-BARI/egi.ubuntu.16.04.lts?fedcloud.egi.eu
+      required: yes

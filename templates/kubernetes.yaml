@@ -20,25 +20,43 @@ topology_template:
     fe_cpus:
       type: integer
       description: Numer of CPUs for the front-end node
-      default: 1
+      default: 2
       required: yes
 
     fe_mem:
       type: scalar-unit.size
       description: Amount of Memory for the front-end node
-      default: 3 GB
+      default: 4 GB
       required: yes
 
     wn_cpus:
       type: integer
       description: Numer of CPUs for the WNs
-      default: 1
+      default: 2
       required: yes
 
     wn_mem:
       type: scalar-unit.size
       description: Amount of Memory for the WNs
-      default: 3 GB
+      default: 4 GB
+      required: yes
+
+    fe_instance_type:
+      type: string
+      description: Name of the FE instance type
+      default: null
+      required: yes
+
+    wn_instance_type:
+      type: string
+      description: Name of the WN instance type
+      default: null
+      required: yes
+
+    os_image:
+      type: string
+      description: URI of the VMI
+      default: null
       required: yes
 
     admin_username:
@@ -85,11 +103,12 @@ topology_template:
             network_name: PUBLIC
         host:
           properties:
+            instance_type: { get_input: fe_instance_type }
             num_cpus: { get_input: fe_cpus }
             mem_size: { get_input: fe_mem }
         os:
           properties:
-              image: one://onecloud.i3m.upv.es/847
+              image: { get_input: os_image }
 
     wn_node:
       type: tosca.nodes.indigo.LRMS.WorkerNode.Kubernetes
@@ -111,11 +130,12 @@ topology_template:
             count: 0
         host:
           properties:
+            instance_type: { get_input: wn_instance_type }
             num_cpus: { get_input: wn_cpus }
             mem_size: { get_input: wn_mem }
         os:
           properties:
-              image: one://onecloud.i3m.upv.es/847
+              image: { get_input: os_image }
 
   outputs:
     cluster_ip:
