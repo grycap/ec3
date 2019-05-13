@@ -54,7 +54,7 @@ except:
     pass
 
 # EC3 client version
-VERSION = '2.0.1'
+VERSION = '2.1.0'
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
 # RADL template path
