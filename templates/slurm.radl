@@ -16,7 +16,10 @@ network public (
   outports contains '8800/tcp'
 )
 
-network private ()
+network private (
+  outports contains '6818/tcp' and
+  outports contains '6817/tcp'
+)
 
 system front (
   # Net interfaces definition. Order matters !
