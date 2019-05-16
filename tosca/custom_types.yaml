@@ -323,6 +323,10 @@ node_types:
         required: no
         type: string
         value: some_insecure_token
+      install_kubeapps:
+        required: no
+        type: boolean
+        value: false
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -343,6 +347,7 @@ node_types:
             kube_front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
             kube_admin_username:  { get_property: [ SELF, admin_username ] }
             kube_admin_token:  { get_property: [ SELF, admin_token ] }
+            kube_install_kubeapps:  { get_property: [ SELF, install_kubeapps ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode

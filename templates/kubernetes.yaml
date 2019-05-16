@@ -67,6 +67,11 @@ topology_template:
       type: string
       description: Access Token for the admin user
       default: not_very_secret_token
+    install_kubeapps:
+      type: boolean
+      description: Flag to set the kubeapps UI to be installed
+      default: false
+
 
   node_templates:
 
@@ -91,6 +96,7 @@ topology_template:
       properties:
         admin_username:  { get_input: admin_username }
         admin_token: { get_input: admin_token }
+        install_kubeapps:  { get_input: install_kubeapps }
       requirements:
         - host: front
 
