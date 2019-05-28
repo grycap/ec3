@@ -12,6 +12,7 @@ system front (
     disk.0.os.name = 'linux' and
     availability_zone = 'atm-prod-cloud.lsd.ufcg.edu.br' and
     disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/a09e8cd9-3b82-4adf-8ac7-b9cceedcacaa'
+    #disk.0.image.url = 'fbw://services-atm-test-site1.lsd.ufcg.edu.br/32a55fa4-0fee-4445-90d2-968becdb9840'
 )
 
 system wn (
@@ -23,6 +24,7 @@ system wn (
     disk.0.os.name = 'linux' and
     availability_zone = 'atm-prod-cloud.lsd.ufcg.edu.br' and
     disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/a09e8cd9-3b82-4adf-8ac7-b9cceedcacaa'
+    #disk.0.image.url = 'fbw://services-atm-test-site1.lsd.ufcg.edu.br/32a55fa4-0fee-4445-90d2-968becdb9840'
 )
 
 system wn2 (
