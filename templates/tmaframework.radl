@@ -1,0 +1,109 @@
+description tmaframework (
+    kind = 'component' and
+    short = 'Trustworthiness Monitoring & Assessment Framework.' and
+    content = 'TMA Framework is a special-purpose ATMOSPHERE application, deployed to run over the infrastructure services layer and internally designed following a microservices-based architecture to monitor the system. 
+
+Webpage: https://github.com/eubr-atmosphere/tma-framework'
+)
+
+network public (
+    outbound = 'yes' and
+    outports contains '8888/tcp' and
+    outports contains '30040/tcp' and
+    outports contains '32025/tcp'
+)
+
+configure tmadeployment (
+@begin
+    - name: Download git repo of the TMA YAML
+      git:
+        repo: https://github.com/eubr-atmosphere/tma-framework
+        #repo: https://github.com/eubr-atmosphere/tma-yaml
+        dest: /tmp/tma-yaml
+        version: master
+
+    - name: initialize kube-proxy service for TMA_Analyze
+      #shell: kubectl proxy --address kubeserverpublic.localdomain --port=8089  --accept-hosts '.*' &
+      shell: kubectl proxy --address '{{ansible_default_ipv4}}' --port=8089  --accept-hosts '.*' &
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+@end
+)
+
+configure kubeprobe (
+@begin
+    - name: Download git repo of the K8s probe for TMA
+      git:
+        repo: https://github.com/eubr-atmosphere/tma-framework-m
+        dest: /tmp/tma-framework-m
+        version: master
+        force: yes
+
+    - name: Modify 'MonitorClient.java' with the name of the machine
+      lineinfile:
+        path: /tmp/tma-framework-m/development/libraries/java-client-lib/src/main/java/eu/atmosphere/tmaf/monitor/client/MonitorClient.java
+        regexp: ' private static final String DEFAULT_ENDPOINT = "https://192.168.1.1:32025/monitor";'
+        line: '    private static final String DEFAULT_ENDPOINT = "https://{{ansible_default_ipv4}}:32025/monitor";'
+        #line: '    private static final String DEFAULT_ENDPOINT = "https://kubeserverpublic.localdomain:32025/monitor";'
+
+    - name: Modify 'environment.properties' with the TMA monitor URL
+      lineinfile:
+        path: /tmp/tma-framework-m/development/probes/probe-k8s-metrics-server/src/main/resources/environment.properties
+        regexp: 'MONITOR_ENDPOINT=https://192.168.1.1:32025/monitor'
+        line: 'MONITOR_ENDPOINT=https://{{ansible_default_ipv4}}:32025/monitor'
+        #line: 'MONITOR_ENDPOINT=https://kubeserverpublic.localdomain:32025/monitor'
+
+    - name: Modify 'environment.properties' with the Kubernetes metrics URL
+      lineinfile:
+        path: /tmp/tma-framework-m/development/probes/probe-k8s-metrics-server/src/main/resources/environment.properties
+        regexp: 'METRICS_ENDPOINT=http://192.168.1.1:8089/apis/metrics.k8s.io/v1beta1/'
+        line: 'METRICS_ENDPOINT=http://{{ansible_default_ipv4}}:8089/apis/metrics.k8s.io/v1beta1/'
+        #line: 'METRICS_ENDPOINT=http://kubeserverpublic.localdomain:8089/apis/metrics.k8s.io/v1beta1/'
+
+    - name: Build python base image
+      command: sh build.sh chdir=/tmp/tma-framework-m/development/dependency/python-base
+
+    - name: generate the digital certificate
+      command: sh setup-environment.sh '{{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}' chdir=/tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python
+      #command: sh setup-environment.sh '{{ansible_default_ipv4}}' chdir=/tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python
+
+    - name: Build Probe Docker base image
+      command: sh build.sh chdir=/tmp/tma-framework-m/development/libraries/java-client-lib 
+
+    - name: Build Kubernetes Probe Docker image
+      command: sh build.sh chdir=/tmp/tma-framework-m/development/probes/probe-k8s-metrics-server 
+@end
+)
+
+configure runkubeprobe (
+@begin
+    - name: apply TMA YAML
+      command: kubectl apply -f /tmp/tma-yaml/deployment/tma_deployment.yaml chdir="/tmp/tma-yaml/deployment"
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+
+    - name: create probe deployment
+      command: kubectl create -f probe-k8s-metrics-server.yaml chdir="/tmp/tma-framework-m/development/probes/probe-k8s-metrics-server"
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+@end
+)
+
+configure front (
+@begin
+---
+  - tasks:
+    - include: tmadeployment.yml
+    - include: kubeprobe.yml
+    - include: runkubeprobe.yml
+@end
+)
+
+configure wn (
+@begin
+---
+  - tasks:
+    - include: kubeprobe.yml
+@end
+)
+
