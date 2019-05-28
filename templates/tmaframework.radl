@@ -82,10 +82,10 @@ configure runkubeprobe (
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
 
-    - name: create probe deployment
-      command: kubectl create -f probe-k8s-metrics-server.yaml chdir="/tmp/tma-framework-m/development/probes/probe-k8s-metrics-server"
-      environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
+    #- name: create probe deployment
+    #  command: kubectl create -f probe-k8s-metrics-server.yaml chdir="/tmp/tma-framework-m/development/probes/probe-k8s-metrics-server"
+    #  environment:
+    #    KUBECONFIG: /etc/kubernetes/admin.conf
 @end
 )
 
