@@ -1,0 +1,37 @@
+description ubuntu_fbw_net (
+    kind = 'images' and
+    short = 'Ubuntu 16.04 amd64 on FogBow.' and
+    content = 'Ubuntu 16.04 amd64 on FogBow using federated net.'
+)
+
+network private (federated = 'yes' and providers = 'atm-prod-cloud.lsd.ufcg.edu.br,upv-cloud.i3m.upv.es' and cidr='10.10.10.0/24')
+
+system front (
+    cpu.count>=2 and
+    memory.size>=2048m and
+    disk.0.os.name = 'linux' and
+    availability_zone = 'atm-prod-cloud.lsd.ufcg.edu.br' and
+    disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/a09e8cd9-3b82-4adf-8ac7-b9cceedcacaa'
+)
+
+system wn (
+    cpu.count>=2 and
+    memory.size>=2048m and
+    ec3_max_instances = 1 and # maximum number of working nodes in the cluster
+    ec3_if_fail = 'wn2' and
+    ec3_node_type = 'wn' and
+    disk.0.os.name = 'linux' and
+    availability_zone = 'atm-prod-cloud.lsd.ufcg.edu.br' and
+    disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/a09e8cd9-3b82-4adf-8ac7-b9cceedcacaa'
+)
+
+system wn2 (
+    cpu.count>=2 and
+    memory.size>=4096m and
+    net_interface.0.connection = 'private' and
+    ec3_max_instances = 1 and # maximum number of working nodes in the cluster
+    ec3_node_type = 'wn' and
+    disk.0.os.name = 'linux' and
+    availability_zone = 'upv-cloud.i3m.upv.es' and
+    disk.0.image.url = 'fbw://fns-atm-prod-cloud.lsd.ufcg.edu.br/b2646164-a77e-408d-8af6-f95ff20d978c'
+)
