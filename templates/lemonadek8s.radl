@@ -1,0 +1,50 @@
+description lemonade (
+    kind = 'component' and
+    short = 'Live Exploration and Mining Of Non-trivial Amount of Data from Everywhere' and
+    content = 'Lemonade is a visual platform for distributed computing, aimed to enable implementation, experimentation, test and deploying of data processing and machine learning applications.
+
+Webpage: https://github.com/eubr-bigsea/lemonade'
+)
+
+network public (
+  # lemonade ports
+  outbound = 'yes' and
+  outports contains '31006/tcp' and
+  outports contains '31001/tcp'
+)
+
+configure lemonade (
+@begin
+    - name: Download lemonade-on-k8s repo
+      git:
+        repo: 'https://github.com/eubr-atmosphere/lemonade-on-k8s.git'
+        dest: /var/tmp/lemonade
+        recursive: yes
+        force: yes
+        version: master
+
+    # TODO: when we use a DFS storage system like HDFS or CEPH, put the server details
+    #- name: Modify storage path
+    #  lineinfile:
+    #    path: /var/tmp/lemonade/setup.sh
+    #    regexp: 'STORAGE_PATH=/srv/lemonade'
+    #    line: 'STORAGE_PATH=/srv/lemonade'
+    
+    - name: Modify Lemonade auth token
+      lineinfile:
+        path: /var/tmp/lemonade/setup.sh
+        regexp: 'AUTH_TOKEN=9740600'
+        line: 'AUTH_TOKEN=7850561'
+        
+    - name: Execute setup.sh
+      shell: ./setup.sh lemonade-test chdir=/var/tmp/lemonade/
+
+@end
+)
+
+configure front (
+@begin
+  - tasks:
+    - include: lemonade.yml
+@end
+)
