@@ -30,15 +30,25 @@ configure tmadeployment (
     #    line: "              - {{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}:6789"
 
     - name: initialize kube-proxy service for TMA_Analyze
+      #shell: kubectl proxy --address kubeserverpublic.localdomain --port=8089  --accept-hosts '.*' &
       shell: kubectl proxy --address '{{ hostvars[groups['front'][0]]['IM_NODE_PUBLIC_IP'] }}' --port=8089  --accept-hosts '.*' &
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
+
+    #- name: apply TMA YAML
+    #  command: kubectl apply -f /tmp/tma-yaml/noceph/tma_deployment.yaml chdir="/tmp/tma-yaml/noceph"
+    #  environment:
+    #    KUBECONFIG: /etc/kubernetes/admin.conf
 @end
 )
 
 configure kubeprobe (
 @begin
 ---
+#  - vars:
+#      FRONT_IP: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
+
+#  - tasks:
     - name: Download git repo of the K8s probe for TMA
       git:
         repo: https://github.com/eubr-atmosphere/tma-framework-m
@@ -51,24 +61,39 @@ configure kubeprobe (
         path: /tmp/tma-framework-m/development/libraries/java-client-lib/src/main/java/eu/atmosphere/tmaf/monitor/client/MonitorClient.java
         regexp: ' private static final String DEFAULT_ENDPOINT = "https://192.168.1.1:32025/monitor";'
         line: '    private static final String DEFAULT_ENDPOINT = "https://{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}:32025/monitor";'
+        #line: '    private static final String DEFAULT_ENDPOINT = "https://kubeserverpublic.localdomain:32025/monitor";'
 
     - name: Modify 'environment.properties' with the TMA monitor URL
       lineinfile:
         path: /tmp/tma-framework-m/development/probes/probe-k8s-metrics-server/src/main/resources/environment.properties
         regexp: 'MONITOR_ENDPOINT=https://192.168.1.1:32025/monitor'
         line: 'MONITOR_ENDPOINT=https://{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}:32025/monitor'
+        #line: 'MONITOR_ENDPOINT=https://kubeserverpublic.localdomain:32025/monitor'
 
     - name: Modify 'environment.properties' with the Kubernetes metrics URL
       lineinfile:
         path: /tmp/tma-framework-m/development/probes/probe-k8s-metrics-server/src/main/resources/environment.properties
         regexp: 'METRICS_ENDPOINT=http://192.168.1.1:8089/apis/metrics.k8s.io/v1beta1/'
         line: 'METRICS_ENDPOINT=http://{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}:8089/apis/metrics.k8s.io/v1beta1/'
+        #line: 'METRICS_ENDPOINT=http://kubeserverpublic.localdomain:8089/apis/metrics.k8s.io/v1beta1/'
 
     - name: Build python base image
       command: sh build.sh chdir=/tmp/tma-framework-m/development/dependency/python-base
 
     - name: generate the digital certificate
       command: sh setup-environment.sh '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}' chdir=/tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python
+      #command: sh setup-environment.sh '{{FRONT_IP}}' chdir=/tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python
+      #command: sh setup-environment.sh '{{ansible_default_ipv4}}' chdir=/tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python
+
+    #- name: Copy monitor certificate to the probe
+    #  fetch:
+    #    src: /tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python/cert.pem
+    #    dest: /tmp/tma-framework-m/development/libraries/java-client-lib/
+    #    flat: yes
+    #    fail_on_missing: no
+
+    - name: Copy monitor certificate to the probe in the front
+      local_action: copy src=/tmp/tma-framework-m/development/server/monitor-server-python/monitor-api-python/cert.pem dest=/tmp/tma-framework-m/development/libraries/java-client-lib/cert.pem
 
     - name: Build Probe Docker base image
       command: sh build.sh chdir=/tmp/tma-framework-m/development/libraries/java-client-lib 
