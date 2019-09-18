@@ -17,10 +17,10 @@ configure tmadeployment (
 @begin
     - name: Download git repo of the TMA YAML
       git:
-        repo: https://github.com/eubr-atmosphere/tma-framework
-        #repo: https://github.com/eubr-atmosphere/tma-yaml
+        #repo: https://github.com/eubr-atmosphere/tma-framework
+        repo: https://github.com/eubr-atmosphere/tma-yaml
         dest: /tmp/tma-yaml
-        version: master
+        version: data-loader
 
     # Only for CEPH version!
     #- name: Modify monitor endpoint for MySQL pod
@@ -106,9 +106,11 @@ configure kubeprobe (
 configure runkubeprobe (
 @begin
     - name: apply TMA YAML
-      command: kubectl apply -f /tmp/tma-yaml/deployment/tma_deployment_without_ceph.yaml chdir="/tmp/tma-yaml/deployment"
+#      command: kubectl apply -f /tmp/tma-yaml/deployment/tma_deployment_without_ceph.yaml chdir="/tmp/tma-yaml/deployment"
+      command: kubectl apply -f /tmp/tma-yaml/noceph/tma_deployment_without_ceph.yaml chdir="/tmp/tma-yaml/noceph"
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
+
 
     - name: create probe deployment
       command: kubectl create -f probe-k8s-metrics-server.yaml chdir="/tmp/tma-framework-m/development/probes/probe-k8s-metrics-server"

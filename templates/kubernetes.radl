@@ -10,14 +10,18 @@ Webpage: https://kubernetes.io/'
 network public (
   # kubernetes ports
   outbound = 'yes' and
-  outports contains '6443/tcp'
+  outports contains '6443/tcp' and
+  outports contains '5000/tcp'
 )
 
-network private ()
+network private (
+  #indicate fogbow dedicated network
+#  provider_id = '3c397a47-2038-4c48-b673-300062960a63@atm-prod.lsd.ufcg.edu.br'
+)
 
 system front (
-  cpu.count>=2 and
-  memory.size>=2048m and
+  #cpu.count>=2 and
+  #memory.size>=2048m and
   net_interface.0.connection = 'private' and
   net_interface.0.dns_name = 'kubeserver' and
   net_interface.1.connection = 'public' and
@@ -36,13 +40,12 @@ configure front (
       kube_server: 'kubeserver'
       kube_apiserver_options: [{option: "--insecure-port", value: "8080"}]
       kube_api_server: '{{ IM_NODE_PRIVATE_IP }}'
-      kube_apply_repos: []
       kube_install_metrics: true
 @end
 )
 
 system wn (
-  memory.size>=2048m and
+  #memory.size>=2048m and
   net_interface.0.connection='private'
 )
 
