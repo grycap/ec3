@@ -36,9 +36,14 @@ configure lemonade (
         regexp: 'AUTH_TOKEN=9740600'
         line: 'AUTH_TOKEN=7850561'
         
-    - name: Execute setup.sh
-      shell: ./setup.sh lemonade-test chdir=/var/tmp/lemonade/
+    - name: create namespace
+      command: kubectl create namespace lemonade
+        
+    - name: Execute accounts.sh
+      shell: ./accounts.sh lemonade chdir=/var/tmp/lemonade/
 
+    - name: Execute setup.sh
+      shell: ./setup.sh lemonade chdir=/var/tmp/lemonade/
 @end
 )
 
