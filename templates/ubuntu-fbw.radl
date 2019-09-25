@@ -1,4 +1,3 @@
-
 description ubuntu_fbw (
     kind = 'images' and
     short = 'Ubuntu 16.04 amd64 on FogBow.' and
@@ -6,16 +5,18 @@ description ubuntu_fbw (
 )
 
 system front (
-    cpu.count>=1 and
-    memory.size>=1024m and
+    cpu.count>=2 and
+    memory.size>=4096m and
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'fbw://services-atm-test-site1.lsd.ufcg.edu.br/32a55fa4-0fee-4445-90d2-968becdb9840'
+    disk.0.image.url = 'fbw://services-atm-prod.lsd.ufcg.edu.br/bef195c5-6ea5-45f9-a657-8d7b703fc539'
 )
 
 system wn (
-    cpu.count>=1 and
-    memory.size>=512m and
+    cpu.count>=2 and
+    cpu.arch='x86_64' and
+    memory.size>=4096m and
+    ec3_node_type = 'wn' and
     ec3_max_instances = 10 and # maximum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'fbw://services-atm-test-site1.lsd.ufcg.edu.br/32a55fa4-0fee-4445-90d2-968becdb9840'
+    disk.0.image.url = 'fbw://services-atm-prod.lsd.ufcg.edu.br/bef195c5-6ea5-45f9-a657-8d7b703fc539'
 )
