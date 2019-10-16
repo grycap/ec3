@@ -80,7 +80,7 @@ class RefreshToken:
     REFRESH_TOKEN_FILE = "/usr/local/ec3/refresh.dat"
 
     def __init__(self, client_id, client_secret):
-        self._refresh_time_diff = 300
+        self._refresh_time_diff = 600
         self._client_id = client_id
         self._client_secret = client_secret
 

@@ -20,8 +20,7 @@ configure front (
 
     - cron:
         name: "refresh token"
-        minute: "0"
-        hour: "*/1"
+        minute: "*/5"
         job: "[ -f /usr/local/ec3/auth.dat ] && /usr/local/ec3/refresh_token.py {{ CLIENT_ID }} {{ CLIENT_SECRET }}"
         user: root
         cron_file: refresh_token
