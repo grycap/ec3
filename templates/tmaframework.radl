@@ -20,7 +20,7 @@ configure tmadeployment (
         #repo: https://github.com/eubr-atmosphere/tma-framework
         repo: https://github.com/eubr-atmosphere/tma-yaml
         dest: /tmp/tma-yaml
-        version: data-loader
+        version: master
 
     # Only for CEPH version!
     #- name: Modify monitor endpoint for MySQL pod
