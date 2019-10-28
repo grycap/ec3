@@ -9,6 +9,8 @@ Webpage: http://ophidia.cmcc.it'
 network public (
   # kubernetes ports
   outbound = 'yes' and
+  outports contains '8800/tcp' and
+  outports contains '8899/tcp' and
   outports contains '8080/tcp' and
   outports contains '11732/tcp' and
   outports contains '4443/tcp'
