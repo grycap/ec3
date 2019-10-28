@@ -69,6 +69,7 @@ configure front (
       nfs_subnet: "oph-*.localdomain"
       mysql_subnet: "oph-%.localdomain"
       io_node_number: "{{ NNODES }}"
+      io_cpus: '{{IM_INFRASTRUCTURE_RADL|json_query("[?id == ''wn''].cpu_count_min|[0]")}}'
 
     - role: 'grycap.im'
 
@@ -77,6 +78,14 @@ configure front (
       clues_queue_system: 'slurm'
       max_number_of_nodes: '{{ NNODES }}'
       vnode_prefix: 'wn'
+      clues_config_options:
+        - { section: 'scheduling', option: 'IDLE_TIME', value: '300' }
+        - { section: 'scheduling', option: 'RECONSIDER_JOB_TIME', value: '60' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '3000' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
+        - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
+        - { section: 'monitoring', option: 'PERIOD_MONITORING_NODES', value: '2' }
+        - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '3000' }
 
    post_tasks:
     - name: Disable oph-io1 node
@@ -99,6 +108,7 @@ configure wn (
       nfs_subnet: "oph-*.localdomain"
       mysql_subnet: "oph-%.localdomain"
       io_node_number: "{{ groups['wn']|length if 'wn' in groups else 1}}"
+      io_cpus: '{{IM_INFRASTRUCTURE_RADL|json_query("[?id == ''wn''].cpu_count_min|[0]")}}'
 
    pre_tasks:
     - name: stop service firewalld
