@@ -7,10 +7,14 @@ Webpage: http://ophidia.cmcc.it'
 )
 
 network public (
-  # kubernetes ports
   outbound = 'yes' and
+  # SLURM ports
+  outports contains '6818/tcp' and
+  outports contains '6817/tcp' and
+  # IM port
   outports contains '8800/tcp' and
   outports contains '8899/tcp' and
+  # Ophidia ports
   outports contains '8080/tcp' and
   outports contains '11732/tcp' and
   outports contains '4443/tcp'
@@ -21,7 +25,7 @@ network private ()
 
 system front (
   cpu.count>=2 and
-  memory.size>=2048m and
+  memory.size>=4096m and
   net_interface.0.connection = 'private' and
   net_interface.0.dns_name = 'oph-server' and
   net_interface.1.connection = 'public' and
@@ -38,7 +42,7 @@ system front (
 
 system wn (
 cpu.count>=2 and
-memory.size>=2g and
+memory.size>=4g and
 net_interface.0.connection = 'private' and
 net_interface.0.dns_name = 'oph-io#N#'
 )
@@ -55,8 +59,6 @@ configure front (
         ec3_xpath: /system/front/auth
 
    pre_tasks:
-    - name: stop service firewalld
-      systemd: name=firewalld state=stopped
     - name: Creates NFS shared directory
       file: path=/data state=directory owner=root group=root
 
@@ -112,12 +114,13 @@ configure wn (
       io_node_number: "{{ groups['wn']|length if 'wn' in groups else 1}}"
       io_cpus: '{{IM_INFRASTRUCTURE_RADL|json_query("[?id == ''wn''].cpu_count_min|[0]")}}'
 
-   pre_tasks:
-    - name: stop service firewalld
-      systemd: name=firewalld state=stopped
-
 @end
 )
+
+include ophidia_misc (
+  template = 'openports'
+)
+
 
 deploy front 1
 deploy wn 1
