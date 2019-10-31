@@ -8,12 +8,8 @@ Webpage: http://ophidia.cmcc.it'
 
 network public (
   outbound = 'yes' and
-  # SLURM ports
-  outports contains '6818/tcp' and
-  outports contains '6817/tcp' and
   # IM port
   outports contains '8800/tcp' and
-  outports contains '8899/tcp' and
   # Ophidia ports
   outports contains '8080/tcp' and
   outports contains '11732/tcp' and
@@ -59,6 +55,8 @@ configure front (
         ec3_xpath: /system/front/auth
 
    pre_tasks:
+    - name: stop service firewalld
+      systemd: name=firewalld state=stopped
     - name: Creates NFS shared directory
       file: path=/data state=directory owner=root group=root
 
@@ -90,10 +88,30 @@ configure front (
         - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
         - { section: 'monitoring', option: 'PERIOD_MONITORING_NODES', value: '2' }
         - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '3000' }
+        - { section: 'scheduling', option: 'EXTRA_NODES_FREE', value: '1' }
+        - { section: 'scheduling', option: 'SCHEDULER_CLASSES', value: 'clueslib.schedulers.CLUES_Scheduler_PowOn_Requests, clueslib.schedulers.CLUES_Scheduler_Reconsider_Jobs, clueslib.schedulers.CLUES_Scheduler_PowOff_IDLE, clueslib.schedulers.CLUES_Scheduler_PowOn_Free' }
 
-   post_tasks:
-    - name: Disable oph-io1 node
-      command: clues disable oph-io1
+   tasks:
+    - name: stop service firewalld
+      systemd: name=firewalld state=stopped enabled=no
+
+    # Add hooks to disable nodes until Ophidia is installed
+    - name: Create Hooks configuration file for CLUES2
+      copy: src=/etc/clues2/conf.d/hooks.cfg-example dest=/etc/clues2/conf.d/hooks.cfg force=no
+      notify: restart cluesd
+
+    - name: Create Hooks configuration file for CLUES2
+      copy:
+        content: |
+          #!/bin/bash
+          scontrol update NodeName=$1 State=DRAIN Reason=”Installing”
+        dest: /etc/clues2/scripts/node_drain.sh
+        force: no
+        mode: '755'
+
+    - name: Set PRE_POWERON hook value
+      ini_file: dest=/etc/clues2/conf.d/hooks.cfg section=hooks option=PRE_POWERON value="./node_drain.sh"
+      notify: restart cluesd
 
 @end
 )
@@ -113,6 +131,14 @@ configure wn (
       mysql_subnet: "oph-%.localdomain"
       io_node_number: "{{ groups['wn']|length if 'wn' in groups else 1}}"
       io_cpus: '{{IM_INFRASTRUCTURE_RADL|json_query("[?id == ''wn''].cpu_count_min|[0]")}}'
+
+   tasks:
+    - name: stop service firewalld
+      systemd: name=firewalld state=stopped enabled=no
+
+    - name: Resume node
+      command: scontrol update NodeName={{ ansible_hostname }} State=RESUME
+      ignore_errors: yes
 
 @end
 )
