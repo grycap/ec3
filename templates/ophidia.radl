@@ -143,10 +143,5 @@ configure wn (
 @end
 )
 
-include ophidia_misc (
-  template = 'openports'
-)
-
-
 deploy front 1
 deploy wn 1
