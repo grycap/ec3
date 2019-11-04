@@ -109,8 +109,8 @@ configure front (
         force: no
         mode: '755'
 
-    - name: Set PRE_POWERON hook value
-      ini_file: dest=/etc/clues2/conf.d/hooks.cfg section=hooks option=PRE_POWERON value="./node_drain.sh"
+    - name: Set POST_POWERON hook value
+      ini_file: dest=/etc/clues2/conf.d/hooks.cfg section=hooks option=POST_POWERON value="./node_drain.sh"
       notify: restart cluesd
 
 @end
