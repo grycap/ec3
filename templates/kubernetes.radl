@@ -10,7 +10,8 @@ Webpage: https://kubernetes.io/'
 network public (
   # kubernetes ports
   outbound = 'yes' and
-  outports contains '6443/tcp'
+  outports contains '6443/tcp' and
+  outports contains '80/tcp'
 )
 
 network private ()
