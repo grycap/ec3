@@ -106,7 +106,7 @@ configure front (
           #!/bin/bash
           if [ $2 -eq 1 ]
           then
-              scontrol update NodeName=$1 State=DRAIN Reason=”Installing”
+              scontrol update NodeName=$1 State=DRAIN Reason="Installing"
           else
               echo "Do not disable node"
           fi
