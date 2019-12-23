@@ -97,8 +97,12 @@ The cluster may not be configured when the IP of the front-end is returned by th
 web page, because the process of configuring the cluster is a batch process that
 takes several minutes, depending on the chosen configuration. However, the user
 is allowed to log in the front-end machine of the cluster since the moment it is
-deployed. To know if the cluster is configured, the command is cluster ready can
-be used. It will check if the configuration process of cluster has finished.
+deployed. To know if the cluster is configured, the command is_cluster_ready can
+be used. It will check if the configuration process of cluster has finished::
+
+  ubuntu@kubeserverpublic:~$ is_cluster_ready
+  Cluster configured!
+
 
 .. _figure_data:
 .. figure:: images/data.png
