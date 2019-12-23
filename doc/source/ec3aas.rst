@@ -8,7 +8,7 @@ Overview
 EC3 as a Service (EC3aaS), is a web service offered to the community to facilitate
 the usage of EC3 to non-experienced users. The EC3 portal integrated in the
 `EGI Application on Demmand`_ can be accessed by users of the `vo.access.egi.eu` VO
-(access `EGI AoD Wiki`_ to get more information). The users are enabled to
+(access `EGI AoD documentation`_ to get more information). The users are enabled to
 try the tool by using the user-friendly wizard to easily configure and deploy Virtual
 Elastic Clusters on `EGI Cloud Compute`_ or `HelixNebula`_ (powered by `Exoscale`_) resources.
 The user only needs to choose the Cloud provider and allow EC3 to provision VMs on behalf
@@ -115,7 +115,7 @@ Configuration and Deployment of a Cluster in HelixNebula Cloud
 
 In case of the HelixNebula Cloud the wizard has an additional step after "Cluster Configurationt".
 In the "Provider Account" step (:ref:`Fig. 6 <figure_helix>`) the user must provide the API key and Secret Key of the Exoscale
-cloud. To get them follow the steps described in the `AoD readthedocs`_.
+cloud. To get them follow the steps described in the `Exoscale Vouchers for AoD`_ documentation.
 
 .. _figure_helix:
 .. figure:: images/helix.png
@@ -148,11 +148,11 @@ to the user.
 .. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/latest/ec3.html
 .. _`OSCAR`: https://github.com/grycap/oscar
 .. _`EGI Application on Demmand`: https://marketplace.egi.eu/42-applications-on-demand
-.. _`EGI AoD Wiki`: https://wiki.egi.eu/wiki/Applications_on_Demand_Service_-_architecture
+.. _`EGI AoD documentation`: https://egi-federated-cloud.readthedocs.io/en/latest/aod.html
 .. _`EGI CheckIn`: https://www.egi.eu/services/check-in/
 .. _`EGI Cloud Compute`: https://www.egi.eu/services/cloud-compute/
 .. _`HelixNebula`: https://www.helix-nebula.eu/
 .. _`Exoscale`: https://www.exoscale.com/
 .. _`ECAS`: https://portal.enes.org/data/data-metadata-service/processing/ecas
 .. _`EGI AppDB`: https://appdb.egi.eu/
-.. _`AoD readthedocs`: https://egi-federated-cloud.readthedocs.io/en/latest/aod/exoscale-vouchers.html
+.. _`Exoscale Vouchers for AoD`: https://egi-federated-cloud.readthedocs.io/en/latest/aod/exoscale-vouchers.html
