@@ -54,7 +54,7 @@ except:
     pass
 
 # EC3 client version
-VERSION = '2.0.1'
+VERSION = '2.1.0'
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
 # RADL template path
@@ -500,7 +500,7 @@ class argparse_configyaml:
         configfilename = os.path.expanduser(FILENAME_CONFIG)
         if os.path.isfile(configfilename):
             try:
-                self._defaults = yaml.load(open(configfilename, "r").read())
+                self._defaults = yaml.safe_load(open(configfilename, "r").read())
             except Exception as e:
                 #CLI.display("Error reading configuration file '%s': %s" % (configfilename, str(e)), level=logging.ERROR, exception=True)
                 sys.stderr.write("ERROR: Error reading configuration file '%s': %s. Delete it and try again.\n" % (configfilename, str(e)))
@@ -559,7 +559,7 @@ default:
                 default = kw["default"][0] if isinstance(kw["default"], list) else kw["default"]
                 if default == sys.stderr or default == sys.stdout:
                     default = dict(stream="stderr" if default == sys.stderr else "stdout")
-                r = "\n".join(yaml.dump(dict(a={prop: default}), default_flow_style=False, indent=4).splitlines()[1:])
+                r = "\n".join(yaml.safe_dump(dict(a={prop: default}), default_flow_style=False, indent=4).splitlines()[1:])
                 self._configfile.write(r + "\n\n")
         elif (self._defaults and prop in self._defaults and kw.get("config", True) and args[0][0] == "-" and
               kw.get("action", None) != "append"):
@@ -885,7 +885,7 @@ class CmdLaunch:
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     raise Exception(resp.text)
 
-                if state not in system.IS_ACCESSIBLE: raise Exception("Frontend in incorrect state")
+                if state not in system.IS_ACCESSIBLE: raise Exception("Frontend in incorrect state: %s." % state)
                 if time.time() - time0 > TIMEOUT:
                     raise Exception("Time out! Infrastructure is not still configured!")
                 Display.display_waiting("Front-end state: %s%s" % (state, ", IP: %s" % vm_ip if vm_ip else ""),
@@ -946,6 +946,13 @@ class CmdLaunch:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
             CLI.display("Front-end ready!")
         finally:
+            if system_front and not options_not_store:
+                system_front.setValue("nodes", len(res if res else [0])-1)
+                system_front.setValue("auth", json.dumps(auth_data))
+                system_front.setValue("__infrastructure_id", infrId)
+                ClusterStore.save(options_clustername, radl)
+
+
             # Print cluster
             if radl and options_print_radl:
                 output = dump_radl_json(radl) if options_json else dump_radl(radl)

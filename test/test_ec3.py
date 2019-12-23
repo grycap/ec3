@@ -200,7 +200,7 @@ system wn (
 
 network public (
   outbound = 'yes' and
-  outports = '6443/tcp,8800/tcp'
+  outports = '8899/tcp,6443/tcp,80/tcp,8800/tcp'
 )
 
 network private (
@@ -227,7 +227,7 @@ configure front (
     when: ansible_os_family == "RedHat"
     with_items: '{{OUTPORTS.split('','')}}'
   vars:
-    OUTPORTS: 6443/tcp,8800/tcp
+    OUTPORTS: 8899/tcp,6443/tcp,80/tcp,8800/tcp
 - roles:
   - kube_api_server: '{{ IM_NODE_PRIVATE_IP }}'
     kube_apiserver_options:
@@ -273,7 +273,7 @@ configure front (
       id: front
       instance_type: t1.micro
       memory.size_max: inf
-      memory.size_min: 2048
+      memory.size_min: 2147483648
       net_interface.0.connection:
         class: network
         id: private
@@ -289,7 +289,9 @@ configure front (
       id: public
       outbound: 'yes'
       outports:
+      - 8899/tcp
       - 6443/tcp
+      - 80/tcp
       - 8800/tcp
     - class: network
       id: private
@@ -302,7 +304,7 @@ configure front (
       id: wn
       instance_type: t1.micro
       memory.size_max: inf
-      memory.size_min: 2048
+      memory.size_min: 2147483648
       net_interface.0.connection:
         class: network
         id: private
@@ -331,7 +333,7 @@ configure wn (
     when: ansible_os_family == "RedHat"
     with_items: '{{OUTPORTS.split('','')}}'
   vars:
-    OUTPORTS: 6443/tcp,8800/tcp
+    OUTPORTS: 8899/tcp,6443/tcp,80/tcp,8800/tcp
 - roles:
   - kube_server: kubeserver
     kube_type_of_node: wn
