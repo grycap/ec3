@@ -55,30 +55,30 @@ the software packages to be installed.
 
 Specifically, the wizard steps are:
 
-#. **Cluster Configurationt**: the user can choose the Local Resource Management
+#. **Cluster Configuration**: the user can choose the Local Resource Management
    System preferred to be automatically installed and configured by EC3. Currently,
    SLURM, Torque, Grid Engine, Mesos (+ Marathon + Chronos), Kubernetes, `ECAS`_,
    Nomad and `OSCAR`_ are supported. Also a set of common software packages is
    available to be installed in the cluster, Spark, Galaxy (only in case of SLURM
-   clusters), GNUPlot or Octave. EC3 can install and configure them
+   clusters), GNUPlot or Octave. EC3 will install and configure them
    automatically in the contextualization process. If the user needs another
    software to be installed in his cluster, a new Ansible recipe can be developed
    and added to EC3 by using the CLI interface.
-#. **Endpoint**: the user can choose one of the EGI Cloud Compute sites that provides
-   support to the `vo.access.egi.eu` VO. The list of sites of automatically obtained
+#. **Endpoint**: the user has to choose one of the EGI Cloud Compute sites that provides
+   support to the `vo.access.egi.eu` VO. The list of sites is automatically obtained
    from the `EGI AppDB`_ information system.
-#. **Operating System**: the user can choose the OS of the cluster from the list of available
+#. **Operating System**: the user chooses the OS of the cluster from the list of available
    Operating Systems that are provided by the selected Cloud site (also obtained from AppDB).
 #. **Instance details**: the user must indicate the instance details, like the number
    of CPUs or the RAM memory, for the front-end and also the working
    nodes of the cluster (also obtained from AppDB).
-#. **Cluster's size & Name**: the user can select the maximum number of nodes of
+#. **Cluster's size & Name**: here, the user has to select the maximum number of nodes of
    the cluster (from 1 to 10), without including the front-end node. This value indicates
    the maximum number of working nodes that the cluster can scale. Remember that, initially
    the cluster only is created with the front-end, and the nodes are powered on on-demand.
    Also a name for the cluster (that must be unique) is required to identify the cluster.
 #. **Resume and Launch**: a summary of the chosen configuration of the cluster
-   is showed to the user at the last step of the wizard, and the deployment
+   is shown to the user at the last step of the wizard, and the deployment
    process can start by clicking the Submit button (:ref:`Fig. 4 <_figure_resume>`).
 
 .. _figure_resume:
@@ -86,13 +86,19 @@ Specifically, the wizard steps are:
 
    Fig 4. Resume and Launch: final Wizard step.
 
-Finally, when all the steps of the wizard are filled correctly, the submit button
+Finally, when all the steps of the wizard are fulfilled correctly, the submit button
 starts the deployment process of the cluster. Only the front-end will be deployed,
 because the working nodes will be automatically provisioned by EC3 when the
 workload of the cluster requires them. When the virtual machine of the front-end
 is running, EC3aaS provides the user with the necessary data to connect to the
 cluster (:ref:`Fig. 5 <figure_data>`) which is composed by the username and SSH private
 key to connect to the cluster, the front-end IP and the name of the cluster.
+
+.. _figure_data:
+.. figure:: images/data.png
+
+   Fig 5. Information received by the user when a deployment succeeds.
+
 The cluster may not be configured when the IP of the front-end is returned by the
 web page, because the process of configuring the cluster is a batch process that
 takes several minutes, depending on the chosen configuration. However, the user
@@ -100,16 +106,12 @@ is allowed to log in the front-end machine of the cluster since the moment it is
 deployed. To know if the cluster is configured, the command is_cluster_ready can
 be used. It will check if the configuration process of cluster has finished::
 
+  user@local:~$ssh -i key.pem <username>@<front_ip>
   ubuntu@kubeserverpublic:~$ is_cluster_ready
   Cluster configured!
 
 If the the command `is_cluster_ready` is not found it means that the cluster is already
 being configured.
-
-.. _figure_data:
-.. figure:: images/data.png
-
-   Fig 5. Information received by the user when a deployment succeeds.
 
 Notice that EC3aaS does not offer all the capabilities of EC3, like hybrid clusters
 or the usage of spot instances. Those capabilities are considered advanced aspects
@@ -119,10 +121,10 @@ of the tool and are only available via the `EC3 Command-line Interface`_.
 Configuration and Deployment of a Cluster in HelixNebula Cloud
 --------------------------------------------------------------
 
-In case of the HelixNebula Cloud the wizard is the same shown for EGI Cloud
-Compute but it has an additional step after "Cluster Configurationt".
+In case of HelixNebula Cloud, the wizard is the same shown for EGI Cloud
+Compute but it has an additional step after "Cluster Configuration".
 In the "Provider Account" step (:ref:`Fig. 6 <figure_helix>`) the user must provide the API key 
-and Secret Key of the Exoscale cloud. To get them follow the steps described in the
+and Secret Key of the Exoscale cloud. To get them, follow the steps described in the
 `Exoscale Vouchers for AoD`_ documentation.
 
 .. _figure_helix:
@@ -134,14 +136,14 @@ Management of deployed clusters
 -------------------------------
 
 You can get a list of all your deployed clusters choosing the "Manage your deployed clusters"
-option (right in :ref:`Fig. 2 <figure_providers>`). It will show a list with the detail of
+option (right in :ref:`Fig. 2 <figure_providers>`). It will show a list with the details of
 the clusters launched by the user. The list will show the following information: Cluster
 name (specified by the user on creation), the state, front-end public IP, number of working
 nodes deployed. It will also enable the user to download the SSH private key needed to access
 the front-end node and the contextualization log to see all the configuration steps performed.
 This log will enable the user to verify the currect status of the configuration of the cluster,
 and check for errors in case that the cluster is not correctily configured (unconfigured state).
-Finally it will also shows a button to delete the cluster.
+Finally it also offers a button to delete the cluster.
 
 When the deletion process finishes successfully, the front-end of the cluster and all the
 working nodes had been destroyed and a message is shown to the user informing
@@ -151,7 +153,7 @@ an error message is returned to the user.
 .. _figure_list:
 .. figure:: images/list.png
 
-   Fig 7. List of Clusters.
+   Fig 7. List of Clusters deployed by the active user.
 
 
 .. _`EC3 Command-line Interface`: http://ec3.readthedocs.org/en/latest/ec3.html
