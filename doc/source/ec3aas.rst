@@ -10,7 +10,7 @@ the usage of EC3 to non-experienced users. The EC3 portal integrated in the
 `EGI Application on Demmand`_ can be accessed by users of the `vo.access.egi.eu` VO
 (read `EGI AoD documentation`_ to get more information). The users are enabled to
 try the tool by using the user-friendly wizard to easily configure and deploy Virtual
-Elastic Clusters on `EGI Cloud Compute`_ or `HelixNebula`_Cloud (powered by `Exoscale`_) resources.
+Elastic Clusters on `EGI Cloud Compute`_ or `HelixNebula`_ Cloud (powered by `Exoscale`_) resources.
 The user only needs to choose the Cloud provider and allow EC3 to provision VMs on behalf
 of the user.
 
