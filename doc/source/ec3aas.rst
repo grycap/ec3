@@ -66,7 +66,9 @@ Specifically, the wizard steps are:
    and added to EC3 by using the CLI interface.
 #. **Endpoint**: the user has to choose one of the EGI Cloud Compute sites that provides
    support to the `vo.access.egi.eu` VO. The list of sites is automatically obtained
-   from the `EGI AppDB`_ information system.
+   from the `EGI AppDB`_ information system. In case that the site has some errors in the
+   Argo Monitoring System a message `(CRITICAL state!)` will be added to the name.
+   You can still use this site but it may fail due to this errors.
 #. **Operating System**: the user chooses the OS of the cluster from the list of available
    Operating Systems that are provided by the selected Cloud site (also obtained from AppDB).
 #. **Instance details**: the user must indicate the instance details, like the number
