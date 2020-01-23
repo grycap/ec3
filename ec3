@@ -1149,6 +1149,7 @@ class CmdReconfigure:
         try:
             r = ClusterStore.load(options.clustername)
             im_server_url, infrId, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            auth_content = Authentication.dump(auth_data)
         except Exception as e:
             CLI.display(str(e), level=logging.ERROR)
             sys.exit(1)
