@@ -221,6 +221,20 @@ node_types:
         description: IM auth data
         default: ""
         required: false
+      config_options:
+        type: list
+        entry_schema:
+          type: map
+        description: CLUES config options
+        default:
+        - { section: 'scheduling', option: 'IDLE_TIME', value: '1800' }
+        - { section: 'scheduling', option: 'RECONSIDER_JOB_TIME', value: '120' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWERON', value: '3000' }
+        - { section: 'monitoring', option: 'MAX_WAIT_POWEROFF', value: '600' }
+        - { section: 'monitoring', option: 'PERIOD_LIFECYCLE', value: '10' }
+        - { section: 'monitoring', option: 'PERIOD_MONITORING_NODES', value: '2' }
+        - { section: 'client', option: 'CLUES_REQUEST_WAIT_TIMEOUT', value: '3000' }
+        required: false
     artifacts:
       clues_role:
         file: grycap.clues
@@ -239,6 +253,7 @@ node_types:
             clues_powermanager_plugin: { get_property: [ SELF, powermanager_plugin] }
             auth: { get_property: [ SELF, im_auth] }
             clues_git_branch: im_rest
+            clues_config_options: { get_property: [ SELF, config_options] }
     requirements:
       - wn:
           capability: tosca.capabilities.Scalable
@@ -326,7 +341,19 @@ node_types:
       install_kubeapps:
         required: no
         type: boolean
-        value: false
+        default: false
+      install_metrics:
+        required: no
+        type: boolean
+        default: true
+      install_nfs_client:
+        required: no
+        type: boolean
+        default: true
+      version: 
+        required: no
+        type: string
+        default: "1.15.7"
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -347,7 +374,11 @@ node_types:
             kube_front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
             kube_admin_username:  { get_property: [ SELF, admin_username ] }
             kube_admin_token:  { get_property: [ SELF, admin_token ] }
-            kube_install_kubeapps:  { get_property: [ SELF, install_kubeapps ] }
+            kube_install_kubeapps: { get_property: [ SELF, install_kubeapps ] }
+            kube_install_metrics:  { get_property: [ SELF, install_metrics ] }
+            kube_install_nfs_client:  { get_property: [ SELF, install_nfs_client ] }
+            kube_version:  { get_property: [ SELF, version ] }
+      
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
@@ -487,3 +518,28 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/mesos_fe_install.yml
           inputs:
             max_number_of_nodes: { get_property: [ wn_node, wn, max_instances] }
+
+  tosca.nodes.indigo.OSCAR:
+    derived_from: tosca.nodes.SoftwareComponent
+    artifacts:
+      faas_role:
+        file: grycap.kubefaas
+        type: tosca.artifacts.AnsibleGalaxy.role
+      minio_role:
+        file: grycap.kubeminio
+        type: tosca.artifacts.AnsibleGalaxy.role
+      registry_role:
+        file: grycap.kuberegistry
+        type: tosca.artifacts.AnsibleGalaxy.role
+      oscar_role:
+        file: grycap.kubeoscar
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/oscar/oscar_install.yml
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+          relationship: tosca.relationships.HostedOn
