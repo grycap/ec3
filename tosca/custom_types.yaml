@@ -350,6 +350,10 @@ node_types:
         required: no
         type: boolean
         default: true
+      install_ingress:
+        required: no
+        type: boolean
+        default: true
       version: 
         required: no
         type: string
@@ -377,6 +381,7 @@ node_types:
             kube_install_kubeapps: { get_property: [ SELF, install_kubeapps ] }
             kube_install_metrics:  { get_property: [ SELF, install_metrics ] }
             kube_install_nfs_client:  { get_property: [ SELF, install_nfs_client ] }
+            kube_install_ingress:  { get_property: [ SELF, install_ingress ] }
             kube_version:  { get_property: [ SELF, version ] }
       
 
