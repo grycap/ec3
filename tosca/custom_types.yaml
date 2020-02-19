@@ -521,6 +521,12 @@ node_types:
 
   tosca.nodes.indigo.OSCAR:
     derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      minio_secretkey:
+        type: string
+        description: Secret key to access Minio
+        required: false
+        default: minio123
     artifacts:
       faas_role:
         file: grycap.kubefaas
@@ -538,6 +544,8 @@ node_types:
       Standard:
         configure:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/oscar/oscar_install.yml
+          inputs:
+            oscar_minio_secretkey: { get_property: [ SELF, minio_secretkey ] }
     requirements:
       - host:
           capability: tosca.capabilities.Container
