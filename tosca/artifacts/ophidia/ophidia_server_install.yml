@@ -21,3 +21,4 @@
       nfs_subnet: "{{ vnode_prefix }}-*.localdomain"
       mysql_subnet: "{{ vnode_prefix }}-%.localdomain"
       io_node_number: "{{ ophidia_io_ips|length }}"
+      io_prefix: "{{ vnode_prefix }}"
