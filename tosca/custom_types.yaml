@@ -559,3 +559,61 @@ node_types:
           capability: tosca.capabilities.Container
           node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
           relationship: tosca.relationships.HostedOn
+
+  tosca.nodes.indigo.OphidiaServer:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      io_ips:
+        type: list
+        entry_schema:
+          type: string
+        description: List of IPs of the Ophidia IO nodes
+        required: false
+        default: []
+    artifacts:
+      ophidia_role:
+        file: OphidiaBigData.ophidia-cluster
+        type: tosca.artifacts.AnsibleGalaxy.role
+      slurm_role:
+        file: grycap.slurm
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/ophidia/ophidia_server_install.yml
+          inputs:
+            ophidia_io_ips: { get_property: [ SELF, io_ips ] }
+            ophidia_server_ip: { get_attribute: [ HOST, private_address, 0 ] }
+            ophidia_server_public_ip: { get_attribute: [ HOST, public_address, 0 ] }
+
+  tosca.nodes.indigo.OphidiaIO:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      server_ip:
+        type: string
+        description: IP of the OphidiaServer node
+        required: true
+      server_public_ip:
+        type: string
+        description: Public IP of the OphidiaServer node
+        required: true
+    artifacts:
+      ophidia_role:
+        file: OphidiaBigData.ophidia-cluster
+        type: tosca.artifacts.AnsibleGalaxy.role
+      slurm_role:
+        file: grycap.slurm
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/ophidia/ophidia_io_install.yml
+          inputs:
+            ophidia_server_ip: { get_property: [ SELF, server_ip ] }
+            ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }

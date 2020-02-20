@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    vnode_prefix: vnode-
+
+  pre_tasks:
+    - name: stop service firewalld
+      systemd: name=firewalld state=stopped
+
+  roles:
+    - role: 'OphidiaBigData.ophidia-cluster'
+      node_type: 'io'
+      deploy_type: 'complete'
+      server_hostname: slurmserver
+      private_server_ip: "{{ ophidia_server_ip }}"
+      public_server_ip: "{{ ophidia_server_public_ip }}"

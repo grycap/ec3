@@ -1,0 +1,23 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    vnode_prefix: vnode-
+
+  pre_tasks:
+    - name: stop service firewalld
+      systemd: name=firewalld state=stopped
+    - name: Creates NFS shared directory
+      file: path=/data state=directory owner=root group=root
+
+  roles:
+    - role: 'OphidiaBigData.ophidia-cluster' 
+      node_type: 'server'
+      deploy_type: 'complete'
+      server_hostname: "slurmserver"
+      io_ips: "{{ ophidia_io_ips }}"
+      private_server_ip: "{{ ophidia_server_ip }}"
+      public_server_ip: "{{ ophidia_server_public_ip }}"
+      nfs_subnet: "{{ vnode_prefix }}-*.localdomain"
+      mysql_subnet: "{{ vnode_prefix }}-%.localdomain"
+      io_node_number: "{{ ophidia_io_ips|length }}"
