@@ -2,7 +2,7 @@
 - hosts: localhost
   connection: local
   vars:
-    vnode_prefix: vnode-
+    io_prefix: vnode-
 
   pre_tasks:
     - name: stop service firewalld
@@ -18,7 +18,6 @@
       io_ips: "{{ ophidia_io_ips }}"
       private_server_ip: "{{ ophidia_server_ip }}"
       public_server_ip: "{{ ophidia_server_public_ip }}"
-      nfs_subnet: "{{ vnode_prefix }}-*.localdomain"
-      mysql_subnet: "{{ vnode_prefix }}-%.localdomain"
+      nfs_subnet: "{{ io_prefix }}-*.localdomain"
+      mysql_subnet: "{{ io_prefix }}-%.localdomain"
       io_node_number: "{{ ophidia_io_ips|length }}"
-      io_prefix: "{{ vnode_prefix }}"
