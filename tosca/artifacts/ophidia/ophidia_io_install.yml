@@ -15,3 +15,4 @@
       server_hostname: slurmserver
       private_server_ip: "{{ ophidia_server_ip }}"
       public_server_ip: "{{ ophidia_server_public_ip }}"
+      mysql_subnet: "{{ io_prefix }}%.localdomain"
