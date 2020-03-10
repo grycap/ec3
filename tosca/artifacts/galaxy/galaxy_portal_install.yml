@@ -11,4 +11,4 @@
         - {path: "/mnt", export: "{{ vnode_prefix }}*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}
       when: galaxy_lrms != 'local'
     - role: grycap.galaxy
-      galaxy_slurm_server_name: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'
+      galaxy_slurm_server_name: '{{ galaxy_server_name }}'

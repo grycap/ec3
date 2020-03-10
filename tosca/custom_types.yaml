@@ -466,6 +466,7 @@ node_types:
             galaxy_admin: { get_property: [ SELF, admin_email ] }
             galaxy_admin_password: { get_property: [ SELF, admin_password ] }
             galaxy_lrms: { get_property: [ SELF, lrms, type ] }
+            galaxy_server_name: { get_property: [ HOST, private_address, 0 ] }
 
   tosca.nodes.indigo.GalaxyWN:
     derived_from: tosca.nodes.SoftwareComponent
