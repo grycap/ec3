@@ -3,22 +3,9 @@
   connection: local
   vars:
      vnode_prefix: vnode-
-  tasks:
-    - name: Call Galaxy WN Role
-      include_role:
-        name: grycap.galaxy
-      vars:
-        galaxy_node_type: wn
-
-    - name: Wait until the correct path is exported
-      wait_for:
-        path: /etc/exports
-        search_regex: "/mnt "
-      delegate_to: "{{ galaxy_front_end_ip }}"
-
-    - name: Call NFS role as WN
-      include_role:
-        name: grycap.nfs
-      vars:
-        nfs_mode: 'wn'
-        nfs_client_imports: [{ local: "/mnt", remote: "/mnt", server_host: '{{ galaxy_front_end_ip }}' }]
+  roles:
+    - role: 'grycap.nfs'
+      nfs_mode: 'wn'
+      nfs_client_imports: [{ local: "/mnt", remote: "/mnt", server_host: '{{ galaxy_front_end_ip }}' }]
+    - role: grycap.galaxy
+      galaxy_node_type: wn
