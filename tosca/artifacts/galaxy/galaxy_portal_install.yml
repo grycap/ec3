@@ -7,8 +7,8 @@
     - role: 'grycap.nfs'
       nfs_mode: 'front'
       nfs_exports:
-        - {path: "/", export: "{{ vnode_prefix }}*.localdomain(fsid=0,ro,async,no_root_squash,no_subtree_check,insecure)"}
-        - {path: "/mnt", export: "{{ vnode_prefix }}*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}
+        - {path: "/home", export: "{{ vnode_prefix }}*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}
       when: galaxy_lrms != 'local'
     - role: grycap.galaxy
+      galaxy_export_dir: /home/export
       galaxy_slurm_server_name: '{{ galaxy_server_name }}'
