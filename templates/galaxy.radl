@@ -30,9 +30,9 @@ configure wn (
     roles:
      - { role: 'grycap.nfs', nfs_mode: 'wn',
                              nfs_client_imports: [{ local: "/mnt",
-                             remote: "/mnt",
+                             remote: "/home",
                              server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
-     - { role: grycap.galaxy, galaxy_node_type: wn }
+     - { role: grycap.galaxy, galaxy_node_type: wn, galaxy_export_dir: '/home/export'  }
 @end
 )
 
@@ -45,12 +45,13 @@ configure front (
     roles:
     - role: 'grycap.nfs'
       nfs_mode: 'front'
-      nfs_exports: [{path: "/mnt",
+      nfs_exports: [{path: "/home",
                      export: "wn*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}]
-      when: QUEUE_SYSTEM != local
+      when: QUEUE_SYSTEM != 'local'
     - role: grycap.galaxy
       galaxy_slurm_server_name: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'
       galaxy_lrms: "{{ QUEUE_SYSTEM }}"
+      galaxy_export_dir: '/home/export'
 
 @end
 )
