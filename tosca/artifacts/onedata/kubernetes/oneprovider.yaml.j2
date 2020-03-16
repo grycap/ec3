@@ -1,0 +1,297 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+labels:
+    name: "{{ _NAMESPACE }}"
+name: "{{ _NAMESPACE }}"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: oneprovider-cacerts-pv
+    labels:
+        data: cacerts
+        app: oneprovider
+spec:
+    storageClassName: slow
+    capacity:
+        storage: 1Gi
+    volumeMode: Filesystem
+    accessModes:
+        - ReadWriteOnce
+    hostPath:
+        path: "{{ __PATH_CACERTS }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    namespace: "{{ _NAMESPACE }}"
+    name: oneprovider-cacerts-pvc
+spec:
+    accessModes:
+        - ReadWriteOnce
+    volumeMode: Filesystem
+    resources:
+        requests:
+            storage: 1Gi
+    storageClassName: slow
+    selector:
+        matchLabels:
+            data: "cacerts"
+            app: "oneprovider"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: oneprovider-persistence-pv
+    labels:
+        data: persistence
+        app: oneprovider
+spec:
+    storageClassName: slow
+    capacity:
+        storage: 1Gi
+    volumeMode: Filesystem
+    accessModes:
+        - ReadWriteOnce
+    hostPath:
+        path: "{{ __PATH_PERSISTENCE }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    namespace: "{{ _NAMESPACE }}"
+    name: oneprovider-persistence-pvc
+spec:
+    accessModes:
+        - ReadWriteOnce
+    volumeMode: Filesystem
+    resources:
+        requests:
+            storage: 1Gi
+    storageClassName: slow
+    selector:
+        matchLabels:
+            data: "persistence"
+            app: "oneprovider"
+---
+apiVersion: v1
+kind: Service
+metadata:
+    namespace: "{{ _NAMESPACE }}"
+    name: upv
+spec:
+    selector:
+        app: oneprovider
+    type: NodePort
+    ports:
+    - name: http
+        port: 80
+        targetPort: 80
+        nodePort: 80
+    - name: https
+        port: 443
+        targetPort: 443
+        nodePort: 443
+    - name: oneclient-rtransfer
+        port: 6665
+        targetPort: 6665
+        nodePort: 6665
+    - name: onepanel-gui
+        port: 9443
+        targetPort: 9443
+        nodePort: 9443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: oneprovider-1
+    namespace: "{{ _NAMESPACE }}"
+    labels:
+        app: oneprovider
+        version: {{ _ONEPROVIDER_CONTAINER_TAG }}
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: oneprovider
+
+    template:
+        metadata:
+            labels:
+                app: oneprovider
+        spec:
+            hostname: {{ _ONEPROVIDER_NAME }}
+            subdomain: upv
+            hostAliases:
+            - ip: "127.0.0.1"
+            hostnames:
+            - "{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }}"        
+            containers:
+            - name: {{ _ONEPROVIDER_NAME }}
+            #image: onedata/oneprovider
+            image: onedata/oneprovider:{{ _ONEPROVIDER_CONTAINER_TAG }}
+            #command: ["/bin/bash"]
+            #args: ["-c", "echo 127.0.0.1 {{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }} > /etc/hosts && /root/oneprovider.sh"]
+            #args: ["-c", "sleep 1000000000000000" ]
+            resources:
+                requests: 
+                memory: "1000Mi"
+                cpu: "1000m"
+                limits:
+                memory: "3500Mi"
+                cpu: "4000m"
+            securityContext:
+                capabilities:
+                add: ["SYS_ADMIN" ]      
+            ports:
+                - containerPort: 80
+                - containerPort: 443
+                - containerPort: 6665
+                - containerPort: 9443
+                - containerPort: 8091
+                - containerPort: 8092
+                - containerPort: 11207
+                - containerPort: 11209
+                - containerPort: 11210
+                - containerPort: 11211
+                - containerPort: 18091
+                - containerPort: 18092
+                - containerPort: 21100
+                - containerPort: 11213
+            volumeMounts:
+                - name: dockersock
+                mountPath: /var/run/docker.sock
+                - name: configuration
+                mountPath: /volumes/persistence
+                - name: storage
+                mountPath: /opt/storage_NB
+                - name: storage2
+                mountPath: /opt/storage_DIPG
+                - name: cacerts
+                mountPath: /etc/op_worker/cacerts
+
+            env:
+                - name: ONEPANEL_DEBUG_MODE
+                value: "false"
+                - name: ONEPANEL_EMERGENCY_PASSPHRASE
+                value: "{{ _ONEPANEL_EMERGENCY_PASSPHRASE }}"
+                - name: ONEPANEL_LOG_LEVEL
+                value: info
+                - name: ONEPANEL_BATCH_MODE
+                value: "true"
+                - name: ONEPANEL_GENERATE_TEST_WEB_CERT
+                value: "true"
+                - name: ONEPANEL_TRUST_TEST_CA
+                value: "true"
+                - name: ONEPANEL_GENERATED_CERT_DOMAIN
+                value: {{ _ONEPROVIDER_NAME }}.{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}
+                - name: ONEPANEL_HOST
+                value: "https://{{ IM_NODE_PUBLIC_IP }}:9443"
+                - name: ONEPROVIDER_HOST
+                value: "https://{{ IM_NODE_PUBLIC_IP }}"
+                - name: ONEPANEL_BASIC_AUTH
+                value: "onepanel:{{ _ONEPANEL_EMERGENCY_PASSPHRASE }}"
+                - name: ONEZONE_HOST
+                value: "https://{{ _ONEPROVIDER_DOMAIN_ONEZONE }}"
+                - name: ONEPROVIDER_CONFIG
+                value: |
+                    cluster:
+                        domainName: "upv.{{ _NAMESPACE }}.svc.cluster.local" 
+                        externalIp: "{{ IM_NODE_PUBLIC_IP }}"
+                        autoDeploy: true
+                        nodes:
+                        n1:
+                            hostname: "{{ _ONEPROVIDER_NAME }}"
+                        managers:
+                        mainNode: "n1"
+                        nodes:
+                            - "n1"
+                        workers:
+                        nodes:
+                            - "n1"
+                        databases:
+                        # Per node Couchbase cache size in MB for all buckets
+                        serverQuota: 4096
+                        # Per bucket Couchbase cache size in MB across the cluster
+                        bucketQuota: 1024
+                        nodes:
+                            - "n1"
+                        storages:
+                            nb:
+                                type: "posix"
+                                mountPoint: "/opt/storage_NB"
+                            dipg:
+                                type: "posix"
+                                mountPoint: "/opt/storage_DIPG"
+                    oneprovider:
+                        geoLatitude: {{ _ONEPROVIDER_GEO_LAT }}
+                        geoLongitude: {{ _ONEPROVIDER_GEO_LONG }}
+                        register: true
+                        token: "{{ _ONEPROVIDER_REGISTRATION_TOKEN }}"
+                        name: "{{ _ONEPROVIDER_NAME }}"
+                        adminEmail: "{{ _ONEPROVIDER_CONTACT_EMAIL }}"
+
+                        # Use built-in Let's Encrypt client to obtain and renew certificates
+                        letsEncryptEnabled: true
+
+                        # Alternatively:
+                        ## Automatically register this Oneprovider in Onezone with subdomain delegation
+                        subdomainDelegation: true
+                        subdomain: "{{_ONEPROVIDER_SUBDOMAIN_ONEZONE }}"
+                    onezone:
+                        # Address of the Onezone at which this Oneprovider will register
+                        domainName: "{{_ONEPROVIDER_DOMAIN_ONEZONE }}"
+
+                    onepanel:
+                        dummy: "dummyy"                                      # Uncomment for 19.02
+                        #users:                                                # Uncomment for 18.03
+                        #  "onepanel":                                         # Uncomment for 18.03
+                        #    password: "{{ _ONEPANEL_EMERGENCY_PASSPHRASE }}"   # Uncomment for 18.03
+                        #    userRole: "admin"                                 # Uncomment for 18.03
+                        
+            volumes:
+            - name: configuration
+                persistentVolumeClaim:
+                    claimName: oneprovider-persistence-pvc
+            - name: storage
+                persistentVolumeClaim:
+                    claimName: oneprovider-storage-pvc
+            - name: storage2
+                persistentVolumeClaim:
+                    claimName: oneprovider-storage2-pvc
+            - name: cacerts
+                persistentVolumeClaim:
+                    claimName: oneprovider-cacerts-pvc
+            - name: dockersock
+                hostPath:
+                    path: /var/run/docker.sock
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+name: oneprovider-config-external-ip
+namespace: {{ _NAMESPACE }}
+spec:
+template:
+    spec:      
+    volumes:
+        - name: configuration
+        persistentVolumeClaim:
+            claimName: oneprovider-persistence-pvc          
+    restartPolicy: Never
+    containers:
+    - name:  oneprovider-config-external-ip
+        image: alpine
+        command: [ "/bin/sh" ]
+        args: [ "-c", "mkdir -p ${PERSISTENCE_PATH}/etc && mkdir -p ${PERSISTENCE_PATH}/etc/op_worker &&  echo -e ${ONEDATA_OVERLAY_CONTENT} > ${PERSISTENCE_PATH}/etc/op_worker/overlay.config"]
+        volumeMounts:
+        - name: configuration
+            mountPath: /volumes/persistence
+        env:
+        - name: PERSISTENCE_PATH
+        value: /volumes/persistence
+        - name: ONEDATA_OVERLAY_CONTENT
+        value: "[{cluster_worker,[{external_ip,{{ IM_NODE_PUBLIC_IP }}}}]}]."
+

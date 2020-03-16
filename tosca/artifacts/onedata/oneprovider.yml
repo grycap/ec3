@@ -1,0 +1,165 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+
+    IM_NODE_PUBLIC_IP_COMMA: "{{ IM_NODE_PUBLIC_IP | replace('.' ,',' ) }}"
+
+    # Oneprovider 
+    _NAMESPACE: production
+    _ONEPROVIDER_CONTAINER_TAG: 19.02.0-rc2
+    #_ONEPROVIDER_CONTAINER_TAG: 18.02.3
+    _ONEPROVIDER_REGISTRATION_TOKEN: MDAxY2xvY2F00aW9uIGRhdGFodWIuZWdpLmV1CjAwMzBpZGVudGlmaWVyIGMxZDE4NDMzNmZjYjI1NzI4OTBlYmIyMTJiYTM00ZjFkCjAwMzBjaWQgdG9rZW5UeXBlID00gcHJvdmlkZXJfcmVnaXN00cmF00aW9uX3Rva2VuCjAwMmZzaWduYXR1cmUgUtU4j8UT4ZVA1f4c8ZsMBijDm5OaLyqj02VzDZDd1xQcK   # obtained from DATAHUB --> only 1 use
+    _ONEPROVIDER_GEO_LAT: 39.46975
+    _ONEPROVIDER_GEO_LONG: -0.37739
+    _ONEPROVIDER_CONTACT_EMAIL: serlohu@upv.es
+    _ONEPROVIDER_NAME: oneprovider-upv
+    _ONEPROVIDER_SUBDOMAIN_ONEZONE: upv
+    _ONEPROVIDER_DOMAIN_ONEZONE: datahub.egi.eu
+    _ONEPANEL_EMERGENCY_PASSPHRASE: 2Y2E1CjAwMzBjaWQgdG9rZW5UeXBlID00gcHJvdmlkZXJfcmVnaXN00cmF00aW9uX3Rva2VuCjAwMmZzaWduYXR1cmUgdMJPw71f
+    ONE_ZONE_API_KEY: __CHANGE_ME__
+
+    # Oneprovider kubernetes volumes
+    __PATH_CACERTS: /opt/nfs/cacerts
+    __PATH_PERSISTENCE: /opt/nfs/persistence   
+
+    SPACES:
+      - id: "ID"  # obtained from DATAHUB
+      - mame: "name"
+      - size: 107374182400 # 100 GB
+      - path: /opt/nfs/storage_space1  # Be careful! Same path in the host as the container
+
+    _DOCKER_ONEDATA_REST_CLI_VERSION: 18.02.0-rc13
+
+
+  tasks:
+    - name: Check oneprovider kubernetes directory
+      command: "ls /root/oneprovider "
+      register: kubernetes_directory_output
+      ignore_errors: True
+
+    - name: Create /root/oneprovider and the Kubernetes yaml to deploy Oneprovider
+      block:
+        - name: Install prerequisites of k8s 
+          pip:
+              state: latest
+              name: "{{ item }}"
+          with_items:
+              - openshift
+              - PyYAML 
+              - docker-py
+
+        - name: "Create /root/oneprovider"
+          file:
+              path: "/root/oneprovider"
+              state: directory
+
+        - name: "Download kubernetes yaml template"
+          get_url:
+              dest: "/root/oneprovider/oneprovider.yaml.j2"
+              url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/onedata/kubernetes/oneprovider.yaml.j2
+
+        - name: "Create kubernetes yaml"
+          template:
+              dest: "/root/oneprovider/oneprovider.yaml"
+              src:  "/root/oneprovider/oneprovider.yaml.j2"
+
+        - name: "Download PV and PVC yaml template for spaces"
+          get_url:
+              dest: "/root/oneprovider/pv_pvc_storage.yaml.j2"
+              url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/onedata/kubernetes/onepropv_pvc_storagevider.yaml.j2
+
+        - name: "Create PV and PVC yaml"
+          template:
+              dest: "/root/oneprovider/pv_pvc_storage_{{ item.id }}.yaml"
+              src:  "/root/oneprovider/pv_pvc_storage.yaml.j2"
+          with_items: SPACES
+
+        - name: "Donwload support_spaces.szh"
+          get_url:
+              path: "/root/oneprovider/support_spaces.zsh"
+              url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/onedata/kubernetes/support_spaces.zsh
+              mode: "0770"
+
+        - name: "Create oneprovider_configuration_externalIp.sh"
+          get_url:
+              path: "/root/oneprovider/oneprovider_configuration_externalIp.sh"
+              url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/onedata/kubernetes/oneprovider_configuration_externalIp.sh
+              mode: "0770"
+
+        - name: "Create waiting_oneprovider_script.zsh"
+          get_url:
+              path: "/root/oneprovider/waiting_oneprovider_script.zsh"
+              url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/onedata/kubernetes/waiting_oneprovider_script.zsh
+              mode: "0770"
+
+        - name: Deploying Namespace, Oneprovider DNS services
+          k8s:
+              state: present
+              src: /root/oneprovider/oneprovider.yaml
+              kubeconfig: /etc/kubernetes/admin.conf
+
+        - name: Deploying  PersistentVolumes, PersistentVolumeClaims per each space
+          k8s:
+              state: present
+              src: "/root/oneprovider/pv_pvc_storage_{{ item.id }}.yaml"
+              kubeconfig: /etc/kubernetes/admin.conf
+          with_items: SPACES
+
+        - name: Create overlay.config file in the NFS directory
+          command: "/root/oneprovider/oneprovider_configuration_externalIp.sh {{ __PATH_PERSISTENCE }} /root/oneprovider/overlay.config"
+
+        - name: Wait until Onepanel can receive REST calls
+          wait_for:
+              timeout: 1200
+              port: 9443 # Onepanel port
+              host: "{{ IM_NODE_PUBLIC_IP }}"  # "{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }}" 
+              sleep: 30
+              state: drained
+
+        - name: Create /root/oneprovider/Oneprovider_isConfigured
+          file: 
+            path: /root/oneprovider/Oneprovider_isConfigured
+            state: touch
+            mode: u=rw,g=r,o=r
+
+        - name: "Create docker container that uses the API REST of Onepanel to notify when the Oneprovider is configured"
+          docker_container:
+              name: onedata-monitoring
+              image: "onedata/rest-cli:{{ _DOCKER_ONEDATA_REST_CLI_VERSION }}"
+              state: started
+              detach: no
+              network_mode: bridge
+              command: /waiting_oneprovider_script.zsh
+              env:
+                  ONEZONE_HOST="https://{{ _ONEPROVIDER_DOMAIN_ONEZONE }}"
+                  ONEZONE_API_KEY="{{ ONE_ZONE_API_KEY }}"
+                  ONEPANEL_BASIC_AUTH="onepanel:{{ _ONEPANEL_EMERGENCY_PASSPHRASE }}"
+                  ONEPANEL_HOST="https://{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }}:9443"
+                  ONEPROVIDER_HOST="https://{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }}"
+              volumes: 
+                  - "/root/oneprovider/Oneprovider_isConfigured:/res"
+                  - "/root/oneprovider/waiting_oneprovider_script.zsh:/waiting_oneprovider_script.zsh"
+
+        - name: "Support Onedata spaces using the API REST - onedata/rest-cli:latest"
+          docker_container:
+              name: onedata-spaces
+              image: "onedata/rest-cli:{{ _DOCKER_ONEDATA_REST_CLI_VERSION }}"
+              state: started
+              detach: no
+              network_mode: bridge
+              command: /support_spaces.zsh
+              env:
+                  ONEZONE_HOST="https://{{ _ONEPROVIDER_DOMAIN_ONEZONE }}"
+                  ONEZONE_API_KEY="{{ ONE_ZONE_API_KEY }}"
+                  ONEPANEL_BASIC_AUTH="onepanel:{{ _ONEPANEL_EMERGENCY_PASSPHRASE }}"
+                  ONEPANEL_HOST="https://{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }}:9443"
+                  ONEPROVIDER_HOST="https://{{ _ONEPROVIDER_SUBDOMAIN_ONEZONE }}.{{ _ONEPROVIDER_DOMAIN_ONEZONE }}"
+                  _SPACE_ID="{{ item.id }}"  
+                  _SPACE_SIZE="{{ item.size }}"
+                  _SPACE_NAME="{{ item.name }}"
+              volumes: 
+                  - "/root/oneprovider/support_spaces.zsh:/support_spaces.zsh"
+          with_items: SPACES
+
+      when: kubernetes_directory_output|failed

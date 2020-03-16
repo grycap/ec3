@@ -1,0 +1,35 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: oneprovider-storage-pv-{{ item.id }}
+    labels:
+        data: storage
+        app: oneprovider
+spec:
+    storageClassName: slow
+    capacity:
+        storage: 5Gi
+    volumeMode: Filesystem
+    accessModes:
+        - ReadWriteOnce
+    hostPath:
+        path: "{{ item.path }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    namespace: "{{ _NAMESPACE }}"
+    name: oneprovider-storage-pvc-{{ item.id }}
+spec:
+    accessModes:
+        - ReadWriteOnce
+    volumeMode: Filesystem
+    resources:
+        requests:
+            storage: 5Gi
+    storageClassName: slow
+    selector:
+        matchLabels:
+            data: "storage"
+            app: "oneprovider"
