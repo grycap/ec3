@@ -618,3 +618,47 @@ node_types:
           inputs:
             ophidia_server_ip: { get_property: [ SELF, server_ip ] }
             ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
+
+  tosca.nodes.indigo.OneProvider:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      contact_email:
+        type: string
+        description: Contact Email
+        required: true
+      name:
+        type: string
+        description: Name of the provider
+        required: true
+      subdomain_onezone:
+        type: string
+        description: DNS onezone subdomain
+        required: true
+      registration_token:
+        type: string
+        description: DataHub registration token. Get it from https://datahub.egi.eu/  -> Clusters -> (+) Add a new Oneprovider Cluster (One single use)
+        required: true
+      onezone_api_key:
+        type: string
+        description: DataHub API Key. Get it from https://datahub.egi.eu/ -> Tokens.
+        required: true
+      oneplanel_emergency_passphrase:
+        type: string
+        description: oneplanel_emergency_passphrase
+        required: true
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+          relationship: tosca.relationships.HostedOn
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/onedata/oneprovider.yml
+          inputs:
+            onedata_contact_email: { get_property: [ SELF, contact_email ] }
+            onedata_name: { get_property: [ SELF, name ] }
+            onedata_subdomain_onezone: { get_property: [ SELF, subdomain_onezone ] }
+            onedata_registration_token: { get_property: [ SELF, registration_token ] }
+            onedata_onezone_api_key: { get_property: [ SELF, onezone_api_key ] }
+            oneplanel_emergency_passphrase: { get_property: [ SELF, oneplanel_emergency_passphrase ] }

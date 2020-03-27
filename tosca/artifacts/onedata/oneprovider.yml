@@ -7,18 +7,18 @@
 
     # Oneprovider 
     _NAMESPACE: production
-    _ONEPROVIDER_CONTAINER_TAG: 19.02.1
+    _ONEPROVIDER_CONTAINER_TAG: "19.02.1"
     #_ONEPROVIDER_CONTAINER_TAG: 19.02.0-rc2
     #_ONEPROVIDER_CONTAINER_TAG: 18.02.3
-    _ONEPROVIDER_REGISTRATION_TOKEN: MDAxY2xvY2F00aW9uIGRhdGFodWIuZWdpLmV1CjAwMzBpZGVudGlmaWVyIGMxZDE4NDMzNmZjYjI1NzI4OTBlYmIyMTJiYTM00ZjFkCjAwMzBjaWQgdG9rZW5UeXBlID00gcHJvdmlkZXJfcmVnaXN00cmF00aW9uX3Rva2VuCjAwMmZzaWduYXR1cmUgUtU4j8UT4ZVA1f4c8ZsMBijDm5OaLyqj02VzDZDd1xQcK   # obtained from DATAHUB --> only 1 use
+    _ONEPROVIDER_REGISTRATION_TOKEN: "{{ onedata_registration_token }}"   # obtained from DATAHUB --> only 1 use
     _ONEPROVIDER_GEO_LAT: 39.46975
     _ONEPROVIDER_GEO_LONG: -0.37739
-    _ONEPROVIDER_CONTACT_EMAIL: micafer1@upv.es
-    _ONEPROVIDER_NAME: oneprovider-upv
-    _ONEPROVIDER_SUBDOMAIN_ONEZONE: upv
+    _ONEPROVIDER_CONTACT_EMAIL: "{{ onedata_contact_email }}"
+    _ONEPROVIDER_NAME: "{{ onedata_name }}" # oneprovider-upv
+    _ONEPROVIDER_SUBDOMAIN_ONEZONE: "{{ onedata_subdomain_onezone }}" # upv
     _ONEPROVIDER_DOMAIN_ONEZONE: datahub.egi.eu
-    _ONEPANEL_EMERGENCY_PASSPHRASE: 2Y2E1CjAwMzBjaWQgdG9rZW5UeXBlID00gcHJvdmlkZXJfcmVnaXN00cmF00aW9uX3Rva2VuCjAwMmZzaWduYXR1cmUgdMJPw71f
-    ONE_ZONE_API_KEY: __CHANGE_ME__
+    _ONEPANEL_EMERGENCY_PASSPHRASE: "{{ oneplanel_emergency_passphrase }}"
+    ONE_ZONE_API_KEY: "{{ onedata_onezone_api_key }}"
 
     # Oneprovider kubernetes volumes
     __PATH_CACERTS: /opt/nfs/cacerts
