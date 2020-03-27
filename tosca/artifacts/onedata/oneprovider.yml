@@ -40,7 +40,7 @@
   tasks:
     - name: Create a directories for PVs
       file:
-        path: {{ item }}
+        path: "{{ item }}"
         state: directory
         mode: '0755'
       with_items:
