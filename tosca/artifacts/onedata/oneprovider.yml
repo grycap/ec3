@@ -32,6 +32,7 @@
   roles:
     - role: 'grycap.nfs'
       nfs_mode: 'front'
+      nfs_only_v4: true
       nfs_exports:
         - path: "/opt/nfs"
           export: "vnode-*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"

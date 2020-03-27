@@ -677,6 +677,10 @@ node_types:
         description: Version/Tag of the docker images of the OneProvider
         required: false
         default: ""19.02.1"
+    artifacts:
+      nfs_role:
+        file: grycap.nfs,nfs4
+        type: tosca.artifacts.AnsibleGalaxy.role
     requirements:
       - host:
           capability: tosca.capabilities.Container
