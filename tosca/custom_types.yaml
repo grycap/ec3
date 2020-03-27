@@ -682,6 +682,9 @@ node_types:
       nfs_role:
         file: grycap.nfs,nfs4
         type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        endpoint:
+          type: tosca.capabilities.Endpoint
     requirements:
       - host:
           capability: tosca.capabilities.Container
