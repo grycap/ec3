@@ -648,6 +648,7 @@ node_types:
         description: oneplanel_emergency_passphrase
         required: true
       spaces:
+        type: list
         entry_schema:
           type: map
         description: "List of spaces to be added to the provider (Each item with: id, name and size in Bytes)"
