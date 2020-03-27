@@ -625,7 +625,8 @@ node_types:
       contact_email:
         type: string
         description: Contact Email
-        required: true
+        required: false
+        default: admin@admin.com
       name:
         type: string
         description: Name of the provider
@@ -649,7 +650,7 @@ node_types:
       spaces:
         entry_schema:
           type: map
-        description: "List of spaces to be added to the provider (Each item with: id, name and size) " 
+        description: "List of spaces to be added to the provider (Each item with: id, name and size in Bytes)"
         required: true
       domain_onezone:
         type: string
