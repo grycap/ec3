@@ -669,9 +669,9 @@ node_types:
         required: no
         entry_schema:
           type: float
-        constraints:
-          - max_length: 2
-          - min_length: 2
+#        constraints:
+#          - max_length: 2
+#          - min_length: 2
         default: [39.46975, -0.37739]
       version:
         type: string
