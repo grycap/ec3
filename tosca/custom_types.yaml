@@ -676,7 +676,7 @@ node_types:
         type: string
         description: Version/Tag of the docker images of the OneProvider
         required: false
-        default: ""19.02.1"
+        default: "19.02.1"
     artifacts:
       nfs_role:
         file: grycap.nfs,nfs4
