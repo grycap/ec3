@@ -14,7 +14,7 @@ spec:
     accessModes:
         - ReadWriteOnce
     hostPath:
-        path: "{{ item.path }}"
+        path: "{{ __PATH_SPACES }}/{{ item.id }}"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

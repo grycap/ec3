@@ -646,6 +646,36 @@ node_types:
         type: string
         description: oneplanel_emergency_passphrase
         required: true
+      spaces:
+        entry_schema:
+          type: map
+        description: "List of spaces to be added to the provider (Each item with: id, name and size) " 
+        required: true
+      domain_onezone:
+        type: string
+        description: Set the domain of the OneZone
+        required: false
+        default: datahub.egi.eu # Set EGI DataHub onezone
+      namespace:
+        type: string
+        description: Set the namespace
+        required: false
+        default: production
+      geo_position:
+        type: list
+        description: Longitud and latitude of the geoposition of the provider
+        required: no
+        entry_schema:
+          type: float
+        constraints:
+          - max_length: 2
+          - min_length: 2
+        default: [39.46975, -0.37739]
+      version:
+        type: string
+        description: Version/Tag of the docker images of the OneProvider
+        required: false
+        default: ""19.02.1"
     requirements:
       - host:
           capability: tosca.capabilities.Container
@@ -662,3 +692,8 @@ node_types:
             onedata_registration_token: { get_property: [ SELF, registration_token ] }
             onedata_onezone_api_key: { get_property: [ SELF, onezone_api_key ] }
             oneplanel_emergency_passphrase: { get_property: [ SELF, oneplanel_emergency_passphrase ] }
+            onedata_spaces: { get_property: [ SELF, spaces ] }
+            onedata_domain_onezone: { get_property: [ SELF, domain_onezone ] }
+            onedata_namespace: { get_property: [ SELF, namespace ] }
+            onedata_geo_position: { get_property: [ SELF, geo_position ] }
+            onedata_version: { get_property: [ SELF, version ] }

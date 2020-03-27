@@ -6,35 +6,47 @@
     IM_NODE_PUBLIC_IP_COMMA: "{{ IM_NODE_PUBLIC_IP | replace('.' ,',' ) }}"
 
     # Oneprovider 
-    _NAMESPACE: production
-    _ONEPROVIDER_CONTAINER_TAG: "19.02.1"
-    #_ONEPROVIDER_CONTAINER_TAG: 19.02.0-rc2
-    #_ONEPROVIDER_CONTAINER_TAG: 18.02.3
+    _NAMESPACE: "{{ onedata_namespace }}"
+    _ONEPROVIDER_CONTAINER_TAG: "{{ onedata_version }}"
+    _DOCKER_ONEDATA_REST_CLI_VERSION: "{{ onedata_version }}"
     _ONEPROVIDER_REGISTRATION_TOKEN: "{{ onedata_registration_token }}"   # obtained from DATAHUB --> only 1 use
-    _ONEPROVIDER_GEO_LAT: 39.46975
-    _ONEPROVIDER_GEO_LONG: -0.37739
+    _ONEPROVIDER_GEO_LAT: "{{ onedata_geo_position[0] }}"
+    _ONEPROVIDER_GEO_LONG: "{{ onedata_geo_position[1] }}"
     _ONEPROVIDER_CONTACT_EMAIL: "{{ onedata_contact_email }}"
     _ONEPROVIDER_NAME: "{{ onedata_name }}" # oneprovider-upv
     _ONEPROVIDER_SUBDOMAIN_ONEZONE: "{{ onedata_subdomain_onezone }}" # upv
-    _ONEPROVIDER_DOMAIN_ONEZONE: datahub.egi.eu
+    _ONEPROVIDER_DOMAIN_ONEZONE:  "{{ onedata_domain_onezone }}"
     _ONEPANEL_EMERGENCY_PASSPHRASE: "{{ oneplanel_emergency_passphrase }}"
     ONE_ZONE_API_KEY: "{{ onedata_onezone_api_key }}"
 
     # Oneprovider kubernetes volumes
     __PATH_CACERTS: /opt/nfs/cacerts
-    __PATH_PERSISTENCE: /opt/nfs/persistence   
+    __PATH_PERSISTENCE: /opt/nfs/persistence
+    __PATH_SPACES: /opt/nfs/spaces # Be careful! Same path in the host as the container
 
-    SPACES:
-      - id: "ID"  # obtained from DATAHUB
-      - mame: "name"
-      - size: 107374182400 # 100 GB
-      - path: /opt/nfs/storage_space1  # Be careful! Same path in the host as the container
+#    onedata_spaces:
+#      - id: "ID"  # obtained from DATAHUB
+#      - mame: "name"
+#      - size: 107374182400 # 100 GB
 
-    #_DOCKER_ONEDATA_REST_CLI_VERSION: 18.02.0-rc13
-    _DOCKER_ONEDATA_REST_CLI_VERSION: "19.02.1"
-
+  roles:
+    - role: 'grycap.nfs'
+      nfs_mode: 'front'
+      nfs_exports:
+        - path: "/opt/nfs"
+          export: "vnode-*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"
 
   tasks:
+    - name: Create a directories for PVs
+      file:
+        path: {{ item }}
+        state: directory
+        mode: '0755'
+      with_items:
+        - "{{ __PATH_CACERTS }}"
+        - "{{ __PATH_PERSISTENCE }}"
+        - "{{ __PATH_SPACES }}"
+
     - name: Check oneprovider kubernetes directory
       command: "ls /root/oneprovider "
       register: kubernetes_directory_output
@@ -75,7 +87,7 @@
           template:
               dest: "/root/oneprovider/pv_pvc_storage_{{ item.id }}.yaml"
               src:  "/root/oneprovider/pv_pvc_storage.yaml.j2"
-          with_items: SPACES
+          with_items: onedata_spaces
 
         - name: "Donwload support_spaces.szh"
           get_url:
@@ -106,7 +118,7 @@
               state: present
               src: "/root/oneprovider/pv_pvc_storage_{{ item.id }}.yaml"
               kubeconfig: /etc/kubernetes/admin.conf
-          with_items: SPACES
+          with_items: onedata_spaces
 
         - name: Create overlay.config file in the NFS directory
           command: "/root/oneprovider/oneprovider_configuration_externalIp.sh {{ __PATH_PERSISTENCE }} /root/oneprovider/overlay.config"
@@ -162,6 +174,6 @@
                   _SPACE_NAME="{{ item.name }}"
               volumes: 
                   - "/root/oneprovider/support_spaces.zsh:/support_spaces.zsh"
-          with_items: SPACES
+          with_items: onedata_spaces
 
       when: kubernetes_directory_output|failed
