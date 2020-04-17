@@ -28,6 +28,9 @@
 #      - id: "ID"  # obtained from DATAHUB
 #      - mame: "name"
 #      - size: 107374182400 # 100 GB
+  pre_tasks:
+  - name: Create dir for NFS
+    file: path=/opt/nfs state=directory mode=755
 
   roles:
     - role: 'grycap.nfs'
@@ -49,9 +52,9 @@
         - "{{ __PATH_SPACES }}"
 
     - name: Check oneprovider kubernetes directory
-      command: "ls /root/oneprovider "
+      stat:
+        path: /root/oneprovider/Oneprovider_isConfigured
       register: kubernetes_directory_output
-      ignore_errors: True
 
     - name: Create /root/oneprovider and the Kubernetes yaml to deploy Oneprovider
       block:
@@ -177,4 +180,4 @@
                   - "/root/oneprovider/support_spaces.zsh:/support_spaces.zsh"
           with_items: onedata_spaces
 
-      when: kubernetes_directory_output|failed
+      when: not kubernetes_directory_output.stat.exists
