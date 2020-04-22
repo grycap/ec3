@@ -1,8 +1,6 @@
 ---
 - hosts: localhost
   connection: local
-  vars:
-     vnode_prefix: vnode-
   roles:
   - role: grycap.docker
 
@@ -14,12 +12,23 @@
     git:
       repo: https://gitlab.com/openbiomaps/docker/obm-composer.git
       dest: /opt/openbiomaps
+      version: devel
 
   - name: Create obm_web network
     docker_network:
       name: obm_web
 
+  - name:
+    lineinfile:
+      path: /opt/openbiomaps/.env
+      regexp: '^BIOMAPS_POSTGRES_PASSWORD:'
+      line: "BIOMAPS_POSTGRES_PASSWORD={{ BIOMAPS_POSTGRES_PASSWORD }}"
+  
+  - name:
+    lineinfile:
+      path: /opt/openbiomaps/.env
+      regexp: '^GISDATA_POSTGRES_PASSWORD:'
+      line: "GISDATA_POSTGRES_PASSWORD={{ GISDATA_POSTGRES_PASSWORD }}"
+
   - name: OBM compose up
-    docker_service:
-      project_src: /opt/openbiomaps/obm-composer
-      state: present
+    command: docker-compose -up -d chdir=/opt/openbiomaps/obm-composer
