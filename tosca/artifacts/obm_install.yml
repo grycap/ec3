@@ -20,6 +20,6 @@
       name: obm_web
 
   - name: OBM compose up
-    docker_compose:
+    docker_service:
       project_src: /opt/openbiomaps/obm-composer
       state: present
