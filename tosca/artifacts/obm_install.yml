@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+     vnode_prefix: vnode-
+  roles:
+  - role: grycap.docker
+
+  tasks:
+  - name: Install Git
+    package: name=git
+
+  - name: Git Dowload
+    git:
+      repo: https://gitlab.com/openbiomaps/docker/obm-composer.git
+      dest: /opt/openbiomaps
+
+  - name: Create obm_web network
+    docker_network:
+      name: obm_web
+
+  - name: OBM compose up
+    docker_compose:
+      project_src: /opt/openbiomaps/obm-composer
+      state: present
