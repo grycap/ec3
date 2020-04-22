@@ -19,4 +19,4 @@
       name: obm_web
 
   - name: OBM compose up
-    command: docker-compose -up -d chdir=/opt/openbiomaps
+    command: docker-compose up -d chdir=/opt/openbiomaps
