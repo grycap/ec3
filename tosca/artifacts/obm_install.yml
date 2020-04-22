@@ -18,17 +18,5 @@
     docker_network:
       name: obm_web
 
-  - name:
-    lineinfile:
-      path: /opt/openbiomaps/.env
-      regexp: '^BIOMAPS_POSTGRES_PASSWORD:'
-      line: "BIOMAPS_POSTGRES_PASSWORD={{ BIOMAPS_POSTGRES_PASSWORD }}"
-  
-  - name:
-    lineinfile:
-      path: /opt/openbiomaps/.env
-      regexp: '^GISDATA_POSTGRES_PASSWORD:'
-      line: "GISDATA_POSTGRES_PASSWORD={{ GISDATA_POSTGRES_PASSWORD }}"
-
   - name: OBM compose up
-    command: docker-compose -up -d chdir=/opt/openbiomaps/obm-composer
+    command: docker-compose -up -d chdir=/opt/openbiomaps
