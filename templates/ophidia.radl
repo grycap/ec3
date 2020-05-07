@@ -13,7 +13,7 @@ network public (
   # Ophidia ports
   outports contains '8080/tcp' and
   outports contains '11732/tcp' and
-  outports contains '4443/tcp'
+  outports contains '443/tcp'
 )
 
 

@@ -137,15 +137,15 @@ You can exploit all the potential of EC3 as if you download the CLI and run it o
  
 To launch a cluster, you can use the recipes that you have locally by mounting the folder as a volume. Also it is recommendable to mantain the data of active clusters locally, by mounting a volume as follows::
 
-   $ sudo docker run -v /home/user/:/tmp/ -v /home/user/ec3/templates/:/etc/ec3/templates -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 launch mycluster torque ubuntu16 -a /tmp/auth.dat 
+   $ sudo docker run -v /home/user/:/tmp/ -v /home/user/ec3/templates/:/etc/ec3/templates -v /home/user/.ec3/clusters:/root/.ec3/clusters grycap/ec3 launch mycluster torque ubuntu16 -a /tmp/auth.dat 
 
 Notice that you need to change the local paths to the paths where you store the auth file, the templates folder and the .ec3/clusters folder. So, once the front-end is deployed and configured you can connect to it by using::
 
-   $ sudo docker run -ti -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 ssh mycluster
+   $ sudo docker run -ti -v /home/user/.ec3/clusters:/root/.ec3/clusters grycap/ec3 ssh mycluster
 
 Later on, when you need to destroy the cluster, you can type::
 
-   $ sudo docker run -ti -v /tmp/.ec3/clusters:/root/.ec3/clusters grycap/ec3 destroy mycluster
+   $ sudo docker run -ti -v /home/user/.ec3/clusters:/root/.ec3/clusters grycap/ec3 destroy mycluster
 
 
 Additional information
