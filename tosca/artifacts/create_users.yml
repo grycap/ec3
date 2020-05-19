@@ -8,24 +8,21 @@
     #  --- Users's Accounts --------  #
     ###################################
 
-    - block:
-
-      - set_fact:
-          user_pass: "{{ lookup('password', '/var/tmp/passwordfile_' + item + ' length=8 chars=digits') }}"
-
-      - name: Create user accounts
-        user: name={{ item }} password={{ user_pass }} shell=/bin/bash generate_ssh_key=yes
-
-      - name: Create $HOME/.ssh directory
-        file: path=/home/{{ item }}/.ssh state=directory owner={{ item }} group={{ item }} mode=0700
-
-      - name: Modify $HOME permissions
-        file: path=/home/{{ item }} state=directory owner={{ item }} group={{ item }} mode=0700
-
-      - name: Modifying authorized_keys
-        copy: dest=/home/{{ item }}/.ssh/authorized_keys content="{{ auth_key }}" owner={{ item }} group={{ item }} mode=0644 force=yes
-
+    - set_fact:
+        accounts: "{{ accounts | default([]) + [{'name': item, 'pw': lookup('password', '/var/tmp/passwordfile_' + item + ' length=8')}] }}"
       with_sequence: start=0 end={{ user_num }} format=user%02x
+
+    - name: Create user accounts
+      user: name={{ item.name }} password={{ item.pw }} shell=/bin/bash generate_ssh_key=yes
+      with_items: "{{ accounts }}"
+
+    - name: Create $HOME/.ssh directory
+      file: path=/home/{{ item.name }}/.ssh state=directory owner={{ item.name }} group={{ item.name }} mode=0700
+      with_items: "{{ accounts }}"
+
+    - name: Modify $HOME permissions
+      file: path=/home/{{ item.name }} state=directory owner={{ item.name }} group={{ item.name }} mode=0700
+      with_items: "{{ accounts }}"
 
 
 
