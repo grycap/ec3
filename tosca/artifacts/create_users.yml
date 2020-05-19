@@ -7,7 +7,7 @@
     ###################################
 
     - set_fact:
-        accounts: "{{ accounts | default([]) + [{'name': item, 'pw': lookup('password', '/var/tmp/passwordfile_' + item + ' length=8')}] }}"
+        accounts: "{{ accounts | default([]) + [{'name': item, 'pw': lookup('password', '/var/tmp/passwordfile_' + item + ' length=8 chars=ascii_letters,digits')}] }}"
       with_sequence: start=0 end={{ user_num }} format=user%02x
 
     - name: Create user accounts
