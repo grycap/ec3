@@ -1,8 +1,6 @@
 ---
 - hosts: localhost
   connection: local
-  vars:
-      user_num: 5
   tasks:
     ###################################
     #  --- Users's Accounts --------  #
