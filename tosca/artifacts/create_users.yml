@@ -1,0 +1,31 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+      user_num: 5
+  tasks:
+    ###################################
+    #  --- Users's Accounts --------  #
+    ###################################
+
+    - block:
+
+      - set_fact:
+          user_pass: "{{ lookup('password', '/var/tmp/passwordfile_' + item + ' length=8 chars=digits') }}"
+
+      - name: Create user accounts
+        user: name={{ item }} password={{ user_pass }} shell=/bin/bash generate_ssh_key=yes
+
+      - name: Create $HOME/.ssh directory
+        file: path=/home/{{ item }}/.ssh state=directory owner={{ item }} group={{ item }} mode=0700
+
+      - name: Modify $HOME permissions
+        file: path=/home/{{ item }} state=directory owner={{ item }} group={{ item }} mode=0700
+
+      - name: Modifying authorized_keys
+        copy: dest=/home/{{ item }}/.ssh/authorized_keys content="{{ auth_key }}" owner={{ item }} group={{ item }} mode=0644 force=yes
+
+      with_sequence: start=0 end={{ user_num }} format=user%02x
+
+
+
