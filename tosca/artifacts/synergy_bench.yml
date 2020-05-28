@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+  - { role: 'grycap.docker' }
+  tasks:
+  - name: Set SITE_NAME environment variable
+    lineinfile:
+      dest: /etc/environment
+      line: "SITE_NAME={{site_name}}"
+
+
+
