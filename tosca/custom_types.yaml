@@ -313,6 +313,11 @@ node_types:
 
   tosca.nodes.indigo.LRMS.WorkerNode.Kubernetes:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    properties:
+      version:
+        required: no
+        type: string
+        default: "1.15.7"
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -326,6 +331,7 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_wn_install.yml
           inputs:
             kube_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+            kube_version:  { get_property: [ SELF, version ] }
 
   tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
