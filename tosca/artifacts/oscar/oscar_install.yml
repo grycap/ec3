@@ -19,6 +19,7 @@
     webhook_endpoints: [{ id: "1", endpoint: "http://oscar-manager.oscar:8080/events"}]
     minio_secretkey: '{{ oscar_minio_secretkey }}'
     master_deploy: true
+    enable_tls: false
 
   - role: 'grycap.kuberegistry'
     public_access: false
@@ -28,7 +29,7 @@
 
   - role: 'grycap.kubeoscar'
     minio_pass: '{{ oscar_minio_secretkey }}'
-    vue_app_backend_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}:{{ nginx_https_nodeport }}'
+    vue_app_backend_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
     master_deploy: true
     oscar_version: 1.2.0
     oscar_ui_version: 1.0.1
