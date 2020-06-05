@@ -3,6 +3,9 @@
   connection: local
   vars:
      vnode_prefix: vnode-
+  pre_tasks:
+  - name: stop firewalld
+    service: name=firewalld state=stopped
   roles:
   - role: grycap.nfs
     nfs_mode: 'front'
