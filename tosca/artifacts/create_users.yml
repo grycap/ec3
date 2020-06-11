@@ -22,5 +22,11 @@
       file: path=/home/{{ item.name }} state=directory owner={{ item.name }} group={{ item.name }} mode=0700
       with_items: "{{ accounts }}"
 
+    - name: Allow SSH password authentication
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication yes" state=present
+      notify:
+        - restart sshd
 
-
+  handlers:
+    - name: restart sshd
+      service: name=sshd state=restarted
