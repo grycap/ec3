@@ -6,6 +6,7 @@
   pre_tasks:
   - name: stop firewalld
     service: name=firewalld state=stopped
+    ignore_errors: yes
   roles:
   - role: grycap.nfs
     nfs_mode: 'front'
