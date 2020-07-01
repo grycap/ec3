@@ -18,5 +18,5 @@
     docker_network:
       name: obm_web
 
-  - name: OBM compose up
-    command: docker-compose up -d chdir=/opt/openbiomaps
+  - name: OBM install
+    command: /opt/openbiomaps/im-dashboard.sh
