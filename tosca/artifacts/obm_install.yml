@@ -13,7 +13,7 @@
       repo: https://gitlab.com/openbiomaps/docker/obm-composer.git
       dest: /opt/openbiomaps
       version: master
-      force: yes
+      update: no
 
   - name: Create obm_web network
     docker_network:
