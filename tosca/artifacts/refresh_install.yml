@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Create dir /usr/local/ec3/
+    file: path=/usr/local/ec3/ state=directory
+
+  - get_url:
+      dest: /usr/local/ec3/refresh_token.py
+      url: https://raw.githubusercontent.com/grycap/ec3/master/templates/refresh_token.py
+      mode: 0700
+
+  - cron:
+      name: "refresh token"
+      minute: "*/5"
+      job: "[ -f /usr/local/ec3/auth.dat ] && /usr/local/ec3/refresh_token.py {{ CLIENT_ID }} {{ CLIENT_SECRET }}"
+      user: root
+      cron_file: refresh_token
+      state: present
+
