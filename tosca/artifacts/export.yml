@@ -10,9 +10,15 @@
       name: im-client
 
   - name: Export infra
-    get_url:
-      url: "{{IM_SERVER}}/infrastructures/{{ IM_INFRASTRUCTURE_ID }}/data"
-      dest: /usr/local/ec3/inf.json
+    shell: im_client.py -r {{IM_SERVER}} -a /usr/local/ec3/auth.dat export {{ IM_INFRASTRUCTURE_ID }} > /usr/local/ec3/inf.json
+    args:
+      creates: /usr/local/ec3/inf.json
+
+  - name: Remove first line
+    lineinfile:
+      path: /usr/local/ec3/inf.json
+      state: absent
+      regexp: 'Secure connection with: .*'
 
   - name: Inport infra
     shell: im_client.py -a /usr/local/ec3/auth.dat import /usr/local/ec3/inf.json && touch /usr/local/ec3/imported
@@ -20,7 +26,7 @@
       creates: /usr/local/ec3/imported
 
   - name: Delete infra
-    get_url:
-      url: "{{IM_SERVER}}/infrastructures/{{ IM_INFRASTRUCTURE_ID }}/data?delete=yes"
-      dest: /usr/local/ec3/inf2.json
+    shell: im_client.py -r {{IM_SERVER}} -a /usr/local/ec3/auth.dat export {{ IM_INFRASTRUCTURE_ID }} 1 > /usr/local/ec3/inf2.json
+    args:
+      creates: /usr/local/ec3/inf2.json
 
