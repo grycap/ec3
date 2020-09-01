@@ -29,7 +29,7 @@ configure wn (
   - ec3_prio: -7
     roles:
      - { role: 'grycap.nfs', nfs_mode: 'wn',
-                             nfs_client_imports: [{ local: "/mnt",
+                             nfs_client_imports: [{ local: "/home",
                              remote: "/home",
                              server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
      - { role: grycap.galaxy, galaxy_node_type: wn, galaxy_export_dir: '/home/export'  }
