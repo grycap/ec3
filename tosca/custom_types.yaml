@@ -717,7 +717,7 @@ node_types:
     derived_from: tosca.nodes.SoftwareComponent
     artifacts:
       hadoop_role:
-        file: indigo-dc.hadoop,master
+        file: grycap.hadoop
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
@@ -734,7 +734,7 @@ node_types:
         type: string
     artifacts:
       hadoop_role:
-        file: indigo-dc.hadoop,master
+        file: grycap.hadoop
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
