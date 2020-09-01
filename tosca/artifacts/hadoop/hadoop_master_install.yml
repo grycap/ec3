@@ -1,0 +1,7 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+  - role: grycap.hadoop
+    hadoop_master: '{{ hadoop_master_ip }}'
+    hadoop_type_of_node: 'master'

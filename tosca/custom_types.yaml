@@ -712,3 +712,33 @@ node_types:
             onedata_namespace: { get_property: [ SELF, namespace ] }
             onedata_geo_position: { get_property: [ SELF, geo_position ] }
             onedata_version: { get_property: [ SELF, version ] }
+
+  tosca.nodes.indigo.HadoopMaster:
+    derived_from: tosca.nodes.SoftwareComponent
+    artifacts:
+      hadoop_role:
+        file: indigo-dc.hadoop,master
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/hadoop/hadoop_master_install.yml
+          inputs:
+            hadoop_master_ip: { get_attribute: [ HOST, private_address, 0 ] }
+
+  tosca.nodes.indigo.HadoopSlave:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      master_ip:
+        required: yes
+        type: string
+    artifacts:
+      hadoop_role:
+        file: indigo-dc.hadoop,master
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/hadoop/hadoop_wn_install.yml
+          inputs:
+            hadoop_master_ip: { get_property: [ SELF, master_ip ] }
