@@ -11,11 +11,11 @@ General FAQs
 
 Currently, EC3 supports `OpenNebula`_, `Amazon EC2`_, `OpenStack`_, `OCCI`_, `LibCloud`_, `Docker`_, `Microsoft Azure`_, `Google Cloud Engine`_ and `LibVirt`_.
 All providers and interfaces are supported by the `CLI`_ interface.
-However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, OpenNebula and `EGI FedCloud`_ is provided. More providers will be added soon.
+However, from the `EC3aaS`_ interface, only support for Amazon EC2, Openstack, OpenNebula and `EGI FedCloud`_ is provided. More providers will be added soon, stay tunned!
 
 **What Local Resource Management Systems (LRMS) are supported by EC3?**
 
-Currently, EC3 supports `SLURM`_, `Torque`_, `Apache Mesos`_  and `SGE`_. Support for `HTCondor`_ is comming soon, stay tunned!
+Currently, EC3 supports `SLURM`_, `Torque`_, `Apache Mesos`_, `SGE`_, `HTCondor`_ and `Kubernetes`_. 
 
 **Is it necessary to indicate a LRMS recipe in the deployment?**
 
@@ -97,6 +97,10 @@ In the EGI FedCloud case, the endpoint and VMI identifier can be obtained from t
 You can configure them by using the EC3 `CLI`_ interface. Thus, you will need to provide a valid Ansible recipe to 
 automatically install the dependence. You can also contact us by using the contact section, and we would try to add the software package you need.
 
+**What is the OSCAR option that appears as a LRMS?**
+
+In OpenNebula and EGI Fedcloud there is an option to deploy as an LRMS the `OSCAR`_ (Open Source Serverless Computing for Data-Processing Applications ) framework, that is an open-source platform to support the Functions as a Service (FaaS) computing model for file-processing applications. This option deploys a Kubernetes cluster with the OSCAR framework and all its dependences.
+
 .. _`CLI`: http://ec3.readthedocs.org/en/latest/ec3.html
 .. _`EC3aaS`: http://servproject.i3m.upv.es/ec3/
 .. _`OpenNebula`: http://www.opennebula.org/
@@ -117,4 +121,6 @@ automatically install the dependence. You can also contact us by using the conta
 .. _`AppDB portal`: https://appdb.egi.eu
 .. _`EGI FedCloud`: https://www.egi.eu/infrastructure/cloud/
 .. _`HTCondor`: https://research.cs.wisc.edu/htcondor/
+.. _`Kubernetes`: https://kubernetes.io/
+.. _`OSCAR`: https://github.com/grycap/oscar
 

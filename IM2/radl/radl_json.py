@@ -31,7 +31,7 @@ try:
 except NameError:
 	class unicode: pass
 
-from .radl import Feature, Features, Aspect, RADL, configure, contextualize, contextualize_item, deploy, SoftFeatures
+from .radl import Feature, Features, Aspect, RADL, configure, contextualize, contextualize_item, deploy, SoftFeatures, UnitToValue
 from . import radl
 import os.path
 schema_path = os.path.join(os.path.dirname(os.path.abspath(radl.__file__ )), "radl_schema.json")
@@ -198,18 +198,23 @@ def featuresToSimple(a):
 			r["softs"] = [ {"weight": i.soft, "items": featuresToSimple(i)}
 			               for i in a.props[SoftFeatures.SOFT] ]
 		elif isinstance(v, tuple):
-			r[k+"_min"] = "-inf" if v[0] is None else v[0].value
-			r[k+"_max"] = "inf" if v[1] is None else v[1].value
+			r[k+"_min"] = "-inf" if v[0] is None else featureToSimple(v[0].value, v[0].unit)
+			r[k+"_max"] = "inf" if v[1] is None else featureToSimple(v[1].value, v[1].unit)
 		elif isinstance(v, (set, list)):
-			r[k] = [ featureToSimple(i.value) for i in v ]
+			r[k] = [ featureToSimple(i.value, i.unit) for i in v ]
 		elif isinstance(v, dict):
-			r[k] = [ featureToSimple(i.value) for i in v.values() ]
+			r[k] = [ featureToSimple(i.value, i.unit) for i in v.values() ]
 		else:
-			r[k] = featureToSimple(v.value)
+			r[k] = featureToSimple(v.value, v.unit)
 	return r
 
-def featureToSimple(a):
-	if isinstance(a, (int, float, str)):
+def featureToSimple(a, u):
+	if isinstance(a, (int, float)):
+		if u:
+			return a * UnitToValue(u)
+		else:
+			return a
+	if isinstance(a, str):
 		return a
 	elif isinstance(a, unicode):
 		return str(a)

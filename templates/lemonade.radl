@@ -6,6 +6,11 @@ description lemonade (
 Webpage: https://github.com/eubr-bigsea/lemonade'
 )
 
+network public (
+    # LEMONADE port
+    outports contains '23450/tcp'
+)
+
 configure lemonade (
 @begin
     - name: Download docker-lemonade repo

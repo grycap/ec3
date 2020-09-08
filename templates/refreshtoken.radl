@@ -1,0 +1,33 @@
+description refreshtoken (
+    kind = 'component' and
+    short = 'Tool to refresh LToS access token.' and
+    content = 'Tool to refresh LToS access token.'
+)
+
+configure front (
+@begin
+  - vars:
+      CLIENT_ID: cid
+      CLIENT_SECRET: csec
+      REFRESH_TOKEN_FILE:
+        ec3_file: refresh_token.py
+
+    tasks:
+    - name: Create dir /usr/local/ec3/
+      file: path=/usr/local/ec3/ state=directory
+
+    - copy:
+        dest: /usr/local/ec3/refresh_token.py
+        content: "{{REFRESH_TOKEN_FILE}}"
+        mode: 0700
+
+    - cron:
+        name: "refresh token"
+        minute: "*/5"
+        job: "[ -f /usr/local/ec3/auth.dat ] && /usr/local/ec3/refresh_token.py {{ CLIENT_ID }} {{ CLIENT_SECRET }}"
+        user: root
+        cron_file: refresh_token
+        state: present
+@end
+)
+
