@@ -317,7 +317,11 @@ node_types:
       version:
         required: no
         type: string
-        default: "1.15.7"
+        default: "1.18.8"
+      nvidia_support:
+        required: no
+        type: boolean
+        default: false
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -332,6 +336,7 @@ node_types:
           inputs:
             kube_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             kube_version:  { get_property: [ SELF, version ] }
+            kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
 
   tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
@@ -363,7 +368,11 @@ node_types:
       version: 
         required: no
         type: string
-        default: "1.15.7"
+        default: "1.18.8"
+      nvidia_support:
+        required: no
+        type: boolean
+        default: false
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -389,6 +398,7 @@ node_types:
             kube_install_nfs_client:  { get_property: [ SELF, install_nfs_client ] }
             kube_install_ingress:  { get_property: [ SELF, install_ingress ] }
             kube_version:  { get_property: [ SELF, version ] }
+            kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
       
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
