@@ -797,6 +797,11 @@ node_types:
         description: Set the gluster brid name
         required: false
         default: brick_name
+      replicas:
+        type: integer
+        description: Numner of replicas
+        required: false
+        default: 2
       options:
         type: map
         entry_schema:
