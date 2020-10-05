@@ -173,6 +173,44 @@ relationship_types:
 
 node_types:
 
+  tosca.nodes.indigo.LRMS.FrontEnd.Storm:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    # properties:
+    #   server_ip:
+    #     type: string
+    #     description: IP of the OphidiaServer node
+    #     required: true
+    #   server_public_ip:
+    #     type: string
+    #     description: Public IP of the OphidiaServer node
+    #     required: true
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/artifacts/slurm/fe-install.yml
+#          inputs:
+#            ophidia_server_ip: { get_property: [ SELF, server_ip ] }
+#            ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
+
+  tosca.nodes.indigo.LRMS.WorkerNode.Storm:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    # properties:
+    #   server_ip:
+    #     type: string
+    #     description: IP of the OphidiaServer node
+    #     required: true
+    #   server_public_ip:
+    #     type: string
+    #     description: Public IP of the OphidiaServer node
+    #     required: true
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/artifacts/wn-install.yml
+  #        inputs:
+  #          ophidia_server_ip: { get_property: [ SELF, server_ip ] }
+  #          ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
+
   tosca.nodes.indigo.Compute:
     derived_from: tosca.nodes.Compute
     attributes:
@@ -365,7 +403,7 @@ node_types:
         required: no
         type: boolean
         default: true
-      version: 
+      version:
         required: no
         type: string
         default: "1.18.8"
@@ -399,7 +437,7 @@ node_types:
             kube_install_ingress:  { get_property: [ SELF, install_ingress ] }
             kube_version:  { get_property: [ SELF, version ] }
             kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
-      
+
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode

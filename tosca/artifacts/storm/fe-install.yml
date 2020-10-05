@@ -1,0 +1,67 @@
+# adapted from https://github.com/DigitalPebble/ansible-storm
+---
+- name: setup storm Nimbus
+  hosts: localhost
+  become: yes
+
+  vars:
+    storm_version: 1.2.3
+    zk_version: 3.6.2
+
+  tasks:
+   - group: name=zookeeper system=yes state=present
+
+   - name: Create zookeeper User
+     user: name=zookeeper system=yes createhome=false group=zookeeper
+
+   - get_url:
+       url: "https://archive.apache.org/dist/zookeeper/zookeeper-{{ zk_version }}/apache-zookeeper-{{ zk_version }}-bin.tar.gz"
+       dest: /tmp/
+       owner: zookeeper
+       group: zookeeper
+       timeout: 600
+       force: yes
+
+   - unarchive:
+       src: /tmp/apache-zookeeper-{{ zk_version }}-bin.tar.gz
+       dest: /tmp
+       owner: zookeeper
+       group: zookeeper
+       remote_src: yes
+
+   - copy:
+       src: "/tmp/apache-zookeeper-{{ zk_version }}-bin/"
+       dest: /opt/zookeeper
+       owner: zookeeper
+       group: zookeeper
+       remote_src: yes
+
+   - name: Copy a new zk conf
+     copy:
+       src: /opt/zookeeper/conf/zoo_sample.cfg
+       dest: /opt/zookeeper/conf/zoo.cfg
+       owner: zookeeper
+       group: zookeeper
+       remote_src: yes
+
+   - name: Add a line to a file if the file does not exist, without passing regexp
+     lineinfile:
+       path: /opt/zookeeper/conf/zoo.cfg
+       line:  admin.enableServer=false
+
+   - name: Copy ZK service file
+     copy:
+       src: zookeeper.service
+       dest: /etc/systemd/system/zookeeper.service
+       remote_src: false
+
+   - template: src=service-template dest="/etc/systemd/system/storm-{{ item }}.service"
+     with_items:
+        - nimbus
+        - ui
+
+   - systemd: state=started name={{ item }}.service daemon_reload=yes
+     with_items:
+        - zookeeper
+        - storm-nimbus
+        - storm-ui

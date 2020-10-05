@@ -1,0 +1,11 @@
+[Unit]
+Description={{item}} service
+[Service]
+Type=simple
+ExecStart=/usr/bin/storm {{item}}
+Restart=always
+PIDFile=/var/run/%i.pid
+User=storm
+WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+[Install]
+WantedBy=multi-user.target
