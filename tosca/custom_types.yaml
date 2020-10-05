@@ -187,7 +187,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/artifacts/slurm/fe-install.yml
+          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/tosca/artifacts/storm/fe-install.yml
 #          inputs:
 #            ophidia_server_ip: { get_property: [ SELF, server_ip ] }
 #            ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
@@ -206,7 +206,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/artifacts/wn-install.yml
+          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/tosca/artifacts/storm/wn-install.yml
   #        inputs:
   #          ophidia_server_ip: { get_property: [ SELF, server_ip ] }
   #          ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
