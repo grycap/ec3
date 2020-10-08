@@ -62,6 +62,54 @@
         [Install]
         WantedBy=default.target
 
+   - name: Download Apache Storm {{ storm_version }}
+     get_url:
+       url: "https://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
+       dest: /tmp/
+       owner: storm
+       group: storm
+       timeout: 600
+
+   - name: Unarchive Apache Storm
+     unarchive:
+       src: /tmp/apache-storm-{{ storm_version }}.tar.gz
+       dest: /usr/share/
+       owner: storm
+       group: storm
+       remote_src: yes
+
+   - file:
+       path: "/usr/share/apache-storm-{{ storm_version }}"
+       owner: "storm"
+       group: "storm"
+       mode: "u=rwx,g=rwx,o=r"
+       recurse: yes
+       state: directory
+
+   - file:
+       src: "/usr/share/apache-storm-{{ storm_version }}/bin/storm"
+       dest: /usr/bin/storm
+       owner: storm
+       group: storm
+       state: link
+
+   - file:
+       path: /var/log/storm
+       owner: storm
+       group: storm
+       state: directory
+       mode: "u=rwx,g=rwx,o=r"
+       recurse: yes
+
+   - copy:
+      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      content: |
+        storm.log.dir: "/var/log/storm"
+        storm.zookeeper.servers: 
+          - "localhost"
+        nimbus.seeds: ["localhost"]
+        worker.heap.memory.mb: 5000
+
    - copy:
       dest: "/etc/systemd/system/storm-{{ item }}.service"
       content: |
