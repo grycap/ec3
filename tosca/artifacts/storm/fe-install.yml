@@ -21,16 +21,17 @@
 
    - unarchive:
        src: /tmp/apache-zookeeper-{{ zk_version }}-bin.tar.gz
-       dest: /tmp
+       dest: /opt
        owner: zookeeper
        group: zookeeper
        remote_src: yes
 
-   - copy:
-       src: "/tmp/apache-zookeeper-{{ zk_version }}-bin/"
+   - file:
+       src: "/opt/apache-zookeeper-{{ zk_version }}-bin/"
        dest: /opt/zookeeper
        owner: zookeeper
        group: zookeeper
+       state: link
        remote_src: yes
 
    - name: Copy a new zk conf
