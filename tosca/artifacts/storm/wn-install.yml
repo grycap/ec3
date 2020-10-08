@@ -12,8 +12,6 @@
    - apt:
       name: openjdk-8-jdk
       state: present
-      update_cache: yes
-      force: yes
 
    - group: name=storm system=yes state=present
 
@@ -68,9 +66,29 @@
        mode: "u=rwx,g=rwx,o=rwx"
        recurse: yes
 
-   - template: src=storm.yaml dest="/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+   - copy:
+      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      content: |
+        storm.log.dir: "/var/log/storm"
+        storm.zookeeper.servers: 
+          - "{{master_ip}}"
+        nimbus.seeds: ["{{master_ip}}"]
+        worker.heap.memory.mb: 5000
 
-   - template: src=service-template dest="/etc/systemd/system/storm-{{ item }}.service"
+   - copy:
+      dest: "/etc/systemd/system/storm-{{ item }}.service"
+      content: |
+        [Unit]
+        Description={{item}} service
+        [Service]
+        Type=simple
+        ExecStart=/usr/bin/storm {{item}}
+        Restart=always
+        PIDFile=/var/run/%i.pid
+        User=storm
+        WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+        [Install]
+        WantedBy=multi-user.target
      with_items:
         - supervisor
 
