@@ -67,6 +67,16 @@
    - name: Create Storm User
      user: name=storm system=yes createhome=false group=storm
 
+   - apt:
+      name: openjdk-8-jdk
+      state: present
+     when: ansible_os_family == "Debian"
+
+   - yum:
+      name: java-1.8.0-openjdk
+      state: present
+     when: ansible_os_family == "RedHat"
+
    - name: Download Apache Storm {{ storm_version }}
      get_url:
        url: "https://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
