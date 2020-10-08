@@ -30,7 +30,6 @@
        owner: storm
        group: storm
        timeout: 600
-       force: yes
 
    - name: Unarchive Apache Storm
      unarchive:

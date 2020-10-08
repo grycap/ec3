@@ -816,7 +816,7 @@ node_types:
       version:
         required: no
         type: string
-        default: "1.2.3"
+        default: "2.2.0"
       zk_version:
         required: no
         type: string
@@ -835,10 +835,11 @@ node_types:
       version:
         required: no
         type: string
-        default: "1.2.3"
+        default: "2.2.0"
     interfaces:
       Standard:
         configure:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/storm/wn-install.yml
           inputs:
+            storm_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             storm_version: { get_property: [ SELF, version ] }

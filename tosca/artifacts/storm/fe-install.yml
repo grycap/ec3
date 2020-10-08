@@ -13,7 +13,6 @@
        owner: zookeeper
        group: zookeeper
        timeout: 600
-       force: yes
 
    - unarchive:
        src: /tmp/apache-zookeeper-{{ zk_version }}-bin.tar.gz
