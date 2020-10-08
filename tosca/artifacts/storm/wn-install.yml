@@ -20,7 +20,7 @@
 
    - name: Download Apache Storm {{ storm_version }}
      get_url:
-       url: "http://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
+       url: "https://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
        dest: /tmp/
        owner: storm
        group: storm
