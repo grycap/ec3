@@ -1,10 +1,6 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
 - hosts: localhost
-  vars:
-    storm_version: 1.2.3
-    zk_version: 3.6.2
-
   tasks:
    - group: name=zookeeper system=yes state=present
 

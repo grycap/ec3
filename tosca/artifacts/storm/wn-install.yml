@@ -2,7 +2,6 @@
 ---
 - hosts: localhost
   vars:
-    storm_version: 1.2.3
     # get IP of master from hostvars
     master_ip: "{{ storm_front_end_ip }}"
 
@@ -12,6 +11,12 @@
    - apt:
       name: openjdk-8-jdk
       state: present
+     when: ansible_os_family == "Debian"
+
+   - yum:
+      name: java-1.8.0-openjdk
+      state: present
+     when: ansible_os_family == "RedHat"
 
    - group: name=storm system=yes state=present
 
