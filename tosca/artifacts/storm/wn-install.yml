@@ -4,7 +4,7 @@
   vars:
     storm_version: 1.2.3
     # get IP of master from hostvars
-    master_ip: "{{ storm_front_end_ip] }}"
+    master_ip: "{{ storm_front_end_ip }}"
 
   tasks:
    - debug: var=master_ip
