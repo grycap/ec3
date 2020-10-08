@@ -1,0 +1,79 @@
+# adapted from https://github.com/DigitalPebble/ansible-storm
+---
+- hosts: localhost
+  vars:
+    storm_version: 1.2.3
+    # get IP of master from hostvars
+    master_ip: "{{ storm_front_end_ip] }}"
+
+  tasks:
+   - debug: var=master_ip
+
+   - apt:
+      name: openjdk-8-jdk
+      state: present
+      update_cache: yes
+      force: yes
+
+   - group: name=storm system=yes state=present
+
+   - name: Create Storm User
+     user: name=storm system=yes createhome=false group=storm
+
+   - name: Download Apache Storm {{ storm_version }}
+     get_url:
+       url: "http://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
+       dest: /tmp/
+       owner: storm
+       group: storm
+       timeout: 600
+       force: yes
+
+   - name: Unarchive Apache Storm
+     unarchive:
+       src: /tmp/apache-storm-{{ storm_version }}.tar.gz
+       dest: /usr/share/
+       owner: storm
+       group: storm
+       remote_src: yes
+
+   - file:
+       path: "/usr/share/apache-storm-{{ storm_version }}"
+       owner: "storm"
+       group: "storm"
+       mode: "u=rwx,g=rwx,o=r"
+       recurse: yes
+       state: directory
+
+   - file:
+       src: "/usr/share/apache-storm-{{ storm_version }}/bin/storm"
+       dest: /usr/bin/storm
+       owner: storm
+       group: storm
+       state: link
+
+   - file:
+       path: /var/log/storm
+       owner: storm
+       group: storm
+       state: directory
+       mode: "u=rwx,g=rwx,o=r"
+       recurse: yes
+
+   - file:
+       path: /var/log/storm/workers-artifacts/
+       owner: storm
+       group: storm
+       state: directory
+       mode: "u=rwx,g=rwx,o=rwx"
+       recurse: yes
+
+   - template: src=storm.yaml dest="/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+
+   - template: src=service-template dest="/etc/systemd/system/storm-{{ item }}.service"
+     with_items:
+        - supervisor
+
+   - systemd: state=started name=storm-{{ item }}.service daemon_reload=yes
+     with_items:
+        - supervisor
