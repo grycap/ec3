@@ -11,6 +11,7 @@
   - role: grycap.nfs
     nfs_mode: 'front'
     nfs_exports: [{path: "/home", export: "{{ vnode_prefix }}*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}]
+    when: slurm_nfs is undefined or slurm_nfs
   - role: grycap.slurm
     slurm_type_of_node: 'front'
     slurm_wn_num: '{{ wn_num }}'

@@ -1,13 +1,6 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
-- name: setup storm Nimbus
-  hosts: localhost
-  become: yes
-
-  vars:
-    storm_version: 1.2.3
-    zk_version: 3.6.2
-
+- hosts: localhost
   tasks:
    - group: name=zookeeper system=yes state=present
 
@@ -20,20 +13,20 @@
        owner: zookeeper
        group: zookeeper
        timeout: 600
-       force: yes
 
    - unarchive:
        src: /tmp/apache-zookeeper-{{ zk_version }}-bin.tar.gz
-       dest: /tmp
+       dest: /opt
        owner: zookeeper
        group: zookeeper
        remote_src: yes
 
-   - copy:
-       src: "/tmp/apache-zookeeper-{{ zk_version }}-bin/"
+   - file:
+       src: "/opt/apache-zookeeper-{{ zk_version }}-bin/"
        dest: /opt/zookeeper
        owner: zookeeper
        group: zookeeper
+       state: link
        remote_src: yes
 
    - name: Copy a new zk conf
@@ -51,11 +44,101 @@
 
    - name: Copy ZK service file
      copy:
-       src: zookeeper.service
        dest: /etc/systemd/system/zookeeper.service
-       remote_src: false
+       content: |
+        [Unit]
+        Description=ZooKeeper Service
+        Documentation=http://zookeeper.apache.org
+        Requires=network.target
+        After=network.target
+        [Service]
+        Type=simple
+        User=zookeeper
+        Group=zookeeper
+        WorkingDirectory=/opt/zookeeper
+        ExecStart=/opt/zookeeper/bin/zkServer.sh start-foreground /opt/zookeeper/conf/zoo.cfg
+        ExecStop=/opt/zookeeper/bin/zkServer.sh stop /opt/zookeeper/conf/zoo.cfg
+        ExecReload=/opt/zookeeper/bin/zkServer.sh restart /opt/zookeeper/conf/zoo.cfg
+        [Install]
+        WantedBy=default.target
 
-   - template: src=service-template dest="/etc/systemd/system/storm-{{ item }}.service"
+   - group: name=storm system=yes state=present
+
+   - name: Create Storm User
+     user: name=storm system=yes createhome=false group=storm
+
+   - apt:
+      name: openjdk-8-jdk
+      state: present
+     when: ansible_os_family == "Debian"
+
+   - yum:
+      name: java-1.8.0-openjdk
+      state: present
+     when: ansible_os_family == "RedHat"
+
+   - name: Download Apache Storm {{ storm_version }}
+     get_url:
+       url: "https://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
+       dest: /tmp/
+       owner: storm
+       group: storm
+       timeout: 600
+
+   - name: Unarchive Apache Storm
+     unarchive:
+       src: /tmp/apache-storm-{{ storm_version }}.tar.gz
+       dest: /usr/share/
+       owner: storm
+       group: storm
+       remote_src: yes
+
+   - file:
+       path: "/usr/share/apache-storm-{{ storm_version }}"
+       owner: "storm"
+       group: "storm"
+       mode: "u=rwx,g=rwx,o=r"
+       recurse: yes
+       state: directory
+
+   - file:
+       src: "/usr/share/apache-storm-{{ storm_version }}/bin/storm"
+       dest: /usr/bin/storm
+       owner: storm
+       group: storm
+       state: link
+
+   - file:
+       path: /var/log/storm
+       owner: storm
+       group: storm
+       state: directory
+       mode: "u=rwx,g=rwx,o=r"
+       recurse: yes
+
+   - copy:
+      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      content: |
+        storm.log.dir: "/var/log/storm"
+        storm.zookeeper.servers:
+          - "localhost"
+        nimbus.seeds: ["localhost"]
+        worker.heap.memory.mb: 5000
+
+   - copy:
+      dest: "/etc/systemd/system/storm-{{ item }}.service"
+      content: |
+        [Unit]
+        Description={{item}} service
+        [Service]
+        Type=simple
+        ExecStart=/usr/bin/storm {{item}}
+        Restart=always
+        PIDFile=/var/run/%i.pid
+        User=storm
+        WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+        [Install]
+        WantedBy=multi-user.target
      with_items:
         - nimbus
         - ui

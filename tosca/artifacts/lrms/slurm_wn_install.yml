@@ -7,6 +7,7 @@
   - role: grycap.nfs
     nfs_mode: 'wn'
     nfs_client_imports: [{ local: "/home", remote: "/home", server_host: "{{ slurm_front_end_ip }}" }]
+    when: slurm_nfs is undefined or slurm_nfs
   - role: grycap.slurm
     slurm_type_of_node: 'wn'
     slurm_server_ip: '{{ slurm_front_end_ip }}'

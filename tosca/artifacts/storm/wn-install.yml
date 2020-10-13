@@ -1,20 +1,9 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
-- name: setup storm worker nodes
-  hosts: localhost
-  become: yes
-
+- hosts: localhost
   vars:
-    storm_version: 1.2.3
     # get IP of master from hostvars
-    master_ip: "{{ hostvars[groups['storm_master'][0]]['ansible_fqdn'] }}"
-
-  gather_facts: yes
-  pre_tasks:
-    - name: Install python for Ansible
-      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
-      changed_when: False
-    - setup: # aka gather_facts
+    master_ip: "{{ storm_front_end_ip }}"
 
   tasks:
    - debug: var=master_ip
@@ -22,8 +11,12 @@
    - apt:
       name: openjdk-8-jdk
       state: present
-      update_cache: yes
-      force: yes
+     when: ansible_os_family == "Debian"
+
+   - yum:
+      name: java-1.8.0-openjdk
+      state: present
+     when: ansible_os_family == "RedHat"
 
    - group: name=storm system=yes state=present
 
@@ -32,12 +25,11 @@
 
    - name: Download Apache Storm {{ storm_version }}
      get_url:
-       url: "http://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
+       url: "https://www.mirrorservice.org/sites/ftp.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz"
        dest: /tmp/
        owner: storm
        group: storm
        timeout: 600
-       force: yes
 
    - name: Unarchive Apache Storm
      unarchive:
@@ -78,9 +70,29 @@
        mode: "u=rwx,g=rwx,o=rwx"
        recurse: yes
 
-   - template: src=storm.yaml dest="/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+   - copy:
+      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      content: |
+        storm.log.dir: "/var/log/storm"
+        storm.zookeeper.servers: 
+          - "{{master_ip}}"
+        nimbus.seeds: ["{{master_ip}}"]
+        worker.heap.memory.mb: 5000
 
-   - template: src=service-template dest="/etc/systemd/system/storm-{{ item }}.service"
+   - copy:
+      dest: "/etc/systemd/system/storm-{{ item }}.service"
+      content: |
+        [Unit]
+        Description={{item}} service
+        [Service]
+        Type=simple
+        ExecStart=/usr/bin/storm {{item}}
+        Restart=always
+        PIDFile=/var/run/%i.pid
+        User=storm
+        WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+        [Install]
+        WantedBy=multi-user.target
      with_items:
         - supervisor
 

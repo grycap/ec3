@@ -441,6 +441,12 @@ node_types:
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    properties:
+      nfs:
+        type: boolean
+        description: Install and mount NFS
+        required: false
+        default: true
     artifacts:
       slurm_role:
         file: grycap.slurm
@@ -455,10 +461,16 @@ node_types:
           inputs:
             slurm_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             slurm_public_front_end_ip: { get_property: [ SELF, public_front_end_ip ] }
+            slurm_nfs: { get_property: [ SELF, nfs ] }
 
   tosca.nodes.indigo.LRMS.FrontEnd.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
     properties:
+      nfs:
+        type: boolean
+        description: Install and mount NFS
+        required: false
+        default: true
       wn_num:
         type: integer
         description: Number of WNs
@@ -483,6 +495,7 @@ node_types:
             wn_ips: { get_property: [ SELF, wn_ips ] }
             front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
             max_number_of_nodes: { get_property: [ wn_node, wn, max_instances] }
+            slurm_nfs: { get_property: [ SELF, nfs ] }
 
   tosca.nodes.indigo.GalaxyPortal:
     derived_from: tosca.nodes.WebServer
@@ -790,3 +803,81 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/hadoop/hadoop_wn_install.yml
           inputs:
             hadoop_master_ip: { get_property: [ SELF, master_ip ] }
+
+  tosca.nodes.indigo.GlusterFSVolume:
+    derived_from: tosca.nodes.BlockStorage
+    properties:
+      size:
+        # to overwrite BlockStorage size property to set it as not required
+        type: scalar-unit.size
+        required: false
+      wn_ips:
+        type: list
+        entry_schema:
+          type: string
+        description: List of IPs of the GlusteFS nodes (WNs)
+        required: false
+        default: []
+      fe_ip:
+        type: list
+        entry_schema:
+          type: string
+        description: IP of the GlusteFS nodes (FE)
+        required: false
+        default: []
+      brick_dir:
+        type: string
+        description: Set the gluster brid dir
+        required: true
+        default: /data
+      brick_name:
+        type: string
+        description: Set the gluster brid name
+        required: false
+        default: brick_name
+      replicas:
+        type: integer
+        description: Numner of replicas
+        required: false
+        default: 2
+      options:
+        type: map
+        entry_schema:
+          type: string
+        description: A dictionary/hash with options/settings for the volume.
+        required: false
+        default: {}
+
+  tosca.nodes.indigo.LRMS.FrontEnd.Storm:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    properties:
+      version:
+        required: no
+        type: string
+        default: "2.2.0"
+      zk_version:
+        required: no
+        type: string
+        default: "3.6.2"
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/storm/fe-install.yml
+          inputs:
+            storm_version: { get_property: [ SELF, version ] }
+            zk_version: { get_property: [ SELF, zk_version ] }
+  
+  tosca.nodes.indigo.LRMS.WorkerNode.Storm:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    properties:
+      version:
+        required: no
+        type: string
+        default: "2.2.0"
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/storm/wn-install.yml
+          inputs:
+            storm_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+            storm_version: { get_property: [ SELF, version ] }

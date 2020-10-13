@@ -1,0 +1,33 @@
+---
+- hosts: localhost
+  connection: local
+  vars: 
+    gluster_nodes: '{{ gluster_wn_ips + [ gluster_fe_ip ]  }}'
+  roles:
+    - role: 'geerlingguy.glusterfs'
+  tasks:
+    - name: Ensure Gluster brick and mount directories exist.
+      file: "path={{ item }} state=directory mode=0777"
+      with_items:
+        - "{{ gluster_brick_dir }}"
+        - "{{ gluster_mount_dir }}"
+
+    - name: Configure Gluster volume.
+      gluster_volume:
+        state: present
+        name: "{{ gluster_brick_name }}"
+        brick: "{{ gluster_brick_dir }}"
+        replicas: "{{ gluster_nodes | length }}"
+        cluster: "{{ gluster_nodes | join(',') }}"
+        host: "{{ ansible_hostname }}"
+        options: "{{ gluster_options }}"
+        force: yes
+      run_once: true
+
+    - name: Ensure Gluster volume is mounted.
+      mount:
+        name: "{{ gluster_mount_dir }}"
+        src: "{{ ansible_hostname }}:/{{ gluster_brick_name }}"
+        fstype: glusterfs
+        opts: "defaults,_netdev"
+        state: mounted
