@@ -38,19 +38,21 @@ Also ``sshpass`` command is required to provide the user with ssh access to the 
 Installing
 ~~~~~~~~~~
 
+As Python 2 is no longer supported, we recommend to install ec3 with Python 3.
+
 First you need to install pip tool. To install them in Debian and Ubuntu based distributions, do::
 
 	sudo apt update
-	sudo apt install python-pip
+	sudo apt install -y python3-pip
 
 In Red Hat based distributions (RHEL, CentOS, Amazon Linux, Oracle Linux, Fedora, etc.), do::
-	
-	sudo yum install epel-release
-	sudo yum install which python-pip
+
+	sudo yum install -y epel-release
+	sudo yum install -y which python3-pip
 	
 Then you only have to call the install command of the pip tool with the `ec3-cli` package::
 	
-    sudo pip install ec3-cli
+    sudo pip3 install ec3-cli
 
 You can also download the last `ec3` version from `this <https://github.com/grycap/ec3>`_ git repository::
 
@@ -58,7 +60,7 @@ You can also download the last `ec3` version from `this <https://github.com/gryc
 
 Then you can install it calling the pip tool with the current ec3 directory::
 	
-    sudo pip install ./ec3
+    sudo pip3 install ./ec3
 
 Basic example with Amazon EC2
 -----------------------------
