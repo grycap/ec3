@@ -176,7 +176,7 @@ class RefreshToken:
             if "OpenStack" in line:
                 for token in line.split(";"):
                     if token.strip().startswith("password"):
-                        return token.split("=")[1].strip()
+                        return token.split("=")[1].strip().strip("'")
 
         return None
 
@@ -188,12 +188,19 @@ class RefreshToken:
         new_auth = ""
         for line in auth_data.split("\n"):
             if "OpenStack" in line:
-                    pos_ini = line.find("password = ") + 11
-                    new_auth += line[:pos_ini] + access_token
-                    pos_end = max(line.find(";", pos_ini), line.find("\n", pos_ini))
-                    if pos_end > -1:
-                        new_auth += line[pos_end:]
-                    new_auth += "\n"
+                pos_ini = line.find("password = ") + 11
+                new_auth += line[:pos_ini] + access_token
+                pos_end = max(line.find(";", pos_ini), line.find("\n", pos_ini))
+                if pos_end > -1:
+                    new_auth += line[pos_end:]
+                new_auth += "\n"
+            elif "InfrastructureManager" in line and "token = " in line:
+                pos_ini = line.find("token = ") + 8
+                new_auth += line[:pos_ini] + access_token
+                pos_end = max(line.find(";", pos_ini), line.find("\n", pos_ini))
+                if pos_end > -1:
+                    new_auth += line[pos_end:]
+                new_auth += "\n"
             else:
                 new_auth += line + "\n"
 
@@ -210,9 +217,15 @@ if __name__ == "__main__":
 
     if not refresh_token:
         refresh_token, access_token = rt.get_refresh_token(access_token)
+        if not access_token:
+            print("Error getting refresh token.")
+            sys.exit(1)
         rt.save_token_to_auth_file("/usr/local/ec3/auth.dat", access_token)
     elif rt.is_access_token_to_expire(access_token):
         access_token = rt.refresh_access_token(access_token, refresh_token)
+        if not access_token:
+            print("Error getting refresh token.")
+            sys.exit(1)
         rt.save_token_to_auth_file("/usr/local/ec3/auth.dat", access_token)
     else:
         print("Access token valid. Nothing to do.")
