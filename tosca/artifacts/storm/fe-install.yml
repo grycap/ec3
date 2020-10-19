@@ -1,13 +1,15 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
-- hosts: localhost
+- hosts: storm_master
   tasks:
-   - group: name=zookeeper system=yes state=present
+   - name: Create zookeeper group
+     group: name=zookeeper system=yes state=present
 
    - name: Create zookeeper User
      user: name=zookeeper system=yes createhome=false group=zookeeper
 
-   - get_url:
+   - name: get Zookeeper
+     get_url:
        url: "https://archive.apache.org/dist/zookeeper/zookeeper-{{ zk_version }}/apache-zookeeper-{{ zk_version }}-bin.tar.gz"
        dest: /tmp/
        owner: zookeeper
@@ -85,7 +87,7 @@
        group: storm
        timeout: 600
 
-   - name: Unarchive Apache Storm
+   - name: Extract Apache Storm
      unarchive:
        src: /tmp/apache-storm-{{ storm_version }}.tar.gz
        dest: /usr/share/
@@ -119,11 +121,18 @@
    - copy:
       dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
+        nimbus.host: "localhost"
+        storm.local.dir: "/var/storm"
         storm.log.dir: "/var/log/storm"
         storm.zookeeper.servers:
           - "localhost"
-        nimbus.seeds: ["localhost"]
         worker.heap.memory.mb: 5000
+        storm.local.hostname: "{{dns_name}}"
+        supervisor.slots.ports:
+          - 6700
+          - 6701
+          - 6702
+          - 6703
 
    - copy:
       dest: "/etc/systemd/system/storm-{{ item }}.service"

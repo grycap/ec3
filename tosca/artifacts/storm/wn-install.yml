@@ -1,6 +1,6 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
-- hosts: localhost
+- hosts: storm_wn
   vars:
     # get IP of master from hostvars
     master_ip: "{{ storm_front_end_ip }}"
@@ -31,7 +31,7 @@
        group: storm
        timeout: 600
 
-   - name: Unarchive Apache Storm
+   - name: Extract Apache Storm
      unarchive:
        src: /tmp/apache-storm-{{ storm_version }}.tar.gz
        dest: /usr/share/
@@ -70,13 +70,20 @@
        mode: "u=rwx,g=rwx,o=rwx"
        recurse: yes
 
+   - name: Add master in hosts
+     lineinfile:
+       dest: /etc/hosts
+       line: "{{master_ip}}  nimbus"
+
    - copy:
       dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
+        nimbus.host: "{{master_ip}}"
         storm.log.dir: "/var/log/storm"
-        storm.zookeeper.servers: 
+        storm.zookeeper.servers:
           - "{{master_ip}}"
         nimbus.seeds: ["{{master_ip}}"]
+        storm.local.hostname: "{{dns_name}}"
         worker.heap.memory.mb: 5000
 
    - copy:
