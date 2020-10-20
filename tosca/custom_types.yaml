@@ -175,6 +175,15 @@ node_types:
 
   tosca.nodes.indigo.LRMS.FrontEnd.Storm:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    properties:
+      storm_version:
+        required: no
+        type: string
+        default: "2.2.0"
+      zookeeper_version:
+        required: no
+        type: string
+        default: "3.6.2"
     # properties:
     #   server_ip:
     #     type: string
@@ -194,6 +203,11 @@ node_types:
 
   tosca.nodes.indigo.LRMS.WorkerNode.Storm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    properties:
+      storm_version:
+        required: no
+        type: string
+        default: "2.2.0"
     # properties:
     #   server_ip:
     #     type: string
@@ -866,7 +880,7 @@ node_types:
           inputs:
             storm_version: { get_property: [ SELF, version ] }
             zk_version: { get_property: [ SELF, zk_version ] }
-  
+
   tosca.nodes.indigo.LRMS.WorkerNode.Storm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
     properties:
