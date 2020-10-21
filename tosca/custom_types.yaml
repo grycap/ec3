@@ -173,58 +173,6 @@ relationship_types:
 
 node_types:
 
-  tosca.nodes.indigo.LRMS.FrontEnd.Storm:
-    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
-    properties:
-      storm_version:
-        required: no
-        type: string
-        default: "2.2.0"
-      zookeeper_version:
-        required: no
-        type: string
-        default: "3.6.2"
-    # properties:
-    #   server_ip:
-    #     type: string
-    #     description: IP of the OphidiaServer node
-    #     required: true
-    #   server_public_ip:
-    #     type: string
-    #     description: Public IP of the OphidiaServer node
-    #     required: true
-    interfaces:
-      Standard:
-        configure:
-          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/tosca/artifacts/storm/fe-install.yml
-#          inputs:
-#            ophidia_server_ip: { get_property: [ SELF, server_ip ] }
-#            ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
-
-  tosca.nodes.indigo.LRMS.WorkerNode.Storm:
-    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
-    properties:
-      storm_version:
-        required: no
-        type: string
-        default: "2.2.0"
-    # properties:
-    #   server_ip:
-    #     type: string
-    #     description: IP of the OphidiaServer node
-    #     required: true
-    #   server_public_ip:
-    #     type: string
-    #     description: Public IP of the OphidiaServer node
-    #     required: true
-    interfaces:
-      Standard:
-        configure:
-          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/tosca/artifacts/storm/wn-install.yml
-  #        inputs:
-  #          ophidia_server_ip: { get_property: [ SELF, server_ip ] }
-  #          ophidia_server_public_ip: { get_property: [ SELF, server_public_ip ] }
-
   tosca.nodes.indigo.Compute:
     derived_from: tosca.nodes.Compute
     attributes:
@@ -876,7 +824,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/storm/fe-install.yml
+          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/tosca/artifacts/storm/fe-install.yml
           inputs:
             storm_version: { get_property: [ SELF, version ] }
             zk_version: { get_property: [ SELF, zk_version ] }
@@ -891,7 +839,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/storm/wn-install.yml
+          implementation: https://raw.githubusercontent.com/asalic/ec3/tosca/tosca/artifacts/storm/wn-install.yml
           inputs:
             storm_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             storm_version: { get_property: [ SELF, version ] }
