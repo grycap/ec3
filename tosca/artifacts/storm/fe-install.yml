@@ -166,6 +166,7 @@
      with_items:
         - nimbus
         - ui
+   - include: ipv6-disable.yml
 
    - systemd: state=started name={{ item }}.service daemon_reload=yes
      with_items:
