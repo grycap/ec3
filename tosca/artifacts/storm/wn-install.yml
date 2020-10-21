@@ -13,21 +13,6 @@
       state: present
      when: ansible_os_family == "Debian"
 
-   - apt:
-      name: openssh-server
-      state: present
-     when: ansible_os_family == "Debian"
-
-   - apt:
-      name: openssh-client
-      state: present
-     when: ansible_os_family == "Debian"
-
-   - apt:
-      name: sshpass
-      state: present
-     when: ansible_os_family == "Debian"
-
    - yum:
       name: java-1.8.0-openjdk
       state: present
