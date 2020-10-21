@@ -83,7 +83,7 @@
         storm.zookeeper.servers:
           - "{{front_end_ip}}"
         nimbus.seeds: ["{{front_end_ip}}"]
-        storm.local.hostname: "{{dns_name}}"
+        storm.local.hostname: "{{ dns_name }}"
         worker.heap.memory.mb: 5000
 
    - copy:
