@@ -117,7 +117,10 @@
         WantedBy=multi-user.target
      with_items:
         - supervisor
+        - logviewer
+   - include: ipv6-disable.yml
 
    - systemd: state=started name=storm-{{ item }}.service daemon_reload=yes
      with_items:
         - supervisor
+        - logviewer

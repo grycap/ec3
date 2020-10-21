@@ -166,6 +166,7 @@
      with_items:
         - nimbus
         - ui
+        - logviewer
    - include: ipv6-disable.yml
 
    - systemd: state=started name={{ item }}.service daemon_reload=yes
@@ -173,3 +174,4 @@
         - zookeeper
         - storm-nimbus
         - storm-ui
+        - logviewer
