@@ -78,11 +78,11 @@
    - copy:
       dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
-        nimbus.host: "{{front_end_ip}}"
+        nimbus.host: "{{ front_end_ip }}"
         storm.log.dir: "/var/log/storm"
         storm.zookeeper.servers:
-          - "{{front_end_ip}}"
-        nimbus.seeds: ["{{front_end_ip}}"]
+          - "{{ front_end_ip }}"
+        nimbus.seeds: ["{{ front_end_ip }}"]
         storm.local.hostname: "{{ dns_name }}"
         worker.heap.memory.mb: 5000
 

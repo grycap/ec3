@@ -127,6 +127,7 @@
         storm.zookeeper.servers:
           - "localhost"
         worker.heap.memory.mb: 5000
+        nimbus.seeds: ["{{ front_end_ip }}"]
         storm.local.hostname: "{{ dns_name }}"
         supervisor.slots.ports:
           - 6700
