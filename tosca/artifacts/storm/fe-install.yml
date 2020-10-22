@@ -174,4 +174,4 @@
         - zookeeper
         - storm-nimbus
         - storm-ui
-        - logviewer
+        - storm-logviewer
