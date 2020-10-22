@@ -73,7 +73,7 @@
    - name: Add master in hosts
      lineinfile:
        dest: /etc/hosts
-       line: "{{master_ip}}  nimbus"
+       line: "{{ front_end_ip }}  nimbus"
 
    - copy:
       dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
