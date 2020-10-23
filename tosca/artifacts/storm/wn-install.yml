@@ -34,13 +34,13 @@
    - name: Extract Apache Storm
      unarchive:
        src: /tmp/apache-storm-{{ storm_version }}.tar.gz
-       dest: /usr/share/
+       dest: /opt/
        owner: storm
        group: storm
        remote_src: yes
 
    - file:
-       path: "/usr/share/apache-storm-{{ storm_version }}"
+       path: "/opt/apache-storm-{{ storm_version }}"
        owner: "storm"
        group: "storm"
        mode: "u=rwx,g=rwx,o=r"
@@ -48,14 +48,14 @@
        state: directory
 
    - file:
-       src: "/usr/share/apache-storm-{{ storm_version }}/bin/storm"
+       src: "/opt/apache-storm-{{ storm_version }}/bin/storm"
        dest: /usr/bin/storm
        owner: storm
        group: storm
        state: link
 
    - file:
-       path: /var/log/storm
+       path: /opt/apache-storm-{{ storm_version }}/log
        owner: storm
        group: storm
        state: directory
@@ -63,7 +63,7 @@
        recurse: yes
 
    - file:
-       path: /var/log/storm/workers-artifacts/
+       path: /opt/apache-storm-{{ storm_version }}/log/workers-artifacts/
        owner: storm
        group: storm
        state: directory
@@ -76,10 +76,10 @@
        line: "{{ storm_front_end_ip }}  nimbus"
 
    - copy:
-      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      dest: "/opt/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
         nimbus.host: "{{ storm_front_end_ip }}"
-        storm.log.dir: "/var/log/storm"
+        storm.log.dir: "/opt/apache-storm-{{ storm_version }}/log"
         storm.zookeeper.servers:
           - "{{ storm_front_end_ip }}"
         nimbus.seeds: ["{{ storm_front_end_ip }}"]
@@ -97,7 +97,7 @@
         Restart=always
         PIDFile=/var/run/%i.pid
         User=storm
-        WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+        WorkingDirectory=/opt/apache-storm-{{ storm_version }}
         [Install]
         WantedBy=multi-user.target
      with_items:
