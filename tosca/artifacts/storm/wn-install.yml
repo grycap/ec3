@@ -3,7 +3,7 @@
 - hosts: storm_wn
   vars:
     # get IP of master from hostvars
-    master_ip: "{{ storm_front_end_ip }}"
+    master_ip: "{{ storm_storm_front_end_ip }}"
 
   tasks:
    - debug: var=master_ip
@@ -73,16 +73,16 @@
    - name: Add master in hosts
      lineinfile:
        dest: /etc/hosts
-       line: "{{ front_end_ip }}  nimbus"
+       line: "{{ storm_front_end_ip }}  nimbus"
 
    - copy:
       dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
-        nimbus.host: "{{ front_end_ip }}"
+        nimbus.host: "{{ storm_front_end_ip }}"
         storm.log.dir: "/var/log/storm"
         storm.zookeeper.servers:
-          - "{{ front_end_ip }}"
-        nimbus.seeds: ["{{ front_end_ip }}"]
+          - "{{ storm_front_end_ip }}"
+        nimbus.seeds: ["{{ storm_front_end_ip }}"]
         storm.local.hostname: "{{ dns_name }}"
         worker.heap.memory.mb: 5000
 
