@@ -121,12 +121,13 @@
    - copy:
       dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
-        nimbus.host: "localhost"
+        nimbus.host: "{{ dns_name }}"
         storm.local.dir: "/var/storm"
         storm.log.dir: "/var/log/storm"
         storm.zookeeper.servers:
           - "localhost"
         worker.heap.memory.mb: 5000
+        storm.local.hostname: "{{ dns_name }}"
         supervisor.slots.ports:
           - 6700
           - 6701
