@@ -489,7 +489,10 @@ class ClusterStore:
         vmId = s0.getValue("__vm_id", default="0")
         auth = None
         if s0.getValue("auth"):
-            auth = json.loads(s0.getValue("auth"))
+            try:
+                auth = json.loads(s0.getValue("auth"))
+            except Exception as ex:
+                raise Exception("Error loading auth data from cluster file: %s" % ex)
         return im_server_name, infrId, vmId, auth
 
 class argparse_configyaml:
