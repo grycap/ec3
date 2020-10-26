@@ -813,6 +813,12 @@ node_types:
   tosca.nodes.indigo.LRMS.FrontEnd.Storm:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
     properties:
+      num_supervisors:
+        required: yes
+        type: integer
+        min: 1
+        max: 100
+        description: the number of supervisors used in the cluster, we need to open as many ports as this number
       dns_name:
         required: yes
         type: string
@@ -833,6 +839,7 @@ node_types:
             storm_version: { get_property: [ SELF, version ] }
             zk_version: { get_property: [ SELF, zk_version ] }
             dns_name: { get_property: [ SELF, dns_name ] }
+            num_supervisors: { get_property: [ SELF, num_supervisors ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Storm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode

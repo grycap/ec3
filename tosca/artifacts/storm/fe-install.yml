@@ -128,10 +128,12 @@
           - "localhost"
         worker.heap.memory.mb: 5000
         supervisor.slots.ports:
-          - 6700
-          - 6701
-          - 6702
-          - 6703
+   - lineinfile:
+      state: present
+      dest: "/opt/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      line: "  - {{ item }}\n"
+     with_sequence: count={{ num_supervisors }} start=6700
+
 
    - copy:
       dest: "/etc/systemd/system/storm-{{ item }}.service"
