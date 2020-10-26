@@ -487,7 +487,9 @@ class ClusterStore:
         im_server_name = s0.getValue("__im_server", default="http://%s:%s" % (getPublicIP(s0), get_out_port(r, 8800)))
         infrId = s0.getValue("__infrastructure_id", default=0)
         vmId = s0.getValue("__vm_id", default="0")
-        auth = json.loads(s0.getValue("auth"))
+        auth = None
+        if s0.getValue("auth"):
+            auth = json.loads(s0.getValue("auth"))
         return im_server_name, infrId, vmId, auth
 
 class argparse_configyaml:
