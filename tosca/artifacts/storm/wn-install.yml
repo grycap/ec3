@@ -104,22 +104,6 @@
         - supervisor
         - logviewer
 
-   - lineinfile:
-      state: present
-      dest: /etc/default/grub
-      backrefs: yes
-      regexp: '^(GRUB_CMDLINE_LINUX=(?!.* audit)\"[^\"]+)(\".*)'
-      line: '\1 ipv6.disable=1\2'
-
-   - name: grub disable ipv6
-     shell: update-grub
-
-   - name: sysctl disable ipv6
-     shell: sysctl -w net.ipv6.conf.all.disable_ipv6=1
-
-   - name: sysctl disable ipv6
-     shell: sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
    - systemd: state=started name=storm-{{ item }}.service daemon_reload=yes
      with_items:
         - supervisor
