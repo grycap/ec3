@@ -1,13 +1,7 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
 - hosts: storm_wn
-  vars:
-    # get IP of master from hostvars
-    master_ip: "{{ storm_storm_front_end_ip }}"
-
   tasks:
-   - debug: var=master_ip
-
    - apt:
       name: openjdk-8-jdk
       state: present

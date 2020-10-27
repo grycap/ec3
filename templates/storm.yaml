@@ -54,11 +54,6 @@ topology_template:
       type: tosca.nodes.indigo.LRMS.WorkerNode.Storm
       properties:
         front_end_ip: { get_attribute: [ fe, private_address, 0 ] }
-      capabilities:
-        wn:
-          properties:
-            max_instances: { get_input: wn_num }
-            min_instances: { get_input: wn_num }
       requirements:
         - host: wn
 
@@ -107,7 +102,5 @@ topology_template:
             version: 18.04
 
   outputs:
-    cluster_ip:
-      value: { get_attribute: [ fe, public_address, 0 ] }
     storm_ui:
       value: {concat: [ 'http://', { get_attribute: [ fe, public_address, 0 ] }, ':8080' ] }
