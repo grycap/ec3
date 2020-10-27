@@ -1,9 +1,9 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
-- hosts: localhost
+- hosts: storm_wn
   vars:
     # get IP of master from hostvars
-    master_ip: "{{ storm_front_end_ip }}"
+    master_ip: "{{ storm_storm_front_end_ip }}"
 
   tasks:
    - debug: var=master_ip
@@ -31,16 +31,16 @@
        group: storm
        timeout: 600
 
-   - name: Unarchive Apache Storm
+   - name: Extract Apache Storm
      unarchive:
        src: /tmp/apache-storm-{{ storm_version }}.tar.gz
-       dest: /usr/share/
+       dest: /opt/
        owner: storm
        group: storm
        remote_src: yes
 
    - file:
-       path: "/usr/share/apache-storm-{{ storm_version }}"
+       path: "/opt/apache-storm-{{ storm_version }}"
        owner: "storm"
        group: "storm"
        mode: "u=rwx,g=rwx,o=r"
@@ -48,14 +48,14 @@
        state: directory
 
    - file:
-       src: "/usr/share/apache-storm-{{ storm_version }}/bin/storm"
+       src: "/opt/apache-storm-{{ storm_version }}/bin/storm"
        dest: /usr/bin/storm
        owner: storm
        group: storm
        state: link
 
    - file:
-       path: /var/log/storm
+       path: /opt/apache-storm-{{ storm_version }}/log
        owner: storm
        group: storm
        state: directory
@@ -63,20 +63,27 @@
        recurse: yes
 
    - file:
-       path: /var/log/storm/workers-artifacts/
+       path: /opt/apache-storm-{{ storm_version }}/log/workers-artifacts/
        owner: storm
        group: storm
        state: directory
        mode: "u=rwx,g=rwx,o=rwx"
        recurse: yes
 
+   - name: Add master in hosts
+     lineinfile:
+       dest: /etc/hosts
+       line: "{{ storm_front_end_ip }}  nimbus"
+
    - copy:
-      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      dest: "/opt/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
-        storm.log.dir: "/var/log/storm"
-        storm.zookeeper.servers: 
-          - "{{master_ip}}"
-        nimbus.seeds: ["{{master_ip}}"]
+        nimbus.host: "{{ storm_front_end_ip }}"
+        storm.log.dir: "/opt/apache-storm-{{ storm_version }}/log"
+        storm.zookeeper.servers:
+          - "{{ storm_front_end_ip }}"
+        nimbus.seeds: ["{{ storm_front_end_ip }}"]
+        storm.local.hostname: "{{ ansible_hostname }}"
         worker.heap.memory.mb: 5000
 
    - copy:
@@ -90,12 +97,30 @@
         Restart=always
         PIDFile=/var/run/%i.pid
         User=storm
-        WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+        WorkingDirectory=/opt/apache-storm-{{ storm_version }}
         [Install]
         WantedBy=multi-user.target
      with_items:
         - supervisor
+        - logviewer
+
+   - lineinfile:
+      state: present
+      dest: /etc/default/grub
+      backrefs: yes
+      regexp: '^(GRUB_CMDLINE_LINUX=(?!.* audit)\"[^\"]+)(\".*)'
+      line: '\1 ipv6.disable=1\2'
+
+   - name: grub disable ipv6
+     shell: update-grub
+
+   - name: sysctl disable ipv6
+     shell: sysctl -w net.ipv6.conf.all.disable_ipv6=1
+
+   - name: sysctl disable ipv6
+     shell: sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
    - systemd: state=started name=storm-{{ item }}.service daemon_reload=yes
      with_items:
         - supervisor
+        - logviewer

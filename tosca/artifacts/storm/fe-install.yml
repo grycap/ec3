@@ -1,13 +1,15 @@
 # adapted from https://github.com/DigitalPebble/ansible-storm
 ---
-- hosts: localhost
+- hosts: storm_master
   tasks:
-   - group: name=zookeeper system=yes state=present
+   - name: Create zookeeper group
+     group: name=zookeeper system=yes state=present
 
    - name: Create zookeeper User
      user: name=zookeeper system=yes createhome=false group=zookeeper
 
-   - get_url:
+   - name: get Zookeeper
+     get_url:
        url: "https://archive.apache.org/dist/zookeeper/zookeeper-{{ zk_version }}/apache-zookeeper-{{ zk_version }}-bin.tar.gz"
        dest: /tmp/
        owner: zookeeper
@@ -85,16 +87,16 @@
        group: storm
        timeout: 600
 
-   - name: Unarchive Apache Storm
+   - name: Extract Apache Storm
      unarchive:
        src: /tmp/apache-storm-{{ storm_version }}.tar.gz
-       dest: /usr/share/
+       dest: /opt
        owner: storm
        group: storm
        remote_src: yes
 
    - file:
-       path: "/usr/share/apache-storm-{{ storm_version }}"
+       path: "/opt/apache-storm-{{ storm_version }}"
        owner: "storm"
        group: "storm"
        mode: "u=rwx,g=rwx,o=r"
@@ -102,14 +104,14 @@
        state: directory
 
    - file:
-       src: "/usr/share/apache-storm-{{ storm_version }}/bin/storm"
+       src: "/opt/apache-storm-{{ storm_version }}/bin/storm"
        dest: /usr/bin/storm
        owner: storm
        group: storm
        state: link
 
    - file:
-       path: /var/log/storm
+       path: /opt/apache-storm-{{ storm_version }}/log
        owner: storm
        group: storm
        state: directory
@@ -117,13 +119,21 @@
        recurse: yes
 
    - copy:
-      dest: "/usr/share/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      dest: "/opt/apache-storm-{{ storm_version }}/conf/storm.yaml"
       content: |
-        storm.log.dir: "/var/log/storm"
-        storm.zookeeper.servers: 
+        nimbus.host: "{{ dns_name }}"
+        storm.local.dir: "/opt/apache-storm-{{ storm_version }}/local"
+        storm.log.dir: "/opt/apache-storm-{{ storm_version }}/log"
+        storm.zookeeper.servers:
           - "localhost"
-        nimbus.seeds: ["localhost"]
         worker.heap.memory.mb: 5000
+        supervisor.slots.ports:
+   - lineinfile:
+      state: present
+      dest: "/opt/apache-storm-{{ storm_version }}/conf/storm.yaml"
+      line: "  - {{ item }}"
+     with_sequence: count={{ num_supervisors }} start=6700
+
 
    - copy:
       dest: "/etc/systemd/system/storm-{{ item }}.service"
@@ -136,15 +146,33 @@
         Restart=always
         PIDFile=/var/run/%i.pid
         User=storm
-        WorkingDirectory=/usr/share/apache-storm-{{ storm_version }}
+        WorkingDirectory=/opt/apache-storm-{{ storm_version }}
         [Install]
         WantedBy=multi-user.target
      with_items:
         - nimbus
         - ui
+        - logviewer
+
+   - lineinfile:
+      state: present
+      dest: /etc/default/grub
+      backrefs: yes
+      regexp: '^(GRUB_CMDLINE_LINUX=(?!.* audit)\"[^\"]+)(\".*)'
+      line: '\1 ipv6.disable=1\2'
+
+   - name: grub disable ipv6
+     shell: update-grub
+
+   - name: sysctl disable ipv6
+     shell: sysctl -w net.ipv6.conf.all.disable_ipv6=1
+
+   - name: sysctl disable ipv6
+     shell: sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
    - systemd: state=started name={{ item }}.service daemon_reload=yes
      with_items:
         - zookeeper
+        - storm-logviewer
         - storm-nimbus
         - storm-ui
