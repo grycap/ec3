@@ -131,7 +131,7 @@
    - lineinfile:
       state: present
       dest: "/opt/apache-storm-{{ storm_version }}/conf/storm.yaml"
-      line: "  - {{ item }}\n"
+      line: "  - {{ item }}"
      with_sequence: count={{ num_supervisors }} start=6700
 
 
