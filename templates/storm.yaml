@@ -71,6 +71,10 @@ topology_template:
           properties:
             dns_name: nimbus
             network_name: PUBLIC
+            ports:
+              storm_port:
+                protocol: tcp
+                source: 8080
         scalable:
           properties:
             count: 1
