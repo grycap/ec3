@@ -41,8 +41,6 @@ topology_template:
       default: 2 GB
       required: yes
 
-topology_template:
-
   node_templates:
 
     fe_node:
