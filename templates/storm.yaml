@@ -45,14 +45,13 @@ topology_template:
 
     fe_node:
       type: tosca.nodes.indigo.LRMS.FrontEnd.Storm
-      properties:
-        num_supervisors: { get_property: [ wn, scalable, count ] }
       requirements:
         - host: fe
 
     wn_node:
       type: tosca.nodes.indigo.LRMS.WorkerNode.Storm
       properties:
+        num_supervisors: { get_input: wn_cpus }
         front_end_ip: { get_attribute: [ fe, private_address, 0 ] }
       requirements:
         - host: wn
