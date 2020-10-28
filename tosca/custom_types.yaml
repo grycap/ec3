@@ -827,6 +827,10 @@ node_types:
         required: no
         type: string
         default: "3.6.2"
+    artifacts:
+      hadoop_role:
+        file: grycap.storm,v2
+        type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
         configure:
@@ -843,6 +847,10 @@ node_types:
         required: no
         type: string
         default: "2.2.0"
+    artifacts:
+      hadoop_role:
+        file: grycap.storm,v2
+        type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
         configure:
