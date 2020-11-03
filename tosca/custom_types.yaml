@@ -562,6 +562,11 @@ node_types:
         description: Secret key to access Minio
         required: false
         default: minio123
+      password:
+        type: string
+        description: OSCAR password for basic auth
+        required: false
+        default: oscar123
     artifacts:
       faas_role:
         file: grycap.kubefaas
@@ -584,6 +589,7 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/oscar/oscar_install.yml
           inputs:
             oscar_minio_secretkey: { get_property: [ SELF, minio_secretkey ] }
+            oscar_password: { get_property: [ SELF, password ] }
     requirements:
       - host:
           capability: tosca.capabilities.Container
