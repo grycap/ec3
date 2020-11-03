@@ -9,17 +9,13 @@
 
   - role: 'grycap.kubefaas'
     faas_framework: 'openfaas'
+    functions_namespace: 'oscar-svc'
     master_deploy: true
-    faas_chart_version: 5.4.0
-    cli_version: 0.11.3
-    oscar_worker_version: 1.2.1
 
   - role: 'grycap.kubeminio'
-    enable_notifications: true
-    webhook_endpoints: [{ id: "1", endpoint: "http://oscar-manager.oscar:8080/events"}]
     minio_secretkey: '{{ oscar_minio_secretkey }}'
     master_deploy: true
-    enable_tls: false
+    enable_tls: true
 
   - role: 'grycap.kuberegistry'
     public_access: false
@@ -28,10 +24,10 @@
     master_deploy: true
 
   - role: 'grycap.kubeoscar'
-    minio_pass: '{{ oscar_minio_secretkey }}'
-    vue_app_backend_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
+    oscar_pass: '{{ oscar_password }}'
+    create_ingress: true
+    serverless_backend: 'openfaas'
+    minio_endpoint:  'https://{{ IM_NODE_PUBLIC_IP }}:30300'
+    minio_secret_key: '{{ oscar_minio_secretkey }}'
+    minio_tls_verify: false
     master_deploy: true
-    oscar_version: 1.2.0
-    oscar_ui_version: 1.0.1
-    supervisor_version: 1.1.2
-    onetrigger_version: 1.0.4
