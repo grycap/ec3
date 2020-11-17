@@ -2,5 +2,7 @@
 - hosts: localhost
   connection: local
   roles:
+  - role: grycap.consul
+
   - role: grycap.nomad
     nomad_type_of_node: 'front'
