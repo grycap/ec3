@@ -880,6 +880,11 @@ node_types:
       hadoop_role:
         file: grycap.nomad
         type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Nomad
+        endpoint:
+          type: tosca.capabilities.Endpoint
     interfaces:
       Standard:
         configure:
