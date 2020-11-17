@@ -1,0 +1,6 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+  - role: grycap.nomad
+    nomad_type_of_node: 'front'

@@ -76,7 +76,7 @@ capability_types:
         type: string
         required: true
         constraints:
-        - valid_values: [ local, torque, slurm, sge, condor, mesos, kubernetes ]
+        - valid_values: [ local, torque, slurm, sge, condor, mesos, kubernetes, nomad ]
 
   tosca.capabilities.indigo.LRMS.Torque:
     derived_from: tosca.capabilities.indigo.LRMS
@@ -127,6 +127,16 @@ capability_types:
         default: mesos
         constraints:
           - equal: mesos
+
+  tosca.capabilities.indigo.LRMS.Nomad:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: nomad
+        constraints:
+          - equal: nomad
 
   tosca.capabilities.indigo.Endpoint:
     derived_from: tosca.capabilities.Endpoint
@@ -829,7 +839,7 @@ node_types:
         default: "3.6.2"
     artifacts:
       hadoop_role:
-        file: grycap.storm,v2
+        file: grycap.storm
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
@@ -863,3 +873,27 @@ node_types:
             storm_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             storm_version: { get_property: [ SELF, version ] }
             num_supervisors: { get_property: [ SELF, num_supervisors ] }
+
+  tosca.nodes.indigo.LRMS.FrontEnd.Nomad:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    artifacts:
+      hadoop_role:
+        file: grycap.nomad
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/nomad_fe_install.yml
+
+  tosca.nodes.indigo.LRMS.WorkerNode.Nomad:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    artifacts:
+      hadoop_role:
+        file: grycap.nomad
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/nomad_wn_install.yml
+          inputs:
+            nomad_server_ip: { get_property: [ SELF, front_end_ip ] }

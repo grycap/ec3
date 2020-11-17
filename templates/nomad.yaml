@@ -1,0 +1,133 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - ec3_custom_types: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/custom_types.yaml
+ 
+metadata:
+  kind: base
+  short: Nomad Cluster
+
+description: TOSCA template for launching a Nomad Virtual Elastic Cluster.
+
+topology_template:
+  inputs:
+    wn_num:
+      type: integer
+      description: Maximum number of WNs in the elastic cluster
+      default: 5
+      required: yes
+
+    fe_cpus:
+      type: integer
+      description: Numer of CPUs for the front-end node
+      default: 2
+      required: yes
+
+    fe_mem:
+      type: scalar-unit.size
+      description: Amount of Memory for the front-end node
+      default: 4 GB
+      required: yes
+
+    wn_cpus:
+      type: integer
+      description: Numer of CPUs for the WNs
+      default: 2
+      required: yes
+
+    wn_mem:
+      type: scalar-unit.size
+      description: Amount of Memory for the WNs
+      default: 4 GB
+      required: yes
+
+    fe_instance_type:
+      type: string
+      description: Name of the FE instance type
+      default: null
+      required: yes
+
+    wn_instance_type:
+      type: string
+      description: Name of the WN instance type
+      default: null
+      required: yes
+
+  node_templates:
+
+    elastic_cluster_front_end:
+      type: tosca.nodes.ec3.ElasticCluster
+      capabilities:
+        endpoint:
+          properties:
+            port: 8800
+            protocol: tcp
+      requirements:
+        - lrms: lrms_front_end
+        - wn: wn_node
+
+    lrms_front_end:
+      type: tosca.nodes.indigo.LRMS.FrontEnd.Nomad
+      capabilities:
+        endpoint:
+          properties:
+            ports:
+              port_4646:
+                protocol: tcp
+                source: 4646
+              port_4647:
+                protocol: tcp
+                source: 4647
+              port_4648:
+                protocol: tcp
+                source: 4648
+              port_8500:
+                protocol: tcp
+                source: 8500
+      requirements:
+        - host: front
+
+    front:
+      type: tosca.nodes.indigo.Compute
+      capabilities:
+        endpoint:
+          properties:
+            dns_name: nomadserver
+            network_name: PUBLIC
+        host:
+          properties:
+            instance_type: { get_input: fe_instance_type }
+            num_cpus: { get_input: fe_cpus }
+            mem_size: { get_input: fe_mem }
+
+    wn_node:
+      type: tosca.nodes.indigo.LRMS.WorkerNode.Nomad
+      properties:
+        front_end_ip: { get_attribute: [ front, private_address, 0 ] }
+      capabilities:
+        wn:
+          properties:
+            max_instances: { get_input: wn_num }
+            min_instances: 0
+      requirements:
+        - host: wn
+            
+    wn:
+      type: tosca.nodes.indigo.Compute
+      capabilities:
+        scalable:
+          properties:
+            count: 0
+        host:
+          properties:
+            instance_type: { get_input: wn_instance_type }
+            num_cpus: { get_input: wn_cpus }
+            mem_size: { get_input: wn_mem }
+
+  outputs:
+    cluster_ip:
+      value: { get_attribute: [ front, public_address, 0 ] }
+    cluster_creds:
+      value: { get_attribute: [ front, endpoint, credential, 0 ] }
+
+
