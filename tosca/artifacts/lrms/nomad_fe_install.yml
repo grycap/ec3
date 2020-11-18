@@ -3,4 +3,10 @@
   connection: local
   roles:
   - role: grycap.nomad
-    nomad_type_of_node: 'front'
+    name: server 
+    bind_address: "172.17.0.3"
+    server_enabled: true
+    client_enabled: false
+    use_consul: true
+    consul_address: "172.17.0.2:8500"
+    create_nomad_service: true
