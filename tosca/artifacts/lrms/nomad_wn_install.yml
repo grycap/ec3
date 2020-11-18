@@ -4,7 +4,7 @@
   roles:
   - role: grycap.nomad
     name: server
-    bind_address: "{{ IM_NODE_PRIVATE_IP }}"
+    bind_address: "0.0.0.0"
     server_enabled: false
     client_enabled: true
     use_consul: true
