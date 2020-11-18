@@ -2,6 +2,8 @@
 - hosts: localhost
   connection: local
   roles:
+  - role: grycap.consul
+
   - role: grycap.nomad
     name: server 
     bind_address: "172.17.0.3"

@@ -838,7 +838,7 @@ node_types:
         type: string
         default: "3.6.2"
     artifacts:
-      hadoop_role:
+      storm_role:
         file: grycap.storm
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
@@ -862,7 +862,7 @@ node_types:
         type: string
         default: "2.2.0"
     artifacts:
-      hadoop_role:
+      storm_role:
         file: grycap.storm
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
@@ -877,9 +877,17 @@ node_types:
   tosca.nodes.indigo.LRMS.FrontEnd.Nomad:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
     artifacts:
-      hadoop_role:
+      nomad_role:
         file: grycap.nomad
         type: tosca.artifacts.AnsibleGalaxy.role
+      consul_role:
+        file: grycap.consul
+        type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.Nomad
+        endpoint:
+          type: tosca.capabilities.Endpoint
     interfaces:
       Standard:
         configure:
@@ -888,7 +896,7 @@ node_types:
   tosca.nodes.indigo.LRMS.WorkerNode.Nomad:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
     artifacts:
-      hadoop_role:
+      nomad_role:
         file: grycap.nomad
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
