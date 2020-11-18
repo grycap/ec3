@@ -6,9 +6,9 @@
 
   - role: grycap.nomad
     name: server 
-    bind_address: "0.0.0.0"
+    bind_address: "{{ IM_NODE_PRIVATE_IP }}"
     server_enabled: true
     client_enabled: false
     use_consul: true
-    consul_address: "172.17.0.2:8500"
+    consul_address: "localhost:8500"
     create_nomad_service: true
