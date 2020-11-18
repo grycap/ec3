@@ -4,7 +4,7 @@
   roles:
   - role: grycap.nomad
     name: server
-    bind_address: "172.17.0.4"
+    bind_address: "0.0.0.0"
     server_enabled: false
     client_enabled: true
     use_consul: true
