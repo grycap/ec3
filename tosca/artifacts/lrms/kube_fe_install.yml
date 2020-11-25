@@ -3,6 +3,7 @@
   connection: local
   vars:
      vnode_prefix: vnode-
+
   pre_tasks:
   - name: Create dir for the NFS PV
     file: path=/pv state=directory mode=755
@@ -23,3 +24,4 @@
       - {option: "--insecure-port", value: "8080"}
       - {option: "--token-auth-file", value: "/etc/kubernetes/pki/auth"}
     kube_deploy_dashboard: true
+    kube_cert_public_ip: "{{ IM_NODE_PUBLIC_IP }}"

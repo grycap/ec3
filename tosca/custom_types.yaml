@@ -383,6 +383,14 @@ node_types:
         required: no
         type: boolean
         default: false
+      cert_manager:
+        required: no
+        type: boolean
+        default: false
+      cert_user_email:
+        required: no
+        type: string
+        default: "jhondoe@server.com"
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -409,6 +417,8 @@ node_types:
             kube_install_ingress:  { get_property: [ SELF, install_ingress ] }
             kube_version:  { get_property: [ SELF, version ] }
             kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
+            kube_cert_manager:  { get_property: [ SELF, cert_manager ] }
+            kube_cert_user_email:  { get_property: [ SELF, cert_user_email ] }
 
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
