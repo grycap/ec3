@@ -4,7 +4,7 @@
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
-    shell: helm list | grep helm_{{ helm_app_name | lower }}_app
+    shell: helm list | grep helm-{{ helm_app_name | lower }}-app
     register: deployed
     failed_when: deployed.rc != 0 and deployed.rc != 1
 
@@ -22,7 +22,7 @@
 
       - name: Deploy {{ helm_app_name }} app
         command: >
-          helm upgrade helm_{{ helm_app_name | lower }}_app --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
+          helm upgrade helm-{{ helm_app_name | lower }}-app --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
           --namespace {{ helm_app_name | lower}} --create-namespace
           --values /tmp/{{ helm_app_name }}-values.yaml
         environment:
