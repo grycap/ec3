@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+
+  - name: "Check if {{ helm_app_name }} is already deployed"
+    shell: helm list | grep {{ helm_app_name }}
+    register: deployed
+    failed_when: deployed.rc != 0 and deployed.rc != 1
+
+  - block:
+      - name: Add helm repo {{ helm_repo_name }}
+        command: helm repo add {{ helm_repo_name }} {{ helm_repo_url }}
+
+      - name: Update helm repositories
+        command: helm repo update
+
+      - name: Create values file
+        copy:
+          content: "{{ helm_values | to_yaml }}"
+          dest: /tmp/{{ helm_app_name }}-values.yaml
+
+      - name: Deploy {{ helm_app_name }} app
+        command: >
+          helm upgrade {{ helm_app_name } --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
+          --namespace {{ helm_app_name }}
+          --values /tmp/{{ helm_app_name }}-values.yaml
+    when: deployed.rc == 1

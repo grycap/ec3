@@ -403,6 +403,9 @@ node_types:
           type: tosca.capabilities.indigo.LRMS.Kubernetes
         endpoint:
           type: tosca.capabilities.Endpoint
+        host:
+          type: tosca.capabilities.Container
+          valid_source_types: [ tosca.nodes.indigo.Kubernetes.HelmChart ]
     interfaces:
       Standard:
         configure:
@@ -915,3 +918,47 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/nomad_wn_install.yml
           inputs:
             nomad_server_ip: { get_property: [ SELF, front_end_ip ] }
+
+  tosca.nodes.indigo.Kubernetes.HelmChart:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      repository_name:
+        type: string
+        description: The Helm repository name
+        required: true
+      repository_url:
+        type: string
+        description: The Helm repository URL
+        required: true
+      name:
+        type: string
+        description: The chart name
+        required: true
+      version:
+        type: string
+        description: The chart version
+        required: false
+        default: latest
+      values:
+        type: map
+        description: A dictionary/hash of values.
+        required: false
+        entry_schema:
+          description: The values to use
+          type: string
+        default: {}
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+          relationship: tosca.relationships.HostedOn
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/helm_chart.yml
+          inputs:
+            helm_repo_name: { get_property: [ SELF, repository_name ] }
+            helm_repo_url: { get_property: [ SELF, repository_url ] }
+            helm_app_name: { get_property: [ SELF, name ] }
+            helm_version: { get_property: [ SELF, version ] }
+            helm_values: { get_property: [ SELF, values ] }
