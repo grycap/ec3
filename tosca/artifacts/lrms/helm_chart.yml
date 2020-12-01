@@ -22,7 +22,10 @@
 
       - name: Deploy {{ helm_app_name }} app
         command: >
-          helm upgrade {{ helm_app_name } --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
-          --namespace {{ helm_app_name }}
+          helm upgrade {{ helm_app_name }} --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
+          --namespace {{ helm_app_name }} --create-namespace
           --values /tmp/{{ helm_app_name }}-values.yaml
+        environment:
+          KUBECONFIG: /etc/kubernetes/admin.conf
+
     when: deployed.rc == 1
