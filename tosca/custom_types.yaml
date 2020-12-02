@@ -405,7 +405,7 @@ node_types:
           type: tosca.capabilities.Endpoint
         host:
           type: tosca.capabilities.Container
-          valid_source_types: [ tosca.nodes.indigo.Kubernetes.HelmChart ]
+          valid_source_types: [ tosca.nodes.indigo.Helm.Chart ]
     interfaces:
       Standard:
         configure:
@@ -919,7 +919,7 @@ node_types:
           inputs:
             nomad_server_ip: { get_property: [ SELF, front_end_ip ] }
 
-  tosca.nodes.indigo.Kubernetes.HelmChart:
+  tosca.nodes.indigo.Helm.Chart:
     derived_from: tosca.nodes.SoftwareComponent
     properties:
       repository_name:
