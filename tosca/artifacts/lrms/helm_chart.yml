@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+    helm_params: 'dummy=0'
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
@@ -15,6 +17,11 @@
       - name: Update helm repositories
         command: helm repo update
 
+      - name: Create params fact
+        set_fact:
+          helm_params: "{{ helm_params }},{{ item.key }}={{ item.value }}"
+        with_dict: "{{ helm_values }}"
+
       - name: Create values file
         copy:
           content: "{{ helm_values | to_yaml }}"
@@ -24,7 +31,7 @@
         command: >
           helm upgrade helm-{{ helm_app_name | lower }}-app --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
           --namespace {{ helm_app_name | lower}} --create-namespace
-          --values /tmp/{{ helm_app_name }}-values.yaml
+          --set {{ helm_params }}
         environment:
           KUBECONFIG: /etc/kubernetes/admin.conf
 
