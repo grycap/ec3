@@ -6,9 +6,11 @@
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
-    command: helm status {{ helm_app_name | lower }}
+    command: helm status {{ helm_app_name | lower }} -n {{ helm_app_name | lower }}
     register: deployed
     failed_when: deployed.rc != 0 and deployed.rc != 1
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
 
   - block:
       - name: Add helm repo {{ helm_repo_name }}
