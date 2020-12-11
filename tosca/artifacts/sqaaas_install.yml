@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Install Git
+    package: name=git
+
+  - name: Git clone SQAaaS repo
+    git:
+      repo: https://github.com/EOSC-synergy/SQAaaS
+      dest: /tmp
+      version: master
+      update: no
+
+  - name: Set github token
+    copy:
+      content: "{{ sqaaas_gh_token }}"
+      dest: /tmp/SQAaaS/k8s/.gh_token
+
+  - name: Set jenkins token
+    copy:
+      content: "{{ sqaaas_jk_token }}"
+      dest: /tmp/SQAaaS/k8s/.jk_token
+
+  - name: Deploy SQAaaS platform
+    command: kubectl apply -k k8s
+    args:
+      chdir: /tmp/SQAaaS
