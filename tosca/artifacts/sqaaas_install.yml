@@ -8,7 +8,7 @@
   - name: Git clone SQAaaS repo
     git:
       repo: https://github.com/EOSC-synergy/SQAaaS
-      dest: /tmp
+      dest: /tmp/SQAaaS
       version: master
       update: no
 
