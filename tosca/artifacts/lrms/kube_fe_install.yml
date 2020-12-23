@@ -21,7 +21,7 @@
     kube_api_server: '{{ kube_front_end_ip }}'
     kube_apiserver_options:
       - {option: "--service-node-port-range", value: "80-35000"}
-      - {option: "--insecure-port", value: "8080"}
+#      - {option: "--insecure-port", value: "8080"}
       - {option: "--token-auth-file", value: "/etc/kubernetes/pki/auth"}
     kube_deploy_dashboard: true
     kube_cert_public_ip: "{{ IM_NODE_PUBLIC_IP }}"
