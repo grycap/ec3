@@ -25,22 +25,49 @@ system front (
   net_interface.1.dns_name = 'kubeserverpublic' and
   queue_system = 'kubernetes' and
   ec3_templates contains 'kubernetes' and
-  disk.0.applications contains (name = 'ansible.modules.grycap.kubernetes')
+  disk.0.applications contains (name = 'ansible.modules.grycap.kubernetes') and
+  disk.0.applications contains (name = 'ansible.modules.grycap.clues')
 )
 
 
 configure front (
 @begin
 ---
-  - roles:
+  - vars:
+      KUBE_TOKEN: "{{ lookup('password', '/var/tmp/kube_token chars=ascii_letters,digits') }}"
+      AUTH:
+        ec3_xpath: /system/front/auth
+      SYSTEMS:
+        ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+
+    pre_tasks:
+    - name: Create auth file dir
+      file: path=/etc/kubernetes/pki state=directory mode=755 recurse=yes
+    - name: Create auth data file with an admin user
+      copy: content='{{ KUBE_TOKEN }},kubeadmin,100,"users,system:masters"' dest=/etc/kubernetes/pki/auth mode=600
+
+    roles:
     - role: 'grycap.kubernetes'
       kube_server: 'kubeserver'
-      kube_apiserver_options: [{option: "--insecure-port", value: "8080"}]
+      kube_apiserver_options:
+       - {option: "--token-auth-file", value: "/etc/kubernetes/pki/auth"}
+       - {option: "--service-node-port-range", value: "80-32767"}
       kube_api_server: '{{ IM_NODE_PRIVATE_IP }}'
       kube_apply_repos: []
+      kube_version: '1.16.4'
+
+
+    - role: 'grycap.clues'
+      auth: '{{AUTH}}'
+      clues_queue_system: 'kubernetes'
+      max_number_of_nodes: '{{ NNODES }}'
+      vnode_prefix: 'wn'
+      KUBERNETES_TOKEN: '{{ KUBE_TOKEN }}'
+
 @end
 )
-
+  
 system wn (
   memory.size>=2048m and
   net_interface.0.connection='private'
@@ -53,11 +80,13 @@ configure wn (
     - role: 'grycap.kubernetes'
       kube_type_of_node: 'wn'
       kube_server: 'kubeserver'
+      kube_version: '1.16.4'
+
 @end
 )
 
 include kube_misc (
-  template = 'openports im clues2'
+  template = 'openports im'
 )
 
 deploy front 1
