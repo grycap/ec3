@@ -22,6 +22,12 @@
       content: "{{ sqaaas_jk_token }}"
       dest: /tmp/SQAaaS/k8s/.jk_token
 
+  - name: Set web vue_app_backend_host
+    replace:
+      path: /tmp/SQAaaS/k8s/sqaaas-web.yaml
+      regexp: '(\s+value:\s+")\{\{vue_app_backend_host\}\}(".*)?$'
+      replace: '\1{{IM_NODE_PUBLIC_IP}}\2'
+
   - name: Deploy SQAaaS platform
     command: kubectl apply -k k8s
     args:
