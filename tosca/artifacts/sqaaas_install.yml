@@ -22,11 +22,27 @@
       content: "{{ sqaaas_jk_token }}"
       dest: /tmp/SQAaaS/k8s/.jk_token
 
+  - name: Set sqaaas.ini file
+    copy:
+      content: |
+        [DEFAULT]
+        repository_backend = {{sqaaas_repo_type}}
+        # db_file = /sqaaas/sqaaas.json
+        [jenkins]
+        url = {{sqaaas_jenkins_url}}
+        user = {{sqaaas_jenkins_admin}}
+        github_organization_name = {{sqaaas_jenkins_github_org_name}}
+        # token = /etc/sqaaas/.jk_token
+        [github]
+        organization = {{sqaaas_github_org}}
+        # token = /etc/sqaaas/.gh_token
+      dest: /tmp/SQAaaS/k8s/sqaaas.ini
+
   - name: Set web vue_app_backend_host
     replace:
       path: /tmp/SQAaaS/k8s/sqaaas-web.yaml
-      regexp: '(\s+value:\s+")\{\{vue_app_backend_host\}\}(".*)?$'
-      replace: '\1{{IM_NODE_PUBLIC_IP}}\2'
+      regexp: '\{\{vue_app_backend_host\}\}'
+      replace: "{{ IM_NODE_PUBLIC_IP }}"
 
   - name: Deploy SQAaaS platform
     command: kubectl apply -k k8s
