@@ -3,6 +3,10 @@
   connection: local
   vars: 
     gluster_nodes: '{{ gluster_wn_ips + [ gluster_fe_ip ]  }}'
+  pre_tasks:
+  - name: stop firewalld
+    service: name=firewalld state=stopped
+    ignore_errors: yes
   roles:
     - role: 'geerlingguy.glusterfs'
   tasks:
