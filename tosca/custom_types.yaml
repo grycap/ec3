@@ -196,6 +196,14 @@ node_types:
           type: string
       ctxt_log:
         type: string
+    properties:
+      tags:
+        type: map
+        description: Map of tags to associate to the Compute instance
+        entry_schema:
+          type: string
+        default: {}
+        required: false
     capabilities:
       scalable:
         type: tosca.capabilities.indigo.Scalable
