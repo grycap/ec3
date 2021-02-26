@@ -773,6 +773,30 @@ node_types:
             onedata_geo_position: { get_property: [ SELF, geo_position ] }
             onedata_version: { get_property: [ SELF, version ] }
 
+  tosca.nodes.indigo.OneDataStorage:
+    derived_from: tosca.nodes.BlockStorage
+    properties:
+      size:
+        # to overwrite BlockStorage size property to set it as not required
+        type: scalar-unit.size
+        required: false
+      oneprovider_host:
+        type: list
+        entry_schema:
+          type: string
+        required: false
+      onezone_endpoint:
+        type: string
+        required: false
+      dataspace:
+        type: list
+        entry_schema:
+          type: string
+        required: false
+      credential:
+        type: tosca.datatypes.Credential
+        required: true
+
   tosca.nodes.indigo.HadoopMaster:
     derived_from: tosca.nodes.SoftwareComponent
     artifacts:
