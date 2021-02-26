@@ -970,3 +970,16 @@ node_types:
             helm_app_name: { get_property: [ SELF, name ] }
             helm_version: { get_property: [ SELF, version ] }
             helm_values: { get_property: [ SELF, values ] }
+
+policy_types:
+
+  tosca.policies.indigo.Placement:
+    derived_from: tosca.policies.Placement
+    properties:
+      cloud_id:
+        required: true
+        type: string
+      availability_zone:
+        required: false
+        type: string
+        default: 
