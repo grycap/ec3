@@ -435,9 +435,10 @@ def d_deploy_sentence(a, enter, margin, indent):
 
 def d_contextualize_sentence(a, enter, margin, indent):
 	assert isinstance(a, contextualize)
-	return "{margin}contextualize {number}({enter}{options}{items}{enter}{margin})".format(
+	return "{margin}contextualize {number}({enter}{options}{sep}{items}{enter}{margin})".format(
 		enter=enter, margin=margin, number="%d " % a.max_time if a.max_time else "", options=enter.join(
 			[ d_contextualize_option(i, enter, margin+indent, indent) for i in a.options.values() ]),
+		sep=enter if a.options else "",
 		items=enter.join(
 			[ d_contextualize_item(i, enter, margin+indent, indent) for i in a.items.values() ]))
 
