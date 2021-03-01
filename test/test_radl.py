@@ -338,5 +338,29 @@ net_interface.0.connection = 'public0'
 			s.setId(i)
 		self.assertEqual(len(set([ f(r.get(system("s0")), i) for i in range(4) ])), 1)
 
+	def test_contextualize_options(self):
+		radl = """
+system test (
+	cpu.count>=1
+)
+deploy test 1
+contextualize (
+	option ansible_version <= '2.6.20'
+)
+			"""
+		r = parse_radl_text(radl)
+		r.check()
+		self.assertEqual(len(r.get(contextualize()).options), 1)
+		self.assertEqual(r.get(contextualize()).options['ansible_version'].getValue(), '2.6.20')
+		self.assertEqual(r.get(contextualize()).options['ansible_version'].operator, '<=')
+
+		radl_json = dump_radl_json(r)
+		print(radl_json)
+		r = parse_radl_json(radl_json)
+		r.check()
+		self.assertEqual(len(r.get(contextualize()).options), 1)
+		self.assertEqual(r.get(contextualize()).options['ansible_version'].getValue(), '2.6.20')
+
+
 if __name__ == "__main__":
 	unittest.main()
