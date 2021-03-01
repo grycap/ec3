@@ -444,7 +444,7 @@ def d_contextualize_sentence(a, enter, margin, indent):
 def d_contextualize_option(a, enter, margin, indent):
 	assert isinstance(a, Feature)
 	return "{margin}option {option}".format(
-		margin=margin, option=d_feature(a))
+		margin=margin, option=d_feature(a, enter, margin, indent))
 
 def d_contextualize_item(a, enter, margin, indent):
 	assert isinstance(a, contextualize_item)
