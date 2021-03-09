@@ -399,6 +399,10 @@ node_types:
         required: no
         type: string
         default: "jhondoe@server.com"
+      public_dns_name:
+        required: no
+        type: string
+        default: ""
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -430,7 +434,7 @@ node_types:
             kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
             kube_cert_manager:  { get_property: [ SELF, cert_manager ] }
             kube_cert_user_email:  { get_property: [ SELF, cert_user_email ] }
-
+            kube_public_dns_name:  { get_property: [ SELF, public_dns_name ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
