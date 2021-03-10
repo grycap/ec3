@@ -696,11 +696,13 @@ class contextualize_item:
 
 class contextualize(Aspect, object):
 	"""Store a ``contextualize`` RADL keyword."""
-	def __init__(self, items=None, max_time=0, line=None):
+	def __init__(self, items=None, max_time=0, options=None, line=None):
 		self.max_time = max_time
 		"""Maximum time."""
 		self.items = {}
 		"""List of contextualize_item."""
+		self.options = None
+		""""List of contextualization options"""
 		if not items:
 			pass
 		elif isinstance(items, list):
@@ -709,6 +711,14 @@ class contextualize(Aspect, object):
 			self.items = items
 		else:
 			raise ValueError("Unexpected type for 'items'.")
+
+		if isinstance(options, list):
+			self.options = dict([(o.prop, o) for o in options])
+		elif isinstance(options, dict):
+			self.options = options
+		elif options is not None:
+			raise ValueError("Unexpected type for 'options'.")
+
 		self.line = line
 
 	def getId(self):
@@ -716,23 +726,28 @@ class contextualize(Aspect, object):
 		return "contextualize"
 
 	def __hash__(self):
-		return hash(tuple([ hash(self.items[k]) for k in sorted(self.items.keys()) ]))
+		hash_elems = [ hash(self.items[k]) for k in sorted(self.items.keys()) ]
+		hash_elems.extend([ hash(self.options[k]) for k in sorted(self.options.keys()) ])
+		return hash(tuple(hash_elems))
 
 	def __eq__(self, other):
-		return other is not None and self.items == other.items
+		return other is not None and self.items == other.items and self.options == other.options
 
 	def diff(self, other):
 		assert isinstance(other, contextualize)
-		return contextualize(set(self.items.values()).difference(set(other.items.values())))
+		items = set(self.items.values()).difference(set(other.items.values()))
+		options = set(self.options.values()).difference(set(other.options.values()))
+		return contextualize(items, options=options)
 
 	def __len__(self):
-		return len(self.items)
+		return len(self.items) + len(self.options)
 
 	def merge(self, cont, **kargs):
 		"""Update this instance with the contextualize passed."""
 
 		self.max_time = max(self.max_time, cont.max_time)
 		self.items.update(cont.items)
+		self.options.update(cont.options)
 
 	def check(self, radl):
 		"""Check a contextualize."""

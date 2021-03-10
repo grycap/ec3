@@ -66,7 +66,8 @@ class RADLParser:
 		'RECIPE_END',
 		'CONTEXTUALIZE',
 		'STEP',
-		'newline'
+		'newline',
+		'OPTION'
 	)
 	
 	# A string containing ignored characters (spaces and tabs)
@@ -139,7 +140,8 @@ class RADLParser:
 		'configure': 'CONFIGURE',
 		'system': 'SYSTEM',
 		'contextualize': 'CONTEXTUALIZE',
-		'step':'STEP'
+		'step':'STEP',
+		'option': 'OPTION'
 	}
 	
 	def t_VAR(self, t):
@@ -228,23 +230,46 @@ class RADLParser:
 			t[0] = deploy(t[2], t[3], t[4], line=t.lineno(1))
 	
 	def p_contextualize_sentence(self, t):
-		"""contextualize_sentence : CONTEXTUALIZE LPAREN contextualize_items RPAREN
-		                          | CONTEXTUALIZE NUMBER  LPAREN contextualize_items RPAREN"""
+		"""contextualize_sentence : CONTEXTUALIZE LPAREN contextualize_options contextualize_items RPAREN
+		                          | CONTEXTUALIZE NUMBER  LPAREN contextualize_options contextualize_items RPAREN"""
 	
 		if len(t) == 5:
 			t[0] = contextualize(t[3], line=t.lineno(1))
+		if len(t) == 6:
+			t[0] = contextualize(t[4], options=t[3], line=t.lineno(1))
 		else:
-			t[0] = contextualize(t[4], t[2], line=t.lineno(1))
-	
-	def p_contextualize_items(self, t):
-		"""contextualize_items : contextualize_items contextualize_item 
-		                       | contextualize_item"""
-	
-		if len(t) == 2:
-			t[0] = [t[1]]
-		else:
+			t[0] = contextualize(t[5], t[2], options=t[4], line=t.lineno(1))
+
+	def p_contextualize_options(self, t):
+		"""contextualize_options : contextualize_options contextualize_option
+								 | contextualize_option
+								 | empty"""
+		if len(t) == 3:
 			t[0] = t[1]
 			t[0].append(t[2])
+		elif t[1]:
+			t[0] = [t[1]]
+		else:
+			t[0] = []
+
+	def p_contextualize_option(self, t):
+		"""contextualize_option : OPTION VAR comparator STRING
+								| OPTION VAR comparator NUMBER"""
+
+		t[0] = Feature(t[2], t[3], t[4], line=t.lineno(1))
+
+	def p_contextualize_items(self, t):
+		"""contextualize_items : contextualize_items contextualize_item 
+		                       | contextualize_item
+		                       | empty"""
+	
+		if len(t) == 3:
+			t[0] = t[1]
+			t[0].append(t[2])
+		elif t[1]:
+			t[0] = [t[1]]
+		else:
+			t[0] = []
 	
 	def p_contextualize_item(self, t):
 		"""contextualize_item : SYSTEM VAR CONFIGURE VAR
@@ -410,9 +435,17 @@ def d_deploy_sentence(a, enter, margin, indent):
 
 def d_contextualize_sentence(a, enter, margin, indent):
 	assert isinstance(a, contextualize)
-	return "{margin}contextualize {number}({enter}{items}{enter}{margin})".format(
-		enter=enter, margin=margin, number="%d " % a.max_time if a.max_time else "", items=enter.join(
+	return "{margin}contextualize {number}({enter}{options}{sep}{items}{enter}{margin})".format(
+		enter=enter, margin=margin, number="%d " % a.max_time if a.max_time else "", options=enter.join(
+			[ d_contextualize_option(i, enter, margin+indent, indent) for i in a.options.values() ]),
+		sep=enter if a.options else "",
+		items=enter.join(
 			[ d_contextualize_item(i, enter, margin+indent, indent) for i in a.items.values() ]))
+
+def d_contextualize_option(a, enter, margin, indent):
+	assert isinstance(a, Feature)
+	return "{margin}option {option}".format(
+		margin=margin, option=d_feature(a, enter, margin, indent))
 
 def d_contextualize_item(a, enter, margin, indent):
 	assert isinstance(a, contextualize_item)

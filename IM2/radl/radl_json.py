@@ -87,7 +87,8 @@ def p_configure(a):
 def p_contextualize(a):
 	assert a["class"] == "contextualize"
 	return contextualize([ p_contextualize_item(i) for i in a.get("items", []) ],
-	                     max_time=a.get("max_time", 0))
+	                     max_time=a.get("max_time", 0),
+						 options=p_features(a.get("options", {})))
 
 def p_contextualize_item(a):
 	return contextualize_item(a["system"], a["configure"], a.get("step", 0))
@@ -167,6 +168,8 @@ def contextualizeToSimple(a):
 	r = {"class": "contextualize"}
 	if a.max_time: r["max_time"] = a.max_time
 	r["items"] = [ contextualizeItemToSimple(i) for i in a.items.values() ]
+	if a.options:
+		r["options"] = featuresToSimple(Features(a.options.values()))
 	return r
 
 def contextualizeItemToSimple(a):
