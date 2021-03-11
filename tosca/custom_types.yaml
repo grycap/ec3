@@ -603,14 +603,8 @@ node_types:
         required: false
         default: oscar123
     artifacts:
-      faas_role:
-        file: grycap.kubefaas
-        type: tosca.artifacts.AnsibleGalaxy.role
       minio_role:
         file: grycap.kubeminio
-        type: tosca.artifacts.AnsibleGalaxy.role
-      registry_role:
-        file: grycap.kuberegistry
         type: tosca.artifacts.AnsibleGalaxy.role
       oscar_role:
         file: grycap.kubeoscar
