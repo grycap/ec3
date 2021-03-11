@@ -15,7 +15,6 @@
   - role: 'grycap.kubeoscar'
     oscar_pass: '{{ oscar_password }}'
     create_ingress: true
-    serverless_backend: 'openfaas'
     minio_endpoint:  'https://{{ IM_NODE_PUBLIC_IP }}:30300'
     minio_secret_key: '{{ oscar_minio_secretkey }}'
     minio_tls_verify: false
