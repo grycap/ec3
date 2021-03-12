@@ -2,11 +2,7 @@
 - hosts: localhost
   connection: local
   roles:
-  - role: 'grycap.nfs'
-    nfs_mode: 'front'
-    nfs_exports:
-    - {path: "/pv", export: "*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"}
-
+  
   - role: 'grycap.kubeminio'
     minio_secretkey: '{{ oscar_minio_secretkey }}'
     master_deploy: true
