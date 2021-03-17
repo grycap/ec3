@@ -14,6 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import subprocess
+
+
 class AuthenticationParserError(Exception):
 	"""
 	Error while parsing a token.
@@ -98,6 +101,18 @@ class Authentication:
 		return tokens
 
 	@staticmethod
+	# fetch the bearer token using the command
+	def fetch_bearer_token(cmd):
+		proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, 
+												stderr=subprocess.PIPE)
+		outs, errs = proc.communicate()
+		if proc.returncode != 0:
+			if errs == b'':
+				errs = outs
+			raise Exception("Failed to get bearer token using %s: %s" % (cmd, errs.decode('utf-8')))
+		return outs.decode('utf-8').replace('\n', '')
+
+	@staticmethod
 	def read_auth_data(filename):
 		"""
 		Read a file to load the Authentication data.
@@ -110,6 +125,7 @@ class Authentication:
 		id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
 		id = occi; type = OCCI; host = occiserver:4567; username = user; password = file(/tmp/filename)
 		id = occi; type = OCCI; proxy = file(/tmp/proxy.pem)
+		type = InfrastructureManager; bearer_token_command = oidc-token OIDC_ACCOUNT
 
 		Arguments:
 		   - filename(str or list): The filename to read or list of auth lines
@@ -137,7 +153,12 @@ class Authentication:
 					if len(key_value) != 2:
 						raise AuthenticationParserError(i)
 					else:
+						key = key_value[0].strip()
 						value = key_value[1].strip().replace("\\n", "\n")
+						# Evals the token command if 'bearer_token_command'
+						if key == 'bearer_token_command':
+							key = 'token'
+							value = Authentication.fetch_bearer_token(value)
 						# Enable to specify a filename and set the contents of
 						# it
 						if value.startswith("file(") and value.endswith(")"):
@@ -148,7 +169,7 @@ class Authentication:
 								value_file.close()
 							except:
 								pass
-						auth[key_value[0].strip()] = value
+						auth[key] = value
 				res.append(auth)
 
 		return res
