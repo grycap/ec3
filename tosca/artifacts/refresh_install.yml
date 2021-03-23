@@ -10,6 +10,9 @@
       url: https://raw.githubusercontent.com/grycap/ec3/master/templates/refresh_token.py
       mode: 0700
 
+  - command: "/usr/local/ec3/refresh_token.py {{ CLIENT_ID }} {{ CLIENT_SECRET }}"
+    ignore_errors: yes
+
   - cron:
       name: "refresh token"
       minute: "*/5"
