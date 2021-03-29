@@ -410,7 +410,7 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 
 * ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI
   and also to authenticate with the InfrastructureManager. To refer to the output of a command you must
-  use the function "file(command)" as shown in the examples.
+  use the function "command(command)" as shown in the examples.
 
 An example of the auth file::
 
