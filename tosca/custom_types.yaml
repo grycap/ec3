@@ -603,6 +603,8 @@ node_types:
         description: Secret key to access Minio
         required: false
         default: minio123
+        constraints:
+          - min_length: 8
       password:
         type: string
         description: OSCAR password for basic auth
