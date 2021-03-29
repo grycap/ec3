@@ -71,9 +71,9 @@ class JWT(object):
 
         :param token: The JWT token
         """
-        part = tuple(str(token).split(b"."))
+        part = tuple(token.encode("utf-8").split(b"."))
         part = [JWT.b64d(p) for p in part]
-        return json.loads(part[1])
+        return json.loads(part[1].decode("utf-8"))
 
 class RefreshToken:
 
@@ -178,6 +178,11 @@ class RefreshToken:
                     if token.strip().startswith("password"):
                         return token.split("=")[1].strip().strip("'")
 
+            if "InfrastructureManager" in line:
+                for token in line.split(";"):
+                    if token.strip().startswith("token"):
+                        return token.split("=")[1].strip().strip("'")
+
         return None
 
     def save_token_to_auth_file(self, auth_file, access_token):
@@ -215,6 +220,9 @@ if __name__ == "__main__":
     access_token = rt.get_token_from_auth_file("/usr/local/ec3/auth.dat")
     refresh_token = rt._load_token()
 
+    if not access_token:
+        print("Error reading access token.")
+        sys.exit(1)
     if not refresh_token:
         refresh_token, access_token = rt.get_refresh_token(access_token)
         if not access_token:
