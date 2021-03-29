@@ -379,6 +379,8 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
   it refers to the *Secret Access Key*. In GCE it refers to *Service 
   Private Key*. See how to get it and how to extract the private key file from
   `here info <https://cloud.google.com/storage/docs/authentication#service_accounts>`_).
+  In OpenStack sites using 3.x_oidc_access_token authentication it indicates the OIDC
+  access token.
 
 * ``tenant`` indicates the tenant associated to the credential.
   This field is only used in the OpenStack plugin.
@@ -406,12 +408,9 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
 
-* ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI and OpenStack plugins
-  and also to authenticate with the InfrastructureManager. 
-
-* ``bearer_token_command`` command used to obtain the access token when the token is not specified. 
-  This command is useful when the lifetime of the token is short, avoiding editing the authentication file each time.
-  This field is used in the OCCI and OpenStack plugins and also to authenticate with the InfrastructureManager. 
+* ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI
+  and also to authenticate with the InfrastructureManager. To refer to the output of a command you must
+  use the function "file(command)" as shown in the examples.
 
 An example of the auth file::
 
@@ -425,7 +424,7 @@ An example of the auth file::
    id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
    id = azure; type = Azure; username = subscription-id; public_key = file(cert.pem); private_key = file(key.pem)
    id = kub; type = Kubernetes; host = http://server:8080; username = user; password = pass
-   type = InfrastructureManager; bearer_token_command = oidc-token OIDC_ACCOUNT
+   type = InfrastructureManager; token = command(oidc-token OIDC_ACCOUNT)
 
 Notice that the user credentials that you specify are *only* employed to provision the resources
 (Virtual Machines, security groups, keypairs, etc.) on your behalf.
