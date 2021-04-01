@@ -603,9 +603,35 @@ node_types:
         description: Mesos Secret
         required: false
         default: mesosSecr
+      marathon_username:
+        type: string
+        description: Marathon username
+        required: false
+        default: admin
+      marathon_password:
+        type: string
+        description: Marathon password
+        required: false
+        default: secreta
+      chronos_username:
+        type: string
+        description: Chronos username
+        required: false
+        default: admin
+      chronos_password:
+        type: string
+        description: Chronos password
+        required: false
+        default: secreta
     artifacts:
       mesos_role:
         file: grycap.mesos
+        type: tosca.artifacts.AnsibleGalaxy.role
+      marathon_role:
+        file: grycap.marathon
+        type: tosca.artifacts.AnsibleGalaxy.role
+      chronos_role:
+        file: grycap.chronos
         type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
         lrms:
@@ -619,6 +645,10 @@ node_types:
           inputs:
             mesos_principal: { get_property: [ SELF, principal] }
             mesos_secret: { get_property: [ SELF, secret] }
+            marathon_username: { get_property: [ SELF, marathon_username] }
+            marathon_password: { get_property: [ SELF, marathon_password] }
+            chronos_username: { get_property: [ SELF, chronos_username] }
+            chronos_password: { get_property: [ SELF, chronos_password] }
 
   tosca.nodes.indigo.OSCAR:
     derived_from: tosca.nodes.SoftwareComponent

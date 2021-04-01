@@ -6,3 +6,7 @@
   roles:
   - role: grycap.mesos
     mesos_type_of_node: 'front'
+
+  - role: grycap.marathon
+
+  - role: grycap.chronos
