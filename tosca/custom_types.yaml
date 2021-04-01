@@ -566,6 +566,17 @@ node_types:
 
   tosca.nodes.indigo.LRMS.WorkerNode.Mesos:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    properties:
+      principal:
+        type: string
+        description: Mesos principal
+        required: false
+        default: mesosPrinc
+      secret:
+        type: string
+        description: Mesos Secret
+        required: false
+        default: mesosSecr
     artifacts:
       mesos_role:
         file: grycap.mesos
@@ -576,11 +587,24 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/mesos_wn_install.yml
           inputs:
             mesos_front_private_ip: { get_property: [ SELF, front_end_ip ] }
+            mesos_principal: { get_property: [ SELF, principal] }
+            mesos_secret: { get_property: [ SELF, secret] }
 
   tosca.nodes.indigo.LRMS.FrontEnd.Mesos:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    properties:
+      principal:
+        type: string
+        description: Mesos principal
+        required: false
+        default: mesosPrinc
+      secret:
+        type: string
+        description: Mesos Secret
+        required: false
+        default: mesosSecr
     artifacts:
-      slurm_role:
+      mesos_role:
         file: grycap.mesos
         type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
@@ -593,7 +617,8 @@ node_types:
         configure:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/mesos_fe_install.yml
           inputs:
-            max_number_of_nodes: { get_property: [ wn_node, wn, max_instances] }
+            mesos_principal: { get_property: [ SELF, principal] }
+            mesos_secret: { get_property: [ SELF, secret] }
 
   tosca.nodes.indigo.OSCAR:
     derived_from: tosca.nodes.SoftwareComponent
