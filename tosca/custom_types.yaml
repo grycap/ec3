@@ -612,7 +612,7 @@ node_types:
         type: string
         description: Marathon password
         required: false
-        default: secreta
+        default: "secret!"
       chronos_username:
         type: string
         description: Chronos username
@@ -622,7 +622,7 @@ node_types:
         type: string
         description: Chronos password
         required: false
-        default: secreta
+        default: "secret!"
     artifacts:
       mesos_role:
         file: grycap.mesos
