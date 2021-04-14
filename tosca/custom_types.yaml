@@ -1056,6 +1056,43 @@ node_types:
             helm_version: { get_property: [ SELF, version ] }
             helm_values: { get_property: [ SELF, values ] }
 
+  tosca.nodes.ec3.DNSRegistry:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      record_name:
+        type: string
+        description: The name of the record to add in the domain
+        required: true
+      domain_name:
+        type: string
+        description: Domain name to register the record
+        required: false
+        default: "grycap.net"
+      dns_service:
+        type: string
+        description: DNS service name to use
+        required: false
+        default: Route53
+      dns_service_credentials:
+        type: tosca.datatypes.Credential
+        description: Credentials neede to access the DNS service
+        required: false
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+          relationship: tosca.relationships.HostedOn
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca_dns/tosca/artifacts/dns_registry.yml
+          inputs:
+            record_name: { get_property: [ SELF, record_name ] }
+            domain_name: { get_property: [ SELF, reposdomain_nameitory_url ] }
+            dns_service: { get_property: [ SELF, dns_service ] }
+            dns_service_credentials: { get_property: [ SELF, dns_service_credentials ] }
+            ip_address: { get_attribute: [ HOST, public_address, 0 ] }
+
 policy_types:
 
   tosca.policies.indigo.Placement:
