@@ -1088,7 +1088,7 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca_dns/tosca/artifacts/dns_registry.yml
           inputs:
             record_name: { get_property: [ SELF, record_name ] }
-            domain_name: { get_property: [ SELF, reposdomain_nameitory_url ] }
+            domain_name: { get_property: [ SELF, domain_name ] }
             dns_service: { get_property: [ SELF, dns_service ] }
             dns_service_credentials: { get_property: [ SELF, dns_service_credentials ] }
             ip_address: { get_attribute: [ HOST, public_address, 0 ] }
