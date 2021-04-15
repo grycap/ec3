@@ -3,14 +3,15 @@
 import sys
 import boto3
 
-if len(sys.argv) != 6:
+if len(sys.argv) != 7:
     print("Invalid parameters")
     sys.exit(-1)
 
-credentials = sys.argv[2]
-record = sys.argv[3]
-domain = sys.argv[4]
-ip_address = sys.argv[5]
+op = sys.argv[1]
+credentials = sys.argv[3]
+record = sys.argv[4]
+domain = sys.argv[5]
+ip_address = sys.argv[6]
 
 if credentials.startswith("arn:aws:iam"):
     sts_client = boto3.client('sts')
@@ -41,12 +42,17 @@ else:
 
 zone = route53.list_hosted_zones_by_name(DNSName=domain)["HostedZones"][0]
 
+if op == "create":
+    action = "UPSERT"
+else:
+    action = "DELETE"
+
 response = route53.change_resource_record_sets(
     HostedZoneId=zone['Id'],
     ChangeBatch={
         'Changes': [
             {
-                'Action': 'UPSERT',
+                'Action': action,
                 'ResourceRecordSet': {
                     'Name': "%s.%s" % (record, domain),
                     'Type': 'A',
