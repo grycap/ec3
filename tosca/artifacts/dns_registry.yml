@@ -2,19 +2,22 @@
 - hosts: localhost
   connection: local
   tasks:
-    - name: Download dns_registry.py
-      get_url:
-        url: https://raw.githubusercontent.com/grycap/ec3/tosca_dns/tosca/artifacts/dns_registry.py
-        dest: /opt/dns_registry.py
-        mode: 0755
+    - block:
+      - name: Download dns_registry.py
+        get_url:
+          url: https://raw.githubusercontent.com/grycap/ec3/tosca_dns/tosca/artifacts/dns_registry.py
+          dest: /opt/dns_registry.py
+          mode: 0755
 
-    - name: Install PIP
-      package: name=python3-pip
+      - name: Install PIP
+        package: name=python3-pip
 
-    - name: Install boto3
-      pip: name=boto3
+      - name: Install boto3
+        pip: name=boto3
 
-    - name: Register DNS record
-      command: python /opt/dns_registry.py create {{ dns_service }} "{{ dns_service_credentials["token"] }}" {{ record_name }} {{ domain_name }} {{ ip_address }}
-      args:
-        creates: /opt/dns_registry.out
+      - name: Register DNS record
+        command: python /opt/dns_registry.py create {{ dns_service }} "{{ dns_service_credentials["token"] }}" {{ record_name }} {{ domain_name }} {{ ip_address }}
+        args:
+          creates: /opt/dns_registry.out
+
+      when: record_name != ""
