@@ -198,7 +198,7 @@ def apply_ec3_expressions(r):
     def rm_ec3_prio(t):
         t[1].pop("ec3_prio", None); return t[1]
     for conf in recipes_prio:
-        conf.recipe = list(map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ])))
+        conf.recipe = list(map(rm_ec3_prio, sorted([ (d.get("ec3_prio", i), d) for i, d in enumerate(conf.recipe) ], key=lambda k:k[0])))
     def sanitize(cad):
         return cad.replace("{", "\\x7b").replace("}", "\\x7d")
         #return cad.replace("\\", "\\\\").replace("{", "\\x7b").replace("}", "\\x7d")
