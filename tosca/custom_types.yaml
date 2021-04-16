@@ -1062,7 +1062,8 @@ node_types:
       record_name:
         type: string
         description: The name of the record to add in the domain
-        required: true
+        required: false
+        default: ""
       domain_name:
         type: string
         description: Domain name to register the record
