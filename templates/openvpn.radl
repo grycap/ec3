@@ -37,6 +37,6 @@ configure wn (
       FRONTEND:
         ec3_xpath: /system/front/net_interface.0.dns_name
     roles:
-    - { role: 'grycap.openvpn', openvpn_type_of_node: "wn", openvpn_frontname: '{{FRONTEND}}'}
+    - { role: 'grycap.openvpn', openvpn_type_of_node: "wn", openvpn_frontname: '{{FRONTEND}}', openvpn_front_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'}
 @end
 )
