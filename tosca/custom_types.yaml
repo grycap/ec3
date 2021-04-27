@@ -1085,7 +1085,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca_dns/tosca/artifacts/dns_registry.yml
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/dns_registry.yml
           inputs:
             record_name: { get_property: [ SELF, record_name ] }
             domain_name: { get_property: [ SELF, domain_name ] }
