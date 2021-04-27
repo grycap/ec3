@@ -5,7 +5,7 @@
     - block:
       - name: Download dns_registry.py
         get_url:
-          url: https://raw.githubusercontent.com/grycap/ec3/tosca_dns/tosca/artifacts/dns_registry.py
+          url: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/dns_registry.py
           dest: /opt/dns_registry.py
           mode: 0755
 
