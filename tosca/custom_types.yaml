@@ -665,12 +665,12 @@ node_types:
         description: OSCAR password for basic auth
         required: false
         default: oscar123
-       dns_host:
+      dns_host:
         type: string
         description: DNS hostname for the ingress
         required: false
         default: "''"
-       cert_manager_issuer:
+      cert_manager_issuer:
         type: string
         description: Cert-manager issuer to automatically assign TLS certificates
         required: false
