@@ -16,8 +16,8 @@
         pip: name=boto3
 
       - name: Register DNS record
-        command: python /opt/dns_registry.py create {{ dns_service }} "{{ dns_service_credentials["token"] }}" {{ record_name }} {{ domain_name }} {{ ip_address }}
+        shell: python /opt/dns_registry.py create {{ dns_service }} "{{ dns_service_credentials["token"] }}" {{ record_name }} {{ domain_name }} {{ ip_address }} > /opt/dns_registry_{{record_name}}.out
         args:
-          creates: /opt/dns_registry.out
+          creates: /opt/dns_registry_{{record_name}}.out
 
       when: record_name != ""
