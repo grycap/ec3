@@ -665,12 +665,22 @@ node_types:
         description: OSCAR password for basic auth
         required: false
         default: oscar123
+       dns_host:
+        type: string
+        description: DNS hostname for the ingress
+        required: false
+        default: "''"
+       cert_manager_issuer:
+        type: string
+        description: Cert-manager issuer to automatically assign TLS certificates
+        required: false
+        default: "letsencrypt-prod"
     artifacts:
       minio_role:
         file: grycap.kubeminio
         type: tosca.artifacts.AnsibleGalaxy.role
       oscar_role:
-        file: grycap.kubeoscar
+        file: grycap.kubeoscar,oscar2
         type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
       endpoint:
@@ -682,6 +692,8 @@ node_types:
           inputs:
             oscar_minio_secretkey: { get_property: [ SELF, minio_secretkey ] }
             oscar_password: { get_property: [ SELF, password ] }
+            cert_manager_issuer: { get_property: [ SELF, cert_manager_issuer ] }
+            dns_host: { get_property: [ SELF, dns_host ] }
     requirements:
       - host:
           capability: tosca.capabilities.Container
