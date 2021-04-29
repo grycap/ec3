@@ -9,7 +9,7 @@
     git:
       repo: https://github.com/EOSC-synergy/SQAaaS
       dest: /tmp/SQAaaS
-      version: dev-diana
+      version: master
       update: no
 
   - name: Set github token
