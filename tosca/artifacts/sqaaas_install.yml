@@ -56,6 +56,12 @@
       regexp: '\{\{vue_app_backend_host\}\}'
       replace: "{{ IM_NODE_PUBLIC_IP }}"
 
+  - name: Create self signed certs
+    command:
+      cmd: openssl req -nodes -new -x509 -keyout server.key -out server.crt -days 365 -subj '/CN=kubeserver'
+      chdir: /tmp/SQAaaS/k8s/
+      creates: /tmp/SQAaaS/k8s/server.key
+
   - name: Deploy SQAaaS platform
     command: kubectl apply -k k8s
     args:
