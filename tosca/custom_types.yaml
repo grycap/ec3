@@ -690,6 +690,11 @@ node_types:
         description: DNS hostname for the ingress
         required: false
         default: "''"
+      minio_dns_host:
+        type: string
+        description: DNS hostname for the minio ingress
+        required: false
+        default: "''"
       cert_manager_issuer:
         type: string
         description: Cert-manager issuer to automatically assign TLS certificates
@@ -697,7 +702,7 @@ node_types:
         default: "letsencrypt-prod"
     artifacts:
       minio_role:
-        file: grycap.kubeminio
+        file: grycap.kubeminio,cert-manager
         type: tosca.artifacts.AnsibleGalaxy.role
       oscar_role:
         file: grycap.kubeoscar,oscar2
@@ -714,6 +719,7 @@ node_types:
             oscar_password: { get_property: [ SELF, password ] }
             cert_manager_issuer: { get_property: [ SELF, cert_manager_issuer ] }
             dns_host: { get_property: [ SELF, dns_host ] }
+            minio_dns_host: { get_property: [ SELF, minio_dns_host ] }
     requirements:
       - host:
           capability: tosca.capabilities.Container

@@ -9,7 +9,7 @@
     git:
       repo: https://github.com/EOSC-synergy/SQAaaS
       dest: /tmp/SQAaaS
-      version: dev-diana
+      version: dev-micafer
       update: no
 
   - name: Set github token
@@ -38,11 +38,29 @@
         # token = /etc/sqaaas/.gh_token
       dest: /tmp/SQAaaS/k8s/sqaaas.ini
 
+  - name: Set BADGRSERVER_IP
+    replace:
+      path: /tmp/SQAaaS/k8s/sqaaas-badgr.yaml
+      regexp: 'BADGRSERVER_IP'
+      replace: "{{ IM_NODE_PUBLIC_IP }}"
+
+  - name: Set BADGRSERVER_IP
+    replace:
+      path: /tmp/SQAaaS/k8s/badgr.sql
+      regexp: 'BADGRSERVER_IP'
+      replace: "{{ IM_NODE_PUBLIC_IP }}"
+
   - name: Set web vue_app_backend_host
     replace:
       path: /tmp/SQAaaS/k8s/sqaaas-web.yaml
       regexp: '\{\{vue_app_backend_host\}\}'
       replace: "{{ IM_NODE_PUBLIC_IP }}"
+
+  - name: Create self signed certs
+    command:
+      cmd: openssl req -nodes -new -x509 -keyout server.key -out server.crt -days 365 -subj '/CN=kubeserver'
+      chdir: /tmp/SQAaaS/k8s/
+      creates: /tmp/SQAaaS/k8s/server.key
 
   - name: Deploy SQAaaS platform
     command: kubectl apply -k k8s
