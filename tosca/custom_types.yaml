@@ -409,6 +409,22 @@ node_types:
         required: no
         type: string
         default: ""
+      cert_manager_challenge:
+        required: no
+        type: string
+        default: "http01"
+      cert_manager_challenge_dns01_domain:
+        required: no
+        type: string
+        default: ""
+      cert_manager_challenge_dns01_ak:
+        required: no
+        type: string
+        default: ""
+      cert_manager_challenge_dns01_sk:
+        required: no
+        type: string
+        default: ""
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -441,6 +457,10 @@ node_types:
             kube_cert_manager:  { get_property: [ SELF, cert_manager ] }
             kube_cert_user_email:  { get_property: [ SELF, cert_user_email ] }
             kube_public_dns_name:  { get_property: [ SELF, public_dns_name ] }
+            kube_cert_manager_challenge: { get_property: [ SELF, cert_manager_challenge ] }
+            kube_cert_manager_challenge_dns01_domain: { get_property: [ SELF, cert_manager_challenge_dns01_domain ] }
+            kube_cert_manager_challenge_dns01_ak: { get_property: [ SELF, cert_manager_challenge_dns01_ak ] }
+            kube_cert_manager_challenge_dns01_sk: { get_property: [ SELF, cert_manager_challenge_dns01_sk ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
