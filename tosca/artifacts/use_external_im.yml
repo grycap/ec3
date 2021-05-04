@@ -14,6 +14,6 @@
     notify: restart cluesd
 
   - name: Set IM plugin configuration file values
-    ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option="IM_VIRTUAL_CLUSTER_INF_ID" value="{{ IM_INFRASTRUCTURE_ID }}"
+    ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option="IM_VIRTUAL_CLUSTER_INF_ID" value="{{ IM_SERVER }}/{{ IM_INFRASTRUCTURE_ID }}"
     notify: restart cluesd
     when: IM_INFRASTRUCTURE_ID is defined
