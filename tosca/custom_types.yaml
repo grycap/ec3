@@ -702,10 +702,10 @@ node_types:
         default: "letsencrypt-prod"
     artifacts:
       minio_role:
-        file: grycap.kubeminio,cert-manager
+        file: grycap.kubeminio
         type: tosca.artifacts.AnsibleGalaxy.role
       oscar_role:
-        file: grycap.kubeoscar,oscar2
+        file: grycap.kubeoscar
         type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
       endpoint:
