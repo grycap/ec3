@@ -1,11 +1,11 @@
 ---
 - hosts: localhost
   connection: local
-  vars:
-    IM_SERVER: "https://appsgrycap.i3m.upv.es:31443/im"
-
   tasks:
   # Reconfigure clues to use IM_SERVER
+  - set_fact: IM_SERVER="https://appsgrycap.i3m.upv.es:31443/im"
+    when: IM_SERVER is undefined
+
   - name: Set IM plugin configuration file values
     ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option={{ item.option }} value="{{ item.value }}"
     with_items:
@@ -13,4 +13,7 @@
       - { option: 'IM_VIRTUAL_CLUSTER_REST_SSL', value: "True" }
     notify: restart cluesd
 
-
+  - name: Set IM plugin configuration file values
+    ini_file: dest=/etc/clues2/conf.d/plugin-im.cfg section="IM VIRTUAL CLUSTER" option={{ IM_VIRTUAL_CLUSTER_INF_ID }} value="{{ IM_INF_ID }}"
+    notify: restart cluesd
+    when: IM_INF_ID is defined
