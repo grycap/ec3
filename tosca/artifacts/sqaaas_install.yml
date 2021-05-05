@@ -53,7 +53,7 @@
 
     - name: Set BADGRSERVER_IP
       replace:
-        path: /tmp/SQAaaS/k8s_badgr/sqaaas-badgr.yaml
+        path: /tmp/SQAaaS/k8s_badgr/badgr.yaml
         regexp: 'BADGRSERVER_IP'
         replace: "{{ IM_NODE_PUBLIC_IP }}"
 
