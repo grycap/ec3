@@ -1131,6 +1131,19 @@ node_types:
             dns_service_credentials: { get_property: [ SELF, dns_service_credentials ] }
             ip_address: { get_attribute: [ HOST, public_address, 0 ] }
 
+
+  tosca.nodes.im.AnsibleHost:
+    derived_from: tosca.nodes.Root
+    properties:
+      host:
+        type: string
+        description: The dns name or IP of the Ansible host
+        required: true
+      credentials:
+        type: tosca.datatypes.Credential
+        description: SSH credentials to access Ansible host
+        required: true
+
 policy_types:
 
   tosca.policies.indigo.Placement:
