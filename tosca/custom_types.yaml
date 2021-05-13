@@ -1139,7 +1139,7 @@ node_types:
         type: string
         description: The dns name or IP of the Ansible host
         required: true
-      credentials:
+      credential:
         type: tosca.datatypes.Credential
         description: SSH credentials to access Ansible host
         required: true
