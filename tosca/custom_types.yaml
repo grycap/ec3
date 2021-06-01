@@ -1144,6 +1144,16 @@ node_types:
         description: SSH credentials to access Ansible host
         required: true
 
+  tosca.nodes.indigo.network.Network:
+    derived_from: tosca.nodes.network.Network
+    properties:
+      proxy_host:
+        type: string
+        required: false
+      proxy_credential:
+        type: tosca.datatypes.Credential
+        required: false
+
 policy_types:
 
   tosca.policies.indigo.Placement:
