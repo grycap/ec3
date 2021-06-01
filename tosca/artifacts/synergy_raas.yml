@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+  - { role: 'grycap.docker' }
+  tasks:
+  - name: Add RaaS installation tasks
+    debug: msg="Add RaaS installation tasks"
+
+
+
