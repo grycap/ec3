@@ -12,6 +12,7 @@
 
   - role: 'grycap.kubefaas'
     master_deploy: true
+    functions_namespace: oscar-svc
 
   - role: 'grycap.kubeoscar'
     oscar_pass: '{{ oscar_password }}'
