@@ -10,19 +10,9 @@
         accounts: "{{ accounts | default([]) + [{'name': item, 'pw': lookup('password', '/var/tmp/passwordfile_' + item + ' length=8 chars=ascii_letters,digits')}] }}"
       with_sequence: start=1 end={{ user_num }} format=user%02x
 
-    - apt: name=whois
-      when: ansible_os_family == "Debian"
-
-    - yum: name=expect
-      when: ansible_os_family == "RedHat"
-
-    - shell: echo "{{ item.pw }}" | mkpasswd -s --method=sha-512
-      with_items: "{{ accounts }}"
-      register: passwd_out
-
     - name: Create user accounts
-      user: name={{ item.item.name }} password={{ item.stdout }} shell=/bin/bash generate_ssh_key=yes
-      with_items: "{{ passwd_out.results }}"
+      user: name={{ item.name }} password={{ item.pw | password_hash('sha512') }} shell=/bin/bash generate_ssh_key=yes update_password=on_create
+      with_items: '{{ accounts }}'
 
     - name: Create $HOME/.ssh directory
       file: path=/home/{{ item.name }}/.ssh state=directory owner={{ item.name }} group={{ item.name }} mode=0700
