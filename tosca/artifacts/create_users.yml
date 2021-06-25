@@ -23,6 +23,11 @@
       with_items: "{{ accounts }}"
 
     - name: Allow SSH password authentication
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication no" state=absent
+      notify:
+        - restart sshd
+
+    - name: Allow SSH password authentication
       lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication yes" state=present
       notify:
         - restart sshd
