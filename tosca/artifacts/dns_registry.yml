@@ -9,8 +9,13 @@
           dest: /opt/dns_registry.py
           mode: 0755
 
-      - name: Install PIP
-        package: name=python3-pip
+      - name: Install pip and setuptools Py3
+        package: name=python3-setuptools,python3-pip
+        when: ansible_python.version.major > 2
+
+      - name: Install pip and setuptools
+        package: name=python-setuptools,python-pip
+        when: ansible_python.version.major <= 2
 
       - name: Install boto3
         pip: name=boto3

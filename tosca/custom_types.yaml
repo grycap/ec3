@@ -721,6 +721,9 @@ node_types:
       oscar_role:
         file: grycap.kubeoscar
         type: tosca.artifacts.AnsibleGalaxy.role
+      kubefaas_role:
+        file: grycap.kubefaas
+        type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
       endpoint:
         type: tosca.capabilities.Endpoint
