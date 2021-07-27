@@ -346,6 +346,12 @@ node_types:
         required: no
         type: boolean
         default: false
+      cri_runtime:
+        required: no
+        type: string
+        default: "docker"
+        constraints:
+        - valid_values: [ docker, containerd ]
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -361,6 +367,7 @@ node_types:
             kube_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             kube_version:  { get_property: [ SELF, version ] }
             kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
+            kube_cri_runtime: { get_property: [ SELF, cri_runtime ] }
 
   tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes:
     derived_from: tosca.nodes.indigo.LRMS.FrontEnd
@@ -425,6 +432,12 @@ node_types:
         required: no
         type: string
         default: ""
+      cri_runtime:
+        required: no
+        type: string
+        default: "docker"
+        constraints:
+        - valid_values: [ docker, containerd ]
     artifacts:
       kube_role:
         file: grycap.kubernetes
@@ -461,6 +474,7 @@ node_types:
             kube_cert_manager_challenge_dns01_domain: { get_property: [ SELF, cert_manager_challenge_dns01_domain ] }
             kube_cert_manager_challenge_dns01_ak: { get_property: [ SELF, cert_manager_challenge_dns01_ak ] }
             kube_cert_manager_challenge_dns01_sk: { get_property: [ SELF, cert_manager_challenge_dns01_sk ] }
+            kube_cri_runtime: { get_property: [ SELF, cri_runtime ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
