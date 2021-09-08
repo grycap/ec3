@@ -1171,6 +1171,26 @@ node_types:
         type: tosca.datatypes.Credential
         required: false
 
+  tosca.nodes.indigo.KubernetesObject:
+    derived_from: tosca.nodes.Root
+    properties:
+      spec:
+        type: string
+        description: The YAML description of the K8s object
+        required: true
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+          relationship: tosca.relationships.HostedOn
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/k8s_object.yml
+          inputs:
+            k8s_spec: { get_property: [ SELF, spec ] }
+
+
 policy_types:
 
   tosca.policies.indigo.Placement:

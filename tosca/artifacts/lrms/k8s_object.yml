@@ -1,0 +1,21 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+
+  - name: Create temporary file
+    tempfile:
+      state: file
+      suffix: k8s
+    register: tempfile
+
+  - name: Create the K8s file spec
+    copy:
+      content: "{{ k8s_spec }}"
+      dest: "{{ tempfile.path }}"
+
+  - name: Apply the K8s spec
+    command: kubectl apply -f {{ tempfile.path }}
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
