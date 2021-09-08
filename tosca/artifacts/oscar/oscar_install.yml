@@ -8,7 +8,8 @@
     master_deploy: true
     enable_tls: true
     enable_ingress: true
-    public_hostname: "{{ minio_dns_host }}"
+    public_hostname_api: "{{ minio_dns_host }}"
+    public_hostname_console: "{{ minio_dns_host_console }}"
 
   - role: 'grycap.kubefaas'
     master_deploy: true
