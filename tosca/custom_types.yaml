@@ -721,7 +721,7 @@ node_types:
         default: "letsencrypt-prod"
     artifacts:
       minio_role:
-        file: grycap.kubeminio,console
+        file: grycap.kubeminio
         type: tosca.artifacts.AnsibleGalaxy.role
       oscar_role:
         file: grycap.kubeoscar
@@ -735,7 +735,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca-test-minio/tosca/artifacts/oscar/oscar_install.yml
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/oscar/oscar_install.yml
           inputs:
             oscar_minio_secretkey: { get_property: [ SELF, minio_secretkey ] }
             oscar_password: { get_property: [ SELF, password ] }
