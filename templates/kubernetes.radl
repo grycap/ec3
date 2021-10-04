@@ -71,7 +71,7 @@ configure front (
 system wn (
   memory.size>=4g and
   net_interface.0.connection='private' and
-  ec3_node_type = 'wn' and
+  ec3_node_type = 'wn'
 )
 
 configure wn (
