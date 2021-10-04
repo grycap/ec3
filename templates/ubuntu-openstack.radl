@@ -1,0 +1,18 @@
+description ubuntu-openstack (
+    kind = 'images' and
+    short = 'Ubuntu (OpenStack).' and
+    content = 'Ubuntu (OpenStack).'
+)
+
+system front (
+    instance_type = 'Medium' and
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'ost://<site.domain>/<image_id>' 
+)
+
+system wn (
+    instance_type = 'XLarge' and
+    ec3_max_instances = 10 and # maximum number of working nodes in the cluster
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'ost://<site.domain>/<image_id>' 
+)

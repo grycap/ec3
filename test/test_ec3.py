@@ -32,7 +32,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
-from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart, CmdSsh
+from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart, CmdSsh, CmdUpdate
 
 cluster_data = """system front (
                     state = 'configured' and
@@ -103,6 +103,9 @@ class TestEC3(unittest.TestCase):
             if url == "/infrastructures":
                 resp.status_code = 200
                 resp.text = 'http://server.com/infid'
+            elif url == "/infrastructures/infid":
+                resp.status_code = 200
+                resp.text = ''
         elif method == "PUT":
             if url == "/infrastructures":
                 resp.status_code = 200
@@ -544,6 +547,26 @@ deploy front 1
         with open(priv_key_file, "r") as f:
             self.assertEquals(f.read(), "priv_key")
 
+    @patch('requests.request')
+    @patch('ec3.ClusterStore')
+    @patch('ec3.CLI.display')
+    def test_update(self, display, cluster_store, requests):
+        Options = namedtuple('Options', ['restapi', 'json', 'clustername', 'reload', 'yes',
+                                         'auth_file', 'add', 'new_template', 'force'])
+        options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', reload=False, yes=True,
+                          auth_file=[], add=["system wn ( cpu.count = 4 )"], new_template=None, force=False)
+
+        cluster_store.list.return_value = ["name"]
+        radl, _ = self.gen_radl()
+        radl.get(system("front")).setValue("ec3_templates_cmd", "ubuntu-ec2 kubernetes")
+        cluster_store.load.return_value = radl
+        auth = [{"type": "InfrastructureManager", "username": "user", "password": "pass"}]
+        cluster_store.get_im_server_infrId_and_vmId_and_auth.return_value = "http://server.com", "infid", "0", auth
+        requests.side_effect = self.get_response
+
+        with self.assertRaises(SystemExit) as ex:
+            CmdUpdate.run(options)
+        self.assertEquals("0" ,str(ex.exception))
 
 if __name__ == "__main__":
     unittest.main()

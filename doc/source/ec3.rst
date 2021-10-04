@@ -6,7 +6,7 @@ Command-line Interface
 
 The program is called like this::
 
-   $ ec3 [-l <file>] [-ll <level>] [-q] launch|list|show|templates|ssh|reconfigure|destroy [args...]
+   $ ec3 [-l <file>] [-ll <level>] [-q] launch|list|show|templates|ssh|reconfigure|destroy|clone|migrate|stop|restart|tranfer|update [args...]
 
 .. program:: ec3
 .. option:: -l <file>, --log-file <file>
@@ -326,6 +326,28 @@ to the internal IM, use this command::
 
    URL to the IM REST API external service.
 
+Command ``update``
+-----------------------
+
+The command updates a previously deployed clusters. It can be called to update the RADL
+of the WNs enabling to change some of their features (url or the image, cpu, memory ...)
+that will be used in next "power on" operations on the cluster::
+
+   ec3 update <clustername>
+
+.. program:: ec3 update
+
+.. option:: -a <file>, --auth-file <file>
+
+   Append authorization entries in the provided file. See :ref:`auth-file`.
+
+.. option:: --add
+
+   Add a piece of RADL. This option enables to include additional features to a running cluster.
+   The following example updates the number of cpus of the WNs::
+
+      ./ec3 update mycluster --add "system wn ( cpu.count = 2 )"
+
 Configuration file
 ------------------
 
@@ -379,6 +401,8 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
   it refers to the *Secret Access Key*. In GCE it refers to *Service 
   Private Key*. See how to get it and how to extract the private key file from
   `here info <https://cloud.google.com/storage/docs/authentication#service_accounts>`_).
+  In OpenStack sites using 3.x_oidc_access_token authentication it indicates the OIDC
+  access token.
 
 * ``tenant`` indicates the tenant associated to the credential.
   This field is only used in the OpenStack plugin.
@@ -406,6 +430,10 @@ Values can contain "=", and "\\n" is replaced by carriage return. The available 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
 
+* ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI
+  and also to authenticate with the InfrastructureManager. To refer to the output of a command you must
+  use the function "command(command)" as shown in the examples.
+
 An example of the auth file::
 
    id = one; type = OpenNebula; host = oneserver:2633; username = user; password = pass
@@ -418,6 +446,7 @@ An example of the auth file::
    id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
    id = azure; type = Azure; username = subscription-id; public_key = file(cert.pem); private_key = file(key.pem)
    id = kub; type = Kubernetes; host = http://server:8080; username = user; password = pass
+   type = InfrastructureManager; token = command(oidc-token OIDC_ACCOUNT)
 
 Notice that the user credentials that you specify are *only* employed to provision the resources
 (Virtual Machines, security groups, keypairs, etc.) on your behalf.
