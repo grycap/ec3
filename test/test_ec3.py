@@ -32,6 +32,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
+from IM2.radl.radl_parse import parse_radl
 from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart, CmdSsh, CmdUpdate
 
 cluster_data = """system front (
@@ -551,10 +552,9 @@ deploy front 1
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
     def test_update(self, display, cluster_store, requests):
-        Options = namedtuple('Options', ['restapi', 'json', 'clustername', 'reload', 'yes',
-                                         'auth_file', 'add', 'new_template', 'force'])
-        options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', reload=False, yes=True,
-                          auth_file=[], add=["system wn ( cpu.count = 4 )"], new_template=None, force=False)
+        Options = namedtuple('Options', ['restapi', 'clustername', 'auth_file', 'add'])
+        options = Options(restapi=['http://server.com:8800'], clustername='name', 
+                          auth_file=[], add=["system wn ( cpu.count = 4 )"])
 
         cluster_store.list.return_value = ["name"]
         radl, _ = self.gen_radl()
@@ -567,6 +567,10 @@ deploy front 1
         with self.assertRaises(SystemExit) as ex:
             CmdUpdate.run(options)
         self.assertEquals("0" ,str(ex.exception))
+        self.assertEquals(requests.call_args_list[0][0][0], "POST")
+        self.assertEquals(requests.call_args_list[0][0][1], "http://server.com/infrastructures/infid")
+        radlo = parse_radl(requests.call_args_list[0][1]['data'])
+        self.assertEquals(radlo.get(system("wn")).getValue("cpu.count"), 4)
 
 if __name__ == "__main__":
     unittest.main()
