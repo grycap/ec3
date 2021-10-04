@@ -551,10 +551,9 @@ deploy front 1
     @patch('ec3.ClusterStore')
     @patch('ec3.CLI.display')
     def test_update(self, display, cluster_store, requests):
-        Options = namedtuple('Options', ['restapi', 'json', 'clustername', 'reload', 'yes',
-                                         'auth_file', 'add', 'new_template', 'force'])
-        options = Options(restapi=['http://server.com:8800'], json=False, clustername='name', reload=False, yes=True,
-                          auth_file=[], add=["system wn ( cpu.count = 4 )"], new_template=None, force=False)
+        Options = namedtuple('Options', ['restapi', 'clustername', 'auth_file', 'add'])
+        options = Options(restapi=['http://server.com:8800'], clustername='name', 
+                          auth_file=[], add=["system wn ( cpu.count = 4 )"])
 
         cluster_store.list.return_value = ["name"]
         radl, _ = self.gen_radl()

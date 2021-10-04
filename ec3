@@ -1789,7 +1789,7 @@ class CmdUpdate:
         parser.add_argument("clustername", help="name of the cluster")
         parser.add_argument("--add", action="append", help="add a piece of RADL")
         parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
-        parser.set_defaults(func=CmdReconfigure.run)
+        parser.set_defaults(func=CmdUpdate.run)
 
     @staticmethod
     def run(options):
