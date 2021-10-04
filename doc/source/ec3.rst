@@ -6,7 +6,7 @@ Command-line Interface
 
 The program is called like this::
 
-   $ ec3 [-l <file>] [-ll <level>] [-q] launch|list|show|templates|ssh|reconfigure|destroy [args...]
+   $ ec3 [-l <file>] [-ll <level>] [-q] launch|list|show|templates|ssh|reconfigure|destroy|clone|migrate|stop|restart|tranfer|update [args...]
 
 .. program:: ec3
 .. option:: -l <file>, --log-file <file>
@@ -325,6 +325,28 @@ to the internal IM, use this command::
 .. option:: -u <url>, --restapi-url <url>
 
    URL to the IM REST API external service.
+
+Command ``update``
+-----------------------
+
+The command updates a previously deployed clusters. It can be called to update the RADL
+of the WNs enabling to change some of their features (url or the image, cpu, memory ...)
+that will be used in next "power on" operations on the cluster::
+
+   ec3 update <clustername>
+
+.. program:: ec3 update
+
+.. option:: -a <file>, --auth-file <file>
+
+   Append authorization entries in the provided file. See :ref:`auth-file`.
+
+.. option:: --add
+
+   Add a piece of RADL. This option enables to include additional features to a running cluster.
+   The following example updates the number of cpus of the WNs::
+
+      ./ec3 update mycluster --add "system wn ( cpu.count = 2 )"
 
 Configuration file
 ------------------

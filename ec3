@@ -54,7 +54,7 @@ except:
     pass
 
 # EC3 client version
-VERSION = '2.1.0'
+VERSION = '2.2.0'
 # Our public IM service
 IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
 # RADL template path
@@ -1782,6 +1782,64 @@ class CmdTransfer:
             sys.exit(1)
 
 
+class CmdUpdate:
+    @staticmethod
+    def parse(subparsers):
+        parser = subparsers.add_parser("update", help="update the RADL of the WNs", config=False)
+        parser.add_argument("clustername", help="name of the cluster")
+        parser.add_argument("--add", action="append", help="add a piece of RADL")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="append new entries to the authorization file")
+        parser.set_defaults(func=CmdReconfigure.run)
+
+    @staticmethod
+    def run(options):
+        # Check cluster name, authentication and IM server
+        try:
+            r = ClusterStore.load(options.clustername)
+            im_server_url, infrId, vmId, auth_data = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
+            auth_content = Authentication.dump(auth_data)
+        except Exception as e:
+            CLI.display(str(e), level=logging.ERROR)
+            sys.exit(1)
+        try:
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+                if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
+                    auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
+                                    (random.random()*1e15, random.random()*1e15))
+                auth_data = Authentication.read_auth_data(auth_content)
+        except Exception as e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        # Instantiate templates
+        if options.auth_file or options.add:
+            templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
+            radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
+            for a in radl.gets(deploy): radl.delete(a)
+            radl = dump_radl(radl)
+        else:
+            radl = ""
+
+        # Update infrastructure
+        CLI.display("Updating infrastructure")
+        try:
+            headers = {"Authorization": format_rest_auth_data(auth_data)}
+            url = "%s/infrastructures/%s" % (im_server_url, infrId)
+            resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
+            print(radl)
+            sys.exit(1)
+            if resp.status_code != 200:
+                raise Exception(resp.text)
+        except Exception as e:
+            CLI.display("Error updating infrastructure: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        CLI.display("Infrastructure Updated.")
+        sys.exit(0)
+
+
 # TODO: muy probablemente no haga falta esto del run_command y se pueda hacer como hace eloy con os.execlp
 class CommandError(Exception):pass
 
@@ -1816,7 +1874,7 @@ if __name__ == "__main__":
     if sys.version_info[:2] <= (2, 7):
         get_input = raw_input
 
-    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart, CmdTransfer]
+    commands = [CmdLaunch, CmdList, CmdShow, CmdTemplates, CmdSsh, CmdReconfigure, CmdDestroy, CmdClone, CmdMigrate, CmdStop, CmdRestart, CmdTransfer, CmdUpdate]
     try:
         CLI.run(commands)
     except (OSError, IOError) as e:
