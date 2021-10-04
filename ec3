@@ -1828,8 +1828,6 @@ class CmdUpdate:
             headers = {"Authorization": format_rest_auth_data(auth_data)}
             url = "%s/infrastructures/%s" % (im_server_url, infrId)
             resp = requests.request("POST", url, verify=False, headers=headers, data=radl)
-            print(radl)
-            sys.exit(1)
             if resp.status_code != 200:
                 raise Exception(resp.text)
         except Exception as e:
