@@ -32,6 +32,7 @@ sys.path.append("..")
 sys.path.append(".")
 
 from IM2.radl.radl import RADL, system, network
+from IM2.radl.radl_parse import parse_radl
 from ec3 import ClusterStore, CLI, CmdLaunch, CmdList, CmdTemplates, CmdDestroy, CmdReconfigure, CmdClone, CmdStop, CmdRestart, CmdSsh, CmdUpdate
 
 cluster_data = """system front (
@@ -566,6 +567,10 @@ deploy front 1
         with self.assertRaises(SystemExit) as ex:
             CmdUpdate.run(options)
         self.assertEquals("0" ,str(ex.exception))
+        self.assertEquals(requests.call_args_list[0][0][0], "POST")
+        self.assertEquals(requests.call_args_list[0][0][1], "http://server.com/infrastructures/infid")
+        radlo = parse_radl(requests.call_args_list[0][1]['data'])
+        self.assertEquals(radlo.get(system("wn")).getValue("cpu.count"), 4)
 
 if __name__ == "__main__":
     unittest.main()
