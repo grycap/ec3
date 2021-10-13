@@ -150,6 +150,10 @@ capability_types:
         type: boolean
         required: false
         default: true
+      additional_ip:
+        description: The optional additional IP to set to the endpoint
+        type: string
+        required: false
     attributes:
       credential:
         type: list
