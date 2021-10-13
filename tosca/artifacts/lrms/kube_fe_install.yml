@@ -3,6 +3,9 @@
   connection: local
   vars:
      vnode_prefix: vnode-
+     control_plane_remote_peer_list: []
+     etcd_peer_list: []
+     type_of_node: 'front'
 
   pre_tasks:
   - name: Create dir for the NFS PV
@@ -11,6 +14,26 @@
     file: path=/etc/kubernetes/pki state=directory mode=755 recurse=yes
   - name: Create auth data file with an admin user
     copy: content='{{kube_admin_token}},{{kube_admin_username}},100,"users,system:masters"' dest=/etc/kubernetes/pki/auth mode=600
+
+  - block:
+
+    - set_fact:
+        type_of_node: 'control_plane'
+      when: not kube_master_node | bool
+
+    - set_fact:
+        control_plane_remote_peer_list: "{{ control_plane_remote_peer_list + [ hostvars[item]['IM_NODE_PRIVATE_IP'] ] }}"
+      with_items: "{{ groups['front'] + groups['cp'] }}"
+      when: item != inventory_hostname
+
+    - set_fact:
+        etcd_peer_list: "{{ etcd_peer_list + [ {'key': hostvars[item]['ansible_hostname'], 'value': hostvars[item]['IM_NODE_PRIVATE_IP']} ] }}"
+      with_items: "{{ groups['front'] + groups['cp'] }}"
+
+    - set_fact:
+        etcd_peer_list: "{{ etcd_peer_list | items2dict}}"
+
+    when: control_plane_ip != ""
 
   roles:
   - role: grycap.nfs
@@ -21,7 +44,14 @@
     kube_api_server: '{{ kube_front_end_ip }}'
     kube_apiserver_options:
       - {option: "--service-node-port-range", value: "80-35000"}
-#      - {option: "--insecure-port", value: "8080"}
       - {option: "--token-auth-file", value: "/etc/kubernetes/pki/auth"}
     kube_deploy_dashboard: true
     kube_cert_public_ip: "{{ IM_NODE_PUBLIC_IP }}"
+    kube_type_of_node: "{{type_of_node}}"
+    # HA parameters
+    kube_control_plane_ip: "{{control_plane_ip}}"
+    kube_control_plane_peer_ip: "{{IM_NODE_PRIVATE_IP}}"
+    kube_control_plane_remote_peer_list: "{{control_plane_remote_peer_list}}"
+    kube_etcd_peer_address: "{{IM_NODE_PRIVATE_IP}}"
+    kube_etcd_peer_list: "{{etcd_peer_list}}"
+    kube_etcd_peer_name: "{{ansible_hostname}}"
