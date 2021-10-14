@@ -366,7 +366,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_wn_install.yml
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca_ha/tosca/artifacts/lrms/kube_wn_install.yml
           inputs:
             kube_front_end_ip: { get_property: [ SELF, front_end_ip ] }
             kube_version:  { get_property: [ SELF, version ] }
@@ -468,7 +468,7 @@ node_types:
     interfaces:
       Standard:
         configure:
-          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/kube_fe_install.yml
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca_ha/tosca/artifacts/lrms/kube_fe_install.yml
           inputs:
             kube_front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
             kube_admin_username:  { get_property: [ SELF, admin_username ] }
