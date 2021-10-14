@@ -19,7 +19,8 @@
 
     - set_fact:
         type_of_node: 'control_plane'
-      when: not kube_master_node | bool
+        kube_server: "{{ kube_master_node_ip }}"
+      when: kube_master_node_ip != ""
 
     - set_fact:
         control_plane_remote_peer_list: "{{ control_plane_remote_peer_list + [ hostvars[item]['IM_NODE_PRIVATE_IP'] ] }}"
