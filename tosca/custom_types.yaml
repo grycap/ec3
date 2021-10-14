@@ -487,7 +487,8 @@ node_types:
             kube_cert_manager_challenge_dns01_ak: { get_property: [ SELF, cert_manager_challenge_dns01_ak ] }
             kube_cert_manager_challenge_dns01_sk: { get_property: [ SELF, cert_manager_challenge_dns01_sk ] }
             kube_cri_runtime: { get_property: [ SELF, cri_runtime ] }
-            kube_master_node: { get_property: [ SELF, master_node ] }
+            kube_control_plane_ip: { get_property: [ SELF, control_plane_ip ] }
+            kube_master_node: { get_property: [ SELF, master_node ] } 
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
