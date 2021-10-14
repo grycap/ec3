@@ -33,7 +33,7 @@
     - set_fact:
         etcd_peer_list: "{{ etcd_peer_list | items2dict}}"
 
-    when: control_plane_ip != ""
+    when: kube_control_plane_ip != ""
 
   roles:
   - role: grycap.nfs
@@ -49,7 +49,6 @@
     kube_cert_public_ip: "{{ IM_NODE_PUBLIC_IP }}"
     kube_type_of_node: "{{type_of_node}}"
     # HA parameters
-    kube_control_plane_ip: "{{control_plane_ip}}"
     kube_control_plane_peer_ip: "{{IM_NODE_PRIVATE_IP}}"
     kube_control_plane_remote_peer_list: "{{control_plane_remote_peer_list}}"
     kube_etcd_peer_address: "{{IM_NODE_PRIVATE_IP}}"
