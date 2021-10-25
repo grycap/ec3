@@ -68,6 +68,9 @@ capability_types:
       sgx:
         type: boolean
         required: no
+      sgx_epc_size:
+        type: scalar-unit.size
+        required: no
 
   tosca.capabilities.indigo.LRMS:
     derived_from: tosca.capabilities.Container
