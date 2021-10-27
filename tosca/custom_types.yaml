@@ -364,7 +364,7 @@ node_types:
         file: grycap.kubernetes
         type: tosca.artifacts.AnsibleGalaxy.role
       nfs_role:
-        file: grycap.nfs
+        file: grycap.nfs,nfs4
         type: tosca.artifacts.AnsibleGalaxy.role
     interfaces:
       Standard:
