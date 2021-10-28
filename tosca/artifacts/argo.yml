@@ -1,0 +1,30 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Create the ARGO ns file spec
+    copy:
+      content: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: argo
+      dest: /tmp/argo_ns.yml
+
+  - name: Create ARGO ns
+    command: kubectl apply -f /tmp/argo_ns.yml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Deploy ARGO
+    command: kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/install.yaml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Create default-admin rolebinding
+    command: "kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default"
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    ignore_errors: yes
+
+    

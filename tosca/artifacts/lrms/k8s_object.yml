@@ -13,6 +13,13 @@
     copy:
       content: "{{ k8s_spec }}"
       dest: "{{ tempfile.path }}"
+    when: not k8s_spec.startswith('http')
+
+  - name: Download the K8s file spec
+    get_url:
+      url: "{{ k8s_spec }}"
+      dest: "{{ tempfile.path }}"
+    when: "k8s_spec.startswith('http')"
 
   - name: Apply the K8s spec
     command: kubectl apply -f {{ tempfile.path }}
