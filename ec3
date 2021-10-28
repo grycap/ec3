@@ -663,7 +663,7 @@ class CmdLaunch:
             auth_data = Authentication.read_auth_data(auth_content)
             if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                 auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
+                                    (int(random.random()*1e15), int(random.random()*1e15)))
                 auth_data = Authentication.read_auth_data(auth_content)
             auth_content = Authentication.dump(auth_data)
         except Exception as e:
@@ -1164,7 +1164,7 @@ class CmdReconfigure:
                 auth_data = Authentication.read_auth_data(auth_content)
                 if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                     auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
+                                    (int(random.random()*1e15), int(random.random()*1e15)))
                 auth_data = Authentication.read_auth_data(auth_content)
         except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
@@ -1271,7 +1271,7 @@ class CmdClone:
                 auth_data = Authentication.read_auth_data(auth_content)
                 if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                     auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
+                                    (int(random.random()*1e15), int(random.random()*1e15)))
                 auth_data = Authentication.read_auth_data(auth_content)
             elif options.destination:
                 for auth in auth_data:
@@ -1416,7 +1416,7 @@ class CmdMigrate:
                                 secret_key = a['password']
                 if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                     auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
+                                    (int(random.random()*1e15), int(random.random()*1e15)))
                 auth_data = Authentication.read_auth_data(auth_content)
             elif options.destination:
                 for auth in auth_data:
@@ -1807,7 +1807,7 @@ class CmdUpdate:
                 auth_data = Authentication.read_auth_data(auth_content)
                 if not any([ a.get("type", None) == "InfrastructureManager" for a in auth_data ]):
                     auth_content.append("type = InfrastructureManager; username = %x; password = %x" %
-                                    (random.random()*1e15, random.random()*1e15))
+                                    (int(random.random()*1e15), int(random.random()*1e15)))
                 auth_data = Authentication.read_auth_data(auth_content)
         except Exception as e:
             CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
