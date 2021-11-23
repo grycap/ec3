@@ -17,12 +17,12 @@
       KUBECONFIG: /etc/kubernetes/admin.conf
 
   - name: Deploy ARGO
-    command: kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/install.yaml
+    command: kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v3.2.3/install.yaml
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
 
   - name: Create default-admin rolebinding
-    command: "kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default"
+    command: "kubectl create rolebinding default-admin --clusterrole=admin -n argo --serviceaccount=argo:default"
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
     ignore_errors: yes
