@@ -29,3 +29,14 @@
       KUBECONFIG: /etc/kubernetes/admin.conf
     ignore_errors: yes
 
+  - name: download argo-client
+    get_url:
+      url: https://github.com/argoproj/argo-workflows/releases/download/v{{VERSION}}/argo-linux-amd64.gz
+      dest: /usr/local/bin/argo-linux-amd64.gz
+    ignore_errors: yes
+
+  - name: extract argo-client
+    shell: gunzip /usr/local/bin/argo-linux-amd64.gz && mv /usr/local/bin/argo-linux-amd64 /usr/local/bin/argo && chmod +x /usr/local/bin/argo
+    args:
+      creates: /usr/local/bin/argo
+    ignore_errors: yes
