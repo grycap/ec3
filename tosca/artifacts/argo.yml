@@ -2,7 +2,7 @@
 - hosts: localhost
   connection: local
   vars: 
-    VERSION=3.2.3
+    VERSION: 3.2.3
   tasks:
   - name: Create the ARGO ns file spec
     copy:
