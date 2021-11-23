@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   connection: local
+  vars: 
+    VERSION=3.2.3
   tasks:
   - name: Create the ARGO ns file spec
     copy:
@@ -17,7 +19,7 @@
       KUBECONFIG: /etc/kubernetes/admin.conf
 
   - name: Deploy ARGO
-    command: kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v3.2.3/install.yaml
+    command: kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v{{VERSION}}/install.yaml
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
 
@@ -27,4 +29,3 @@
       KUBECONFIG: /etc/kubernetes/admin.conf
     ignore_errors: yes
 
-    
