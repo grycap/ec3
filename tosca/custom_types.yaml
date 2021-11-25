@@ -153,6 +153,14 @@ capability_types:
         type: boolean
         required: false
         default: true
+      ports:
+        type: map
+        description: The optional map of ports the Endpoint supports (if more than one).
+        required: false
+        constraints:
+          - min_length: 1
+        entry_schema:
+          type: tosca.datatypes.network.PortSpec
       additional_ip:
         description: The optional additional IP to set to the endpoint
         type: string
@@ -1206,6 +1214,17 @@ node_types:
           inputs:
             k8s_spec: { get_property: [ SELF, spec ] }
 
+  tosca.nodes.indigo.network.Port:
+    derived_from: tosca.nodes.network.Port 
+    properties:
+      dns_name:
+        description: The optional name to register with DNS
+        type: string
+        required: false
+      additional_ip:
+        description: The optional additional IP to set to the endpoint
+        type: string
+        required: false
 
 policy_types:
 
