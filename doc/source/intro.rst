@@ -106,9 +106,12 @@ Also you can show basic information about the deployed clusters by executing::
 EC3 in Docker Hub
 -----------------
 
-EC3 has an official Docker container image available in `Docker Hub`_ that can be used instead of installing the CLI. You can download it by typing:: 
+EC3 has an official Docker container image available in `Docker Hub`_ and `GitHub Container Regitry`_
+that can be used instead of installing the CLI. You can download it by typing:: 
 
    $ sudo docker pull grycap/ec3
+   or
+   $ sudo docker pull ghcr.io/grycap/ec3
    
 You can exploit all the potential of EC3 as if you download the CLI and run it on your computer:: 
 
@@ -166,3 +169,4 @@ Additional information
 .. _`sshpass`: https://gist.github.com/arunoda/7790979
 .. _`ubuntu-ec2`: https://github.com/grycap/ec3/blob/devel/templates/ubuntu-ec2.radl
 .. _`jsonschema`: https://github.com/Julian/jsonschema
+.. _`GitHub Container Regitry`: https://github.com/grycap/ec3/pkgs/container/ec3

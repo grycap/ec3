@@ -192,7 +192,7 @@ class RefreshToken:
         # replace old token with new one
         new_auth = ""
         for line in auth_data.split("\n"):
-            if "OpenStack" in line:
+            if "3.x_oidc_access_token" in line:
                 pos_ini = line.find("password = ") + 11
                 new_auth += line[:pos_ini] + access_token
                 pos_end = max(line.find(";", pos_ini), line.find("\n", pos_ini))
