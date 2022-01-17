@@ -56,7 +56,7 @@ except:
 # EC3 client version
 VERSION = '2.2.0'
 # Our public IM service
-IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im-dev/'
+IM_URL = 'https://appsgrycap.i3m.upv.es:31443/im/'
 # RADL template path
 TEMPLATE_PATHS = ["./templates", "~/.ec3/templates", "/etc/ec3/templates"]
 # Path where to store launched clusters
