@@ -1004,6 +1004,7 @@ class CmdShow:
 
     @staticmethod
     def run(options):
+        auth_data = None
         try:
             if options.auth_file:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
