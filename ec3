@@ -420,7 +420,7 @@ class ClusterStore:
         return r
 
     @staticmethod
-    def load(clustername, refresh=False):
+    def load(clustername, refresh=False, auth_data=None):
         ClusterStore._check_dir()
         if clustername not in ClusterStore.list():
             raise Exception("There is no cluster with name '%s'!" % clustername)
@@ -433,6 +433,8 @@ class ClusterStore:
         try:
             new_im_server_url, infrId, vmId, auth = ClusterStore.get_im_server_infrId_and_vmId_and_auth(r)
 
+            if auth_data:
+                auth = auth_data
             headers = {"Authorization": format_rest_auth_data(auth), "Accept": "application/json"}
             url = "%s/infrastructures/%s" % (new_im_server_url, infrId)
             resp = requests.request("GET", url, verify=False, headers=headers)
@@ -995,12 +997,23 @@ class CmdShow:
         parser.add_argument("clustername", help="name of the cluster to show")
         parser.add_argument("--json", action="store_true", default=False, help="output information in JSON format")
         parser.add_argument("-r", "--refresh", action="store_true", default=False, help="updated state of the clusters")
+        parser.add_argument("-a", "--auth-file", type=argparse.FileType('r'), dest="auth_file", nargs=1, help="authorization file", config_default="""    # auth_file: |
+    #   type = OpenNebula; host = myone.com:9999; username = user; password = 1234
+    #   type = EC2; username = AKIAAAAAAAAAAAAAAAAA; password = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa""")
         parser.set_defaults(func=CmdShow.run)
 
     @staticmethod
     def run(options):
         try:
-            r = ClusterStore.load(options.clustername, options.refresh)
+            if options.auth_file:
+                auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
+                auth_data = Authentication.read_auth_data(auth_content)
+        except Exception as e:
+            CLI.display("Error in -a/--auth-file: %s" % str(e), level=logging.ERROR)
+            sys.exit(1)
+
+        try:
+            r = ClusterStore.load(options.clustername, options.refresh, auth_data)
             output = dump_radl_json(r) if options.json else dump_radl(r)
             CLI.display(output + "\n")
         except Exception as e:
