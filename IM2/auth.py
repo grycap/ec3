@@ -171,7 +171,7 @@ class Authentication:
 								value_file.close()
 							except:
 								pass
-						auth[key] = value
+						auth[key] = value.strip().replace("\\n", "\n")
 				res.append(auth)
 
 		return res
