@@ -101,7 +101,7 @@ class RefreshToken:
         """
         try:
             decoded_token = JWT().get_info(access_token)
-            token_scopes = "openid profile offline_access"
+            token_scopes = "openid profile offline_access eduperson_entitlement"
             url = "%s/token" % decoded_token['iss']
             payload = ("client_id=%s&client_secret=%s&grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Atoken-exchange&"
                         "audience=tokenExchange&subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
