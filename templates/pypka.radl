@@ -26,7 +26,7 @@ configure front (
     - name: install apt requisites
       apt: 
         pkg:
-          - ligfortran4
+          - libgfortran4
           - gawk
           - python3-pip
           - autossh
@@ -61,7 +61,7 @@ configure wn (
     - name: install apt requisites
       apt: 
         pkg:
-          - ligfortran4
+          - libgfortran4
           - gawk
           - python3-pip
           - autossh
