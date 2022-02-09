@@ -22,6 +22,7 @@ import re
 import base64
 import requests
 import time
+import os
 
 
 class JWT(object):
@@ -87,6 +88,7 @@ class RefreshToken:
     def _save_token(self, token):
         with open(self.REFRESH_TOKEN_FILE, 'w') as f:
             f.write(token)
+        os.chmod(self.REFRESH_TOKEN_FILE, 0o600)
 
     def _load_token(self):
         try:
