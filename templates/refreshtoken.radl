@@ -7,8 +7,8 @@ description refreshtoken (
 configure front (
 @begin
   - vars:
-      CLIENT_ID: ef4d5286-0db3-4c06-87ff-6a27ec97cb85
-      CLIENT_SECRET: O-UODpEZZiceW3X47Kx_RDYnd5KJwrm-UzHJK_4Z5tfyKF5RbtbluJcnzeGzPz8xmlfbCWEjKjDj_aBT3HlhlA
+      CLIENT_ID: cid
+      CLIENT_SECRET: csec
       REFRESH_TOKEN_FILE:
         ec3_file: refresh_token.py
 
