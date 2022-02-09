@@ -1,0 +1,77 @@
+description pypka (
+    kind = 'component' and
+    short = 'PypKa Server.' and
+    content = 'Flexible Poisson-Boltzmann based pKa calculations with proton tautomerism.
+
+Webpage: https://pypka.org/'
+)
+
+configure front (
+@begin
+---
+  - ec3_prio: -10
+    tasks:
+
+    - name: Add psql repo key
+      apt_key:
+        url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+        state: present
+
+    - name: Add psql repo
+      apt_repository:
+        repo: 'deb http://apt.postgresql.org/pub/repos/apt/ {{ansible_distribution_release}}-pgdg main'
+        state: present
+        update_cache: yes
+
+    - name: install apt requisites
+      apt: 
+        pkg:
+          - ligfortran4
+          - gawk
+          - python3-pip
+          - autossh
+          - postgresql
+
+    - name: Install pypka
+      pip:
+        name:
+        - sqlalchemy
+        - psycopg2-binary
+        - pypka
+@end
+)
+
+configure wn (
+@begin
+---
+  - ec3_prio: -10
+    tasks:
+
+    - name: Add psql repo key
+      apt_key:
+        url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+        state: present
+
+    - name: Add psql repo
+      apt_repository:
+        repo: 'deb http://apt.postgresql.org/pub/repos/apt/ {{ansible_distribution_release}}-pgdg main'
+        state: present
+        update_cache: yes
+
+    - name: install apt requisites
+      apt: 
+        pkg:
+          - ligfortran4
+          - gawk
+          - python3-pip
+          - autossh
+          - postgresql
+
+    - name: Install pypka
+      pip:
+        name:
+        - sqlalchemy
+        - psycopg2-binary
+        - pypka
+@end
+)
