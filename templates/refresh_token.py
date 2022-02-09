@@ -22,6 +22,7 @@ import re
 import base64
 import requests
 import time
+import os
 
 
 class JWT(object):
@@ -87,6 +88,7 @@ class RefreshToken:
     def _save_token(self, token):
         with open(self.REFRESH_TOKEN_FILE, 'w') as f:
             f.write(token)
+        os.chmod(self.REFRESH_TOKEN_FILE, 0o600)
 
     def _load_token(self):
         try:
@@ -101,7 +103,7 @@ class RefreshToken:
         """
         try:
             decoded_token = JWT().get_info(access_token)
-            token_scopes = "openid profile offline_access"
+            token_scopes = "openid profile offline_access eduperson_entitlement"
             url = "%s/token" % decoded_token['iss']
             payload = ("client_id=%s&client_secret=%s&grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Atoken-exchange&"
                         "audience=tokenExchange&subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
@@ -130,7 +132,7 @@ class RefreshToken:
         """
         try:
             decoded_token = JWT().get_info(access_token)
-            token_scopes = "openid profile offline_access"
+            token_scopes = "openid profile offline_access email eduperson_entitlement"
             url = "%s/token" % decoded_token['iss']
             payload = ("client_id=%s&client_secret=%s&grant_type=refresh_token&scope=%s"
                         "&refresh_token=%s") % (self._client_id, self._client_secret,
