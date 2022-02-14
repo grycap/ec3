@@ -380,7 +380,7 @@ class Display:
     @staticmethod
     def display(msg):
         Display.clean()
-        sys.stdout.write(str(msg) + "\n")
+        sys.stdout.write("%s\n" % msg)
         sys.stdout.flush()
 
 class ClusterStore:
@@ -719,7 +719,7 @@ class CmdLaunch:
             for elem in resp.json()["uri-list"]:
                 vm_ids.append(os.path.basename(list(elem.values())[0]))
         except Exception as e:
-            CLI.display("Error launching front-end: %s" % str(e), level=logging.ERROR)
+            CLI.display("Error launching front-end: %s" % e.message, level=logging.ERROR)
             sys.exit(1)
         CLI.display("Infrastructure successfully created with ID: %s" % infrId, alt=infrId)
 
