@@ -1,5 +1,76 @@
 tosca_definitions_version: tosca_simple_yaml_1_0
 
+data_types:
+
+  tosca.datatypes.oscar.StorageIOConfig:
+    derived_from: tosca.datatypes.Root
+    properties:
+      storage_provider:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true
+      suffix:
+        type: string
+        required: false
+      prefix:
+        type: string
+        required: false
+
+  tosca.datatypes.oscar.StorageProvider:
+    derived_from: tosca.datatypes.Root
+    properties:
+      id:
+        type: string
+        required: true
+
+  tosca.datatypes.oscar.StorageS3Provider:
+    derived_from: tosca.datatypes.oscar.StorageProvider
+    properties:
+      access_key:
+        type: string
+        required: true
+      secret_key:
+        type: string
+        required: true
+      region:
+        type: string
+        required: true
+
+  tosca.datatypes.oscar.StorageOnedataProvider:
+    derived_from: tosca.datatypes.oscar.StorageProvider
+    properties:
+      oneprovider:
+        type: string
+        required: true
+      token:
+        type: string
+        required: true
+      space:
+        type: string
+        required: true
+
+  tosca.datatypes.oscar.StorageMinIOProvider:
+    derived_from: tosca.datatypes.oscar.StorageProvider
+    properties:
+      access_key:
+        type: string
+        required: true
+      secret_key:
+        type: string
+        required: true
+      region:
+        type: string
+        required: true
+      endpoint:
+        type: string
+        required: true
+      veryfy:
+        type: boolean
+        required: false
+        default: false
+
 capability_types:
 
   tosca.capabilities.indigo.OperatingSystem:
@@ -701,6 +772,16 @@ node_types:
 
   tosca.nodes.indigo.OSCAR:
     derived_from: tosca.nodes.SoftwareComponent
+    attributes:
+      url:
+        type: string
+        default: { concat: [ 'https://', get_property: [SELF, dns_host], '/' ] }
+      credential:
+        type: tosca.datatypes.Credential
+        default:
+          token_type: password
+          user: oscar
+          token: { get_property: [ SELF, password ] }
     properties:
       minio_secretkey:
         type: string
@@ -747,6 +828,9 @@ node_types:
     capabilities:
       endpoint:
         type: tosca.capabilities.Endpoint
+      host:
+          type: tosca.capabilities.Container
+          valid_source_types: [ tosca.nodes.aisprint.FaaS.Function]
     interfaces:
       Standard:
         configure:
@@ -1225,6 +1309,60 @@ node_types:
         description: The optional additional IP to set to the endpoint
         type: string
         required: false
+
+  tosca.nodes.aisprint.FaaS.Function:
+    derived_from: tosca.nodes.Root
+    properties:
+      name:
+        type: string
+        required: true
+      memory:
+        type: scalar-unit.size
+        required: true
+      cpu:
+        type: float
+        required: false
+        default: 1.0
+      image:
+        type: string
+        required: true
+      script:
+        type: string
+        required: true
+      alpine:
+        type: boolean
+        required: false
+        default: false
+      env_variables:
+        type: map
+        entry_schema:
+          type: string
+        default: {}
+        required: false
+      input:
+        type: list
+        entry_schema:
+          type: tosca.datatypes.oscar.StorageIOConfig
+        default: []
+        required: false
+      output:
+        type: list
+        entry_schema:
+          type: tosca.datatypes.oscar.StorageIOConfig
+        default: []
+        required: false
+      storage_providers:
+        type: list
+        entry_schema:
+          type: tosca.datatypes.oscar.StorageProvider
+        default: []
+        required: false
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          relationship: tosca.relationships.HostedOn
+          node: tosca.nodes.indigo.OSCAR
+          occurrences: [0, 1]
 
 policy_types:
 
