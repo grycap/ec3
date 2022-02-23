@@ -775,7 +775,7 @@ node_types:
     attributes:
       url:
         type: string
-        default: { concat: [ 'https://', get_property: [SELF, dns_host], '/' ] }
+        default: { concat: [ 'https://', get_property: [SELF, dns_host] ] }
       credential:
         type: tosca.datatypes.Credential
         default:
