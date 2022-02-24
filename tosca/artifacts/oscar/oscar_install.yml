@@ -5,7 +5,7 @@
   - set_fact:
       minio_enable_ingress: false
       minio_enable_tls: false
-      oscar_minio_endpoint: "http://{{ ansible_default_ipv4.address }}:30303"
+      oscar_minio_endpoint: "http://{{ ansible_default_ipv4.address }}:30300"
     when: minio_dns_host == "" or minio_dns_host == "''"
   - set_fact:
       minio_enable_ingress: true
