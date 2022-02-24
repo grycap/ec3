@@ -789,17 +789,17 @@ node_types:
         type: string
         description: DNS hostname for the ingress
         required: false
-        default: "''"
+        default: ""
       minio_dns_host:
         type: string
         description: DNS hostname for the minio ingress
         required: false
-        default: "''"
+        default: ""
       minio_dns_host_console:
         type: string
         description: DNS hostname for the minio console ingress
         required: false
-        default: "''"
+        default: ""
       cert_manager_issuer:
         type: string
         description: Cert-manager issuer to automatically assign TLS certificates

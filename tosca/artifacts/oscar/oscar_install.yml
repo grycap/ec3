@@ -1,13 +1,24 @@
 ---
 - hosts: localhost
   connection: local
+  pre_tasks:
+  - set_fact:
+      minio_enable_ingress: false
+      minio_enable_tls: false
+      oscar_minio_endpoint: "https://{{ ansible_default_ipv4.address }}:30303"
+    when: minio_dns_host == ""
+  - set_fact:
+      minio_enable_ingress: true
+      minio_enable_tls: true
+      scar_minio_endpoint: 'https://{{ minio_dns_host }}'
+    when: minio_dns_host != ""
   roles:
   
   - role: 'grycap.kubeminio'
     minio_secretkey: '{{ oscar_minio_secretkey }}'
     master_deploy: true
-    enable_tls: true
-    enable_ingress: true
+    enable_tls: '{{ minio_enable_tls }}'
+    enable_ingress: '{{ minio_enable_ingress }}'
     public_hostname_api: "{{ minio_dns_host }}"
     public_hostname_console: "{{ minio_dns_host_console }}"
 
@@ -18,7 +29,7 @@
   - role: 'grycap.kubeoscar'
     oscar_pass: '{{ oscar_password }}'
     create_ingress: true
-    minio_endpoint:  'https://{{ minio_dns_host }}'
+    minio_endpoint:  '{{ scar_minio_endpoint }}'
     minio_secret_key: '{{ oscar_minio_secretkey }}'
     master_deploy: true
     openfaas_scaler_enable: true
