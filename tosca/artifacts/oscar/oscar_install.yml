@@ -5,10 +5,12 @@
   - set_fact:
       minio_enable_ingress: false
       oscar_minio_endpoint: "https://{{ ansible_default_ipv4.address }}:30300"
+      oscar_minio_tls_verify: false
     when: minio_dns_host == "" or minio_dns_host == "''"
   - set_fact:
       minio_enable_ingress: true
       oscar_minio_endpoint: 'https://{{ minio_dns_host }}'
+      oscar_minio_tls_verify: true
     when: minio_dns_host != "''" and minio_dns_host != ""
   roles:
   
@@ -32,3 +34,4 @@
     master_deploy: true
     openfaas_scaler_enable: true
     serverless_backend: "openfaas"
+    minio_tls_verify: '{{ oscar_minio_tls_verify }}'
