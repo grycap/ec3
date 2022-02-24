@@ -772,16 +772,6 @@ node_types:
 
   tosca.nodes.indigo.OSCAR:
     derived_from: tosca.nodes.SoftwareComponent
-    attributes:
-      url:
-        type: string
-        default: { concat: [ 'https://', get_property: [SELF, dns_host] ] }
-      credential:
-        type: tosca.datatypes.Credential
-        default:
-          token_type: password
-          user: oscar
-          token: { get_property: [ SELF, password ] }
     properties:
       minio_secretkey:
         type: string
