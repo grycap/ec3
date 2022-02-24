@@ -29,7 +29,7 @@
   - role: 'grycap.kubeoscar'
     oscar_pass: '{{ oscar_password }}'
     create_ingress: true
-    minio_endpoint:  '{{ scar_minio_endpoint }}'
+    minio_endpoint:  '{{ oscar_minio_endpoint }}'
     minio_secret_key: '{{ oscar_minio_secretkey }}'
     master_deploy: true
     openfaas_scaler_enable: true
