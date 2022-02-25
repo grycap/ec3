@@ -18,15 +18,27 @@ data_types:
         type: string
         required: false
 
-  tosca.datatypes.oscar.StorageProvider:
+  tosca.datatypes.oscar.StorageProviders:
     derived_from: tosca.datatypes.Root
     properties:
-      id:
-        type: string
-        required: true
+      minio:
+        type: map
+        entry_schema:
+          type: tosca.datatypes.oscar.StorageMinIOProvider
+        required: false
+      s3:
+        type: map
+        entry_schema:
+          type: tosca.datatypes.oscar.StorageS3Provider
+        required: false
+      onedata:
+        type: map
+        entry_schema:
+          type: tosca.datatypes.oscar.StorageOnedataProvider
+        required: false
 
   tosca.datatypes.oscar.StorageS3Provider:
-    derived_from: tosca.datatypes.oscar.StorageProvider
+    derived_from: tosca.datatypes.Root
     properties:
       access_key:
         type: string
@@ -39,9 +51,9 @@ data_types:
         required: true
 
   tosca.datatypes.oscar.StorageOnedataProvider:
-    derived_from: tosca.datatypes.oscar.StorageProvider
+    derived_from: tosca.datatypes.Root
     properties:
-      oneprovider:
+      oneprovider_host:
         type: string
         required: true
       token:
@@ -52,17 +64,8 @@ data_types:
         required: true
 
   tosca.datatypes.oscar.StorageMinIOProvider:
-    derived_from: tosca.datatypes.oscar.StorageProvider
+    derived_from: tosca.datatypes.oscar.StorageS3Provider
     properties:
-      access_key:
-        type: string
-        required: true
-      secret_key:
-        type: string
-        required: true
-      region:
-        type: string
-        required: true
       endpoint:
         type: string
         required: true
@@ -1342,10 +1345,7 @@ node_types:
         default: []
         required: false
       storage_providers:
-        type: list
-        entry_schema:
-          type: tosca.datatypes.oscar.StorageProvider
-        default: []
+        type: tosca.datatypes.oscar.StorageProviders
         required: false
     requirements:
       - host:
