@@ -1310,7 +1310,7 @@ node_types:
         type: string
         required: true
       memory:
-        type: scalar-unit.size
+        type: string
         required: true
       cpu:
         type: float
