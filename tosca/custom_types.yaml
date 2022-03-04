@@ -1305,6 +1305,9 @@ node_types:
 
   tosca.nodes.aisprint.FaaS.Function:
     derived_from: tosca.nodes.Root
+    attributes:
+      endpoint:
+        type: string
     properties:
       name:
         type: string
