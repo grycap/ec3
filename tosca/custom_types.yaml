@@ -1308,6 +1308,8 @@ node_types:
     attributes:
       endpoint:
         type: string
+      credential:
+        type: tosca.datatypes.Credential
     properties:
       name:
         type: string
