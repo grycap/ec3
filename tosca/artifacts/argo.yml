@@ -23,6 +23,35 @@
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
 
+  - name: Create the ARGO ingress file spec
+    copy:
+      content: |
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: argo-server
+          namespace: argo
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            nginx.ingress.kubernetes.io/backend-protocol: https
+        spec:
+          rules:
+            - http:
+                paths:
+                  - backend:
+                      service:
+                        name: argo-server
+                        port:
+                          number: 2746
+                    path: /
+                    pathType: Prefix
+      dest: /tmp/argo_ingress.yml
+
+  - name: Deploy ARGO ingress
+    command: kubectl apply -f /tmp/argo_ingress.yml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
   - name: Create default-admin rolebinding
     command: "kubectl create rolebinding default-admin --clusterrole=admin -n argo --serviceaccount=argo:default"
     environment:
