@@ -84,7 +84,7 @@
         kind: RoleBinding
         metadata:
           namespace: {{ARGO_NS}}
-          name: argo-binding
+          name: argo-user-binding
         roleRef:
           apiGroup: rbac.authorization.k8s.io
           kind: Role
@@ -98,7 +98,7 @@
         kind: ClusterRoleBinding
         metadata:
           namespace: {{ARGO_NS}}
-          name: argo-cluster-binding
+          name: argo-user-cluster-binding
         roleRef:
           apiGroup: rbac.authorization.k8s.io
           kind: ClusterRole
