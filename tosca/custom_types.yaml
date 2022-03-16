@@ -74,6 +74,27 @@ data_types:
         required: false
         default: false
 
+  tosca.datatypes.indigo.AnsibleTask:
+    derived_from: tosca.datatypes.Root
+    description: he Tosca AnsibleTask type is a complex TOSCA data Type used when describing a single Ansible task.
+    properties:
+      state:
+        description: the state returned by Ansiible (ok, failed, skipped, ...)
+        type: string
+      output:
+        description: the output (if available) returned by the Ansible task.
+        type: string
+
+  tosca.datatypes.indigo.CtxtTask:
+    derived_from: tosca.datatypes.Root
+    description: The Tosca CtxtTask type is a complex TOSCA data Type used when describing the outputs of the ansible contextualization process.
+    properties:
+      tasks:
+        type: map
+        description: The tasks map contains the tasks made by the ctxt agent
+        entry_schema:
+          type: tosca.datatypes.indigo.AnsibleTask
+
 capability_types:
 
   tosca.capabilities.indigo.OperatingSystem:
@@ -285,6 +306,10 @@ node_types:
           type: string
       ctxt_log:
         type: string
+      ansible_output:
+        type: map
+        entry_schema:
+          type: tosca.datatypes.indigo.CtxtTask
     properties:
       tags:
         type: map
