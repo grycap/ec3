@@ -95,6 +95,13 @@ data_types:
         entry_schema:
           type: tosca.datatypes.indigo.AnsibleTask
 
+  tosca.datatypes.indigo.network.PortSpec:
+    derived_from: tosca.datatypes.network.PortSpec
+    properties:
+      remote_cidr:
+        description: CIDR of the remote allowed IPs.
+        type: string
+
 capability_types:
 
   tosca.capabilities.indigo.OperatingSystem:
@@ -255,7 +262,7 @@ capability_types:
         constraints:
           - min_length: 1
         entry_schema:
-          type: tosca.datatypes.network.PortSpec
+          type: tosca.datatypes.indigo.network.PortSpec
       additional_ip:
         description: The optional additional IP to set to the endpoint
         type: string
@@ -333,7 +340,7 @@ node_types:
     derived_from: tosca.nodes.SoftwareComponent
     capabilities:
       endpoint:
-        type: tosca.capabilities.Endpoint
+        type: tosca.capabilities.indigo.Endpoint
 
   tosca.nodes.ec3.ElasticCluster:
     derived_from: tosca.nodes.ec3.Application
@@ -563,7 +570,7 @@ node_types:
         lrms:
           type: tosca.capabilities.indigo.LRMS.Kubernetes
         endpoint:
-          type: tosca.capabilities.Endpoint
+          type: tosca.capabilities.indigo.Endpoint
         host:
           type: tosca.capabilities.Container
           valid_source_types: [ tosca.nodes.indigo.Helm.Chart ]
@@ -668,7 +675,7 @@ node_types:
           relationship: tosca.relationships.HostedOn
     capabilities:
       endpoint:
-        type: tosca.capabilities.Endpoint
+        type: tosca.capabilities.indigo.Endpoint
     artifacts:
       nfs_role:
         file: grycap.nfs
@@ -785,7 +792,7 @@ node_types:
         lrms:
           type: tosca.capabilities.indigo.LRMS.Mesos
         endpoint:
-          type: tosca.capabilities.Endpoint
+          type: tosca.capabilities.indigo.Endpoint
     interfaces:
       Standard:
         configure:
@@ -845,7 +852,7 @@ node_types:
         type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
       endpoint:
-        type: tosca.capabilities.Endpoint
+        type: tosca.capabilities.indigo.Endpoint
       host:
           type: tosca.capabilities.Container
           valid_source_types: [ tosca.nodes.aisprint.FaaS.Function]
@@ -989,7 +996,7 @@ node_types:
         type: tosca.artifacts.AnsibleGalaxy.role
     capabilities:
         endpoint:
-          type: tosca.capabilities.Endpoint
+          type: tosca.capabilities.indigo.Endpoint
     requirements:
       - host:
           capability: tosca.capabilities.Container
@@ -1171,7 +1178,7 @@ node_types:
         lrms:
           type: tosca.capabilities.indigo.LRMS.Nomad
         endpoint:
-          type: tosca.capabilities.Endpoint
+          type: tosca.capabilities.indigo.Endpoint
     interfaces:
       Standard:
         configure:
@@ -1220,7 +1227,7 @@ node_types:
         default: {}
     capabilities:
       endpoint:
-        type: tosca.capabilities.Endpoint
+        type: tosca.capabilities.indigo.Endpoint
     requirements:
       - host:
           capability: tosca.capabilities.Container
