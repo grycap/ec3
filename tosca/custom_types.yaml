@@ -101,6 +101,7 @@ data_types:
       remote_cidr:
         description: CIDR of the remote allowed IPs.
         type: string
+        required: no
 
 capability_types:
 
