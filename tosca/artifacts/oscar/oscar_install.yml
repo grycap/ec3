@@ -23,8 +23,9 @@
     public_hostname_console: "{{ minio_dns_host_console }}"
 
   - role: 'grycap.kubefaas'
+    faas_framework: 'knative'
+    knative_version: '1.3.0'
     master_deploy: true
-    functions_namespace: oscar-svc
 
   - role: 'grycap.kubeoscar'
     oscar_pass: '{{ oscar_password }}'
@@ -32,6 +33,5 @@
     minio_endpoint:  '{{ oscar_minio_endpoint }}'
     minio_secret_key: '{{ oscar_minio_secretkey }}'
     master_deploy: true
-    openfaas_scaler_enable: true
-    serverless_backend: "openfaas"
+    serverless_backend: "knative"
     minio_tls_verify: '{{ oscar_minio_tls_verify }}'
