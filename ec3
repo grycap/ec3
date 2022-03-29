@@ -1678,6 +1678,7 @@ class CmdStop:
                 auth_content = [ str(l) for l in options.auth_file[0].readlines() ]
                 auth = Authentication.read_auth_data(auth_content)
 
+            newInfrId = infrId
             #Import the infrastructure for the restart operation
             try:
                 headers = {"Authorization": format_rest_auth_data(auth), "Accept": "application/json"}
@@ -1697,7 +1698,6 @@ class CmdStop:
                 #ClusterStore.write(options.clustername + "_ids", ids)
             except Exception as e:
                 CLI.display("Error transferring infrastructure: %s" % str(e), level=logging.ERROR)
-                sys.exit(1)
 
             #Stop the infrastructure
             #success, info = cluster_im_server.StopInfrastructure(infrId, auth)
