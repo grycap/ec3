@@ -3,6 +3,8 @@
   connection: local
   vars:
     helm_params: 'dummy=0'
+    default_namespace: "{{ helm_app_name | lower }}"
+    namespace: helm_namespace | default(default_namespace)
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
@@ -27,7 +29,7 @@
       - name: Deploy {{ helm_app_name }} app
         command: >
           helm upgrade {{ helm_app_name | lower }} --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
-          --namespace {{ helm_app_name | lower}} --create-namespace
+          --namespace {{ namespace }} --create-namespace
           --set {{ helm_params }}
         environment:
           KUBECONFIG: /etc/kubernetes/admin.conf

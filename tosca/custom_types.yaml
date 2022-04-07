@@ -1218,6 +1218,10 @@ node_types:
         description: The chart version
         required: false
         default: latest
+      namespace:
+        type: string
+        description: The Helm namespace
+        required: false
       values:
         type: map
         description: A dictionary/hash of values.
@@ -1244,6 +1248,7 @@ node_types:
             helm_app_name: { get_property: [ SELF, name ] }
             helm_version: { get_property: [ SELF, version ] }
             helm_values: { get_property: [ SELF, values ] }
+            helm_namespace: { get_property: [ SELF, namespace ] }
 
   tosca.nodes.ec3.DNSRegistry:
     derived_from: tosca.nodes.SoftwareComponent
