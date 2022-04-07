@@ -1230,6 +1230,11 @@ node_types:
           description: The values to use
           type: string
         default: {}
+      values_file:
+        type: string
+        description: Contents of the values file
+        required: false
+        default: ""
     capabilities:
       endpoint:
         type: tosca.capabilities.indigo.Endpoint
@@ -1249,6 +1254,7 @@ node_types:
             helm_version: { get_property: [ SELF, version ] }
             helm_values: { get_property: [ SELF, values ] }
             helm_namespace: { get_property: [ SELF, namespace ] }
+            helm_values_file: { get_property: [ SELF, values_file ] }
 
   tosca.nodes.ec3.DNSRegistry:
     derived_from: tosca.nodes.SoftwareComponent

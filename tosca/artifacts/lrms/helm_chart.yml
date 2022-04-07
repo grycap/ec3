@@ -26,10 +26,15 @@
           helm_params: "{{ helm_params }},{{ item.key }}={{ item.value }}"
         with_dict: "{{ helm_values }}"
 
+      - name: Create values file
+        copy:
+          content: "{{ helm_values_file }}"
+          dest: /tmp/{{helm_namespace}}_{{helm_app_name}}_values.yml
+
       - name: Deploy {{ helm_app_name }} app
         command: >
           helm upgrade {{ helm_app_name | lower }} --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
-          --namespace {{ namespace }} --create-namespace
+          --namespace {{ namespace }} --create-namespace -f /tmp/{{helm_namespace}}_{{helm_app_name}}_values.yml
           --set {{ helm_params }}
         environment:
           KUBECONFIG: /etc/kubernetes/admin.conf
