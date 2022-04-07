@@ -4,7 +4,7 @@
   vars:
     helm_params: 'dummy=0'
     default_namespace: "{{ helm_app_name | lower }}"
-    namespace: helm_namespace | default(default_namespace)
+    namespace: "{{ helm_namespace | default(default_namespace) }}"
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
