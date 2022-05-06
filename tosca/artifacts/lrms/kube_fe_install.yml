@@ -29,4 +29,5 @@
 
   tasks:
   - debug: msg="{{ lookup('file', '/etc/kubernetes/admin.conf') }}"
+    name: kube_conf
     ignore_errors: yes
