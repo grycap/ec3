@@ -28,6 +28,6 @@
     kube_cert_public_ip: "{{ IM_NODE_PUBLIC_IP }}"
 
   tasks:
-  - debug: msg="{{ lookup('file', '/etc/kubernetes/admin.conf') }}"
+  - debug: msg="{{ lookup('file', '/etc/kubernetes/admin.conf') | replace(IM_NODE_PRIVATE_IP ,IM_NODE_PUBLIC_IP ) }}"
     name: kube_conf
     ignore_errors: yes
