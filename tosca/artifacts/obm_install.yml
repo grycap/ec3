@@ -1,6 +1,10 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+    compute_name: "{{ obm_compute_name | default('compute_name') }}"
+    compute_id: "{{ obm_compute_name | default('compute_id') }}"
+    compute_key: "{{ obm_compute_name | default('compute_key') }}"
   roles:
   - role: grycap.docker
 
@@ -29,8 +33,34 @@
     args:
       chdir: /opt/openbiomaps
 
+  - block:
+
+    - name: OBM compose set computational server
+      command: docker-compose exec -T app bash -c 'sed -i "s/COMPUTATIONAL_SERVERS/define(\'COMPUTATIONAL_SERVERS\',array(\'http://{{obm_compute_node_ip}}/api.php\'));/g" /etc/openbiomaps/system_vars.php.inc'
+      args:
+        chdir: /opt/openbiomaps
+
+    - name: OBM compose set computational name
+      command: docker-compose exec -T app bash -c 'sed -i "s/'COMPUTATIONAL_CLIENT_NAME'/define(\'COMPUTATIONAL_CLIENT_NAME\',\'{{compute_name}}\');/g" /etc/openbiomaps/system_vars.php.inc'
+      args:
+        chdir: /opt/openbiomaps
+
+    - name: OBM compose set computational id
+      command: docker-compose exec -T app bash -c 'sed -i "s/'COMPUTATIONAL_CLIENT_KEY'/define(\'COMPUTATIONAL_CLIENT_KEY\',\'{{compute_id}}\');/g" /etc/openbiomaps/system_vars.php.inc'
+      args:
+        chdir: /opt/openbiomaps
+
+    - name: OBM compose set computational key
+      command: docker-compose exec -T app bash -c 'sed -i "s/'COMPUTATIONAL_CLIENT_SEC'/define(\'COMPUTATIONAL_CLIENT_SEC\',\'{{compute_sec}}\');/g" /etc/openbiomaps/system_vars.php.inc'
+      args:
+        chdir: /opt/openbiomaps
+
+    when: obm_compute_node_ip is defined and obm_compute_node_ip != ""
+
   - name: OBM post install
     shell: ./obm_post_install.sh && touch /opt/openbiomaps/post
     args:
       chdir: /opt/openbiomaps
       creates: /opt/openbiomaps/post
+    
+

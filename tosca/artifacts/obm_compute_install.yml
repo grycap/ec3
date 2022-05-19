@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    compute_name: "{{ obm_compute_name | default('compute_name') }}"
+    compute_id: "{{ obm_compute_name | default('compute_id') }}"
+    compute_key: "{{ obm_compute_name | default('compute_key') }}"
+  roles:
+  - role: grycap.docker
+
+  tasks:
+  - name: Install Git
+    package: name=git
+
+  - name: Apache | Make sure the Apache packages are installed
+    apt: name=apache2,php,libapache2-mod-php update_cache=yes
+    when: ansible_os_family == "Debian"
+    
+  - name: Apache | Make sure the Apache packages are installed
+    yum: name=httpd,php
+    when: ansible_os_family == "RedHat"
+
+  - name: Git Dowload
+    git:
+      repo: https://gitlab.com/openbiomaps/obm-computation-node.git
+      dest: /var/www/html
+      version: master
+      update: no
+
+  - name: create client.yaml
+    copy:
+      contents: |
+        {{ compute_name }}:
+          - {{ compute_id }}
+          - {{ compute_key }}
+      dest: /var/www/html/clients.yml
