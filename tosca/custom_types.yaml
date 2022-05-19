@@ -126,6 +126,9 @@ capability_types:
       credential:
         type: tosca.datatypes.Credential
         required: no
+      vo:
+        type: string
+        required: no
 
   tosca.capabilities.indigo.Scalable:
     derived_from: tosca.capabilities.Scalable

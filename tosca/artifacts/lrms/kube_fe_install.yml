@@ -26,3 +26,12 @@
     kube_deploy_dashboard: true
     kube_install_metrics: true
     kube_cert_public_ip: "{{ IM_NODE_PUBLIC_IP }}"
+
+  tasks:
+  - slurp: src=/etc/kubernetes/admin.conf
+    register: slurpfile
+    name: Read kubeconfig file
+    ignore_errors: true
+  - debug: msg="{{ slurpfile['content'] | b64decode | replace(IM_NODE_PRIVATE_IP, IM_NODE_PUBLIC_IP ) }}"
+    ignore_errors: true
+    name: kube_conf
