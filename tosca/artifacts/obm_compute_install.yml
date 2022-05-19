@@ -23,7 +23,7 @@
   - name: Git Dowload
     git:
       repo: https://gitlab.com/openbiomaps/obm-computation-node.git
-      dest: /var/www/html
+      dest: /var/www/html/compute
       version: master
       update: no
 
