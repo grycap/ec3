@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+  - role: 'grycap.kubeminio'
+    minio_secretkey: '{{ minio_secretkey }}'
+    master_deploy: true
+    enable_tls: true
