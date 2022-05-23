@@ -36,7 +36,7 @@
   - block:
 
     - name: OBM compose set computational server
-      command: docker-compose exec -T app bash -c 'sed -i "s/.*COMPUTATIONAL_SERVERS.*/define('\''COMPUTATIONAL_SERVERS'\'',array('\''http:\/\/{{obm_compute_node_ip}}\/compute\/api.php'\'');/g" /etc/openbiomaps/system_vars.php.inc'
+      command: docker-compose exec -T app bash -c 'sed -i "s/.*COMPUTATIONAL_SERVERS.*/define('\''COMPUTATIONAL_SERVERS'\'',array('\''http:\/\/{{obm_compute_node_ip}}\/compute\/api.php'\''));/g" /etc/openbiomaps/system_vars.php.inc'
       args:
         chdir: /opt/openbiomaps
 
