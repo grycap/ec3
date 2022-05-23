@@ -63,8 +63,10 @@
       chdir: /opt/openbiomaps
       creates: /opt/openbiomaps/post
     register: post_install
-    
+
   - name: supervisor_pass
     debug: msg={{ item }}
-    when: '"Supervisor" in item'
-    with_items: "{{ post_install.stdout_lines }}"
+    when: '"" == ansible_loop.previtem | default(None) and "" == ansible_loop.nextitem | default(None) and "Supervisor" not in item'
+    loop: "{{ post_install.stdout_lines }}"
+    loop_control:
+      extended: yes
