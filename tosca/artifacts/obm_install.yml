@@ -4,7 +4,7 @@
   vars:
     compute_name: "{{ obm_compute_name | default('compute_name') }}"
     compute_id: "{{ obm_compute_name | default('compute_id') }}"
-    compute_key: "{{ obm_compute_name | default('compute_key') }}"
+    compute_key: "{{ lookup('password', '/var/tmp/compute_key length=8 chars=digits') }}"
   roles:
   - role: grycap.docker
 
