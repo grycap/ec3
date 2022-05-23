@@ -62,5 +62,9 @@
     args:
       chdir: /opt/openbiomaps
       creates: /opt/openbiomaps/post
+    register: post_install
     
-
+  - name: supervisor_pass
+    debug: msg={{ item }}
+    when: "Supervisor" in item
+    with_items: "{{ post_install.stdout_lines }}"
