@@ -29,7 +29,7 @@
 
   - name: create client.yaml
     copy:
-      contents: |
+      content: |
         {{ compute_name }}:
           - {{ compute_id }}
           - {{ compute_key }}
