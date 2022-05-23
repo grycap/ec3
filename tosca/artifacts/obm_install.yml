@@ -64,9 +64,12 @@
       creates: /opt/openbiomaps/post
     register: post_install
 
-  - name: supervisor_pass
-    debug: msg={{ item }}
+  - name: Get Supervisor pass value
+    set_fact: supervisor_pass={{ item }}
     when: '"" == ansible_loop.previtem | default(None) and "" == ansible_loop.nextitem | default(None) and "Supervisor" not in item'
     loop: "{{ post_install.stdout_lines }}"
     loop_control:
       extended: yes
+
+  - name: supervisor_pass
+    debug: msg={{ supervisor_pass }}
