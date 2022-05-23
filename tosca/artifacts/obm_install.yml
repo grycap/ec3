@@ -66,5 +66,5 @@
     
   - name: supervisor_pass
     debug: msg={{ item }}
-    when: "Supervisor" in item
+    when: '"Supervisor" in item'
     with_items: "{{ post_install.stdout_lines }}"
