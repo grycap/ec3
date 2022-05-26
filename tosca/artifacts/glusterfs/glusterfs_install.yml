@@ -27,6 +27,7 @@
         options: "{{ gluster_options }}"
         force: yes
       run_once: true
+      ignore_errors: yes
 
     - name: Ensure Gluster volume is mounted.
       mount:
