@@ -21,7 +21,7 @@
         state: present
         name: "{{ gluster_brick_name }}"
         brick: "{{ gluster_brick_dir }}"
-        replicas: "{{ gluster_nodes | length }}"
+        replicas: "{{ gluster_replicas }}"
         cluster: "{{ gluster_nodes | join(',') }}"
         host: "{{ ansible_hostname }}"
         options: "{{ gluster_options }}"
