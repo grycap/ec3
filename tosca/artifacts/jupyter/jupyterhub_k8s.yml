@@ -1,0 +1,42 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    kubeconfig_path: '/etc/kubernetes/admin.conf'
+    jup_auth_class: "{{ authenticator_class | default('dummy') }}"
+  tasks:
+  - name: Add jupyterhub helm repo
+    command: helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+    environment:
+      KUBECONFIG: "{{ kubeconfig_path }}"
+
+  - name: "Update helm repositories"
+    command: helm repo update
+    environment:
+      KUBECONFIG: "{{ kubeconfig_path }}"
+
+  - name: "Create values file"
+    copy:
+      dest: /tmp/config.yaml
+      contents: |
+          hub:
+            config:
+              baseUrl: /
+              JupyterHub:
+                admin_access: true
+                authenticator_class: {{ jup_auth_class }}
+          proxy:
+            service:
+              type: NodePort
+              nodePorts:
+                http: 32080
+                https: 32443
+          ingress:
+            annotations: { kubernetes.io/ingress.class: nginx }
+            enabled: true
+            pathSuffix: jupyterhub
+
+  - name: Install (or upgrade) the chart
+    command: helm upgrade --cleanup-on-fail jupyterhub/jupyterhub --namespace jupyter --create-namespace --values /tmp/config.yaml
+    environment:
+      KUBECONFIG: "{{ kubeconfig_path }}"
