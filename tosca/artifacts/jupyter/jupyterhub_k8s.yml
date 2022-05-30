@@ -18,7 +18,7 @@
   - name: "Create values file"
     copy:
       dest: /tmp/config.yaml
-      contents: |
+      content: |
           hub:
             config:
               baseUrl: /
