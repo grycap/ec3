@@ -37,6 +37,6 @@
             pathSuffix: jupyterhub
 
   - name: Install (or upgrade) the chart
-    command: helm upgrade --cleanup-on-fail jupyterhub/jupyterhub --namespace jupyter --create-namespace --values /tmp/config.yaml
+    command: helm upgrade --install jupyterhub jupyterhub/jupyterhub --namespace jupyter --create-namespace --values /tmp/config.yaml
     environment:
       KUBECONFIG: "{{ kubeconfig_path }}"
