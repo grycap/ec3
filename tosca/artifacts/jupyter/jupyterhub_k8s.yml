@@ -21,7 +21,16 @@
       dest: /tmp/config.yaml
       content: |
           hub:
-            baseUrl: /jupyterhub
+            baseUrl: /jupyterhub/
+            config:
+              Authenticator:
+                admin_users:
+                  - admin
+              DummyAuthenticator:
+                password: {{ jup_dummy_pass }}
+              JupyterHub:
+                admin_access: true
+                authenticator_class: {{ jup_auth_class }}
           proxy:
             service:
               type: ClusterIP
