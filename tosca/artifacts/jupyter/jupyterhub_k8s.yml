@@ -4,6 +4,7 @@
   vars:
     kubeconfig_path: '/etc/kubernetes/admin.conf'
     jup_auth_class: "{{ authenticator_class | default('dummy') }}"
+    jup_dummy_pass: "{{ dummy_pass | default('dummy_pass') }}"
   tasks:
   - name: Add jupyterhub helm repo
     command: helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
@@ -20,17 +21,20 @@
       dest: /tmp/config.yaml
       content: |
           hub:
-            config:
-              baseUrl: /
-              JupyterHub:
-                admin_access: true
-                authenticator_class: {{ jup_auth_class }}
+            baseUrl: /jupyterhub
           proxy:
             service:
-              type: NodePort
-              nodePorts:
-                http: 32080
-                https: 32443
+              type: ClusterIP
+          auth:
+            type: {{ jup_auth_class }}
+            admin:
+              access: true
+              users:
+                - admin
+            dummy:
+              password: {{ jup_dummy_pass }}
+            whitelist:
+              users:
           ingress:
             annotations: { kubernetes.io/ingress.class: nginx }
             enabled: true
