@@ -175,7 +175,8 @@
             }
         }
       dest: /opt/minio/nginx.conf
-
-      docker_compose:
-        project_src: /opt/minio/
-        state: present
+  
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/minio/
+      state: present
