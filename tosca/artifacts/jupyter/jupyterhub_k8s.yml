@@ -21,6 +21,7 @@
     copy:
       dest: /tmp/config.yaml
       content: |
+          # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/main/jupyterhub/values.yaml
           hub:
             baseUrl: /jupyterhub/
             config:
@@ -38,7 +39,6 @@
           ingress:
             annotations: { kubernetes.io/ingress.class: nginx }
             enabled: true
-            #pathSuffix: jupyterhub
 
   - name: Install (or upgrade) the chart
     command: helm upgrade --install jupyterhub jupyterhub/jupyterhub --namespace jupyter --create-namespace --values /tmp/config.yaml
