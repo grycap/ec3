@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+    - role: 'nvidia.nvidia_driver'
+
+
+
