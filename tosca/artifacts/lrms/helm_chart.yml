@@ -2,7 +2,7 @@
 - hosts: localhost
   connection: local
   vars:
-    helm_params: 'dummy=0'
+    helm_params: ''
     default_namespace: "{{ helm_app_name | lower }}"
     namespace: "{{ helm_namespace | default(default_namespace) }}"
   tasks:
@@ -23,7 +23,7 @@
 
       - name: Create params fact
         set_fact:
-          helm_params: "{{ helm_params }},{{ item.key }}={{ item.value }}"
+          helm_params: "{{ item.key }}={{ item.value }},{{ helm_params }}"
         with_dict: "{{ helm_values }}"
 
       - name: Create values file
