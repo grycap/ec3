@@ -1202,7 +1202,7 @@ node_types:
             nomad_server_ip: { get_property: [ SELF, front_end_ip ] }
 
   tosca.nodes.indigo.Helm.Chart:
-    derived_from: tosca.nodes.SoftwareComponent
+    derived_from: tosca.nodes.ec3.Application
     properties:
       repository_name:
         type: string
