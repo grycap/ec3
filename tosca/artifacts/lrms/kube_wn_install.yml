@@ -4,6 +4,10 @@
   vars:
      vnode_prefix: vnode-
   roles:
+  - name: Set cri runtime to containerd in Ubuntu 22.04
+    set_fact:
+      kube_cri_runtime: "containerd"
+    when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version|int >= 22
   - role: grycap.nfs
     nfs_mode: 'wn'
   - role: 'grycap.kubernetes'
