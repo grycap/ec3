@@ -3,7 +3,7 @@
   connection: local
   vars:
      vnode_prefix: vnode-
-     fsid: 'fsid=0,'
+     export_line: "*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"
 
   pre_tasks:
   - name: Create dir for the NFS PV
@@ -14,13 +14,13 @@
     copy: content='{{kube_admin_token}},{{kube_admin_username}},100,"users,system:masters"' dest=/etc/kubernetes/pki/auth mode=600
   - name: Do not use fsid=0 in Ubuntu 22.04
     set_fact:
-      fsid: ''
+      export_line: "*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"
     when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version|int >= 22
 
   roles:
   - role: grycap.nfs
     nfs_mode: 'front'
-    nfs_exports: [{path: "/pv", export: "*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"}]
+    nfs_exports: [{path: "/pv", export: export_line}]
   - role: grycap.kubernetes
     kube_server: '{{ kube_front_end_ip }}'
     kube_api_server: '{{ kube_front_end_ip }}'
