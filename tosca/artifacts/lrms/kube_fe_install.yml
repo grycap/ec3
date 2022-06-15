@@ -12,9 +12,10 @@
     file: path=/etc/kubernetes/pki state=directory mode=755 recurse=yes
   - name: Create auth data file with an admin user
     copy: content='{{kube_admin_token}},{{kube_admin_username}},100,"users,system:masters"' dest=/etc/kubernetes/pki/auth mode=600
-  - name: Do not use fsid=0 in Ubuntu 22.04
+  - name: Do not use fsid=0 in Ubuntu 22.04 and set cri runtime to containerd
     set_fact:
       export_line: "*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure)"
+      kube_cri_runtime: "containerd"
     when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version|int >= 22
 
   roles:
