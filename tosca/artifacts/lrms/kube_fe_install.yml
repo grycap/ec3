@@ -21,7 +21,7 @@
   roles:
   - role: grycap.nfs
     nfs_mode: 'front'
-    nfs_exports: [{path: "/pv", export: export_line}]
+    nfs_exports: [{path: "/pv", export: '{{ export_line }}'}]
   - role: grycap.kubernetes
     kube_server: '{{ kube_front_end_ip }}'
     kube_api_server: '{{ kube_front_end_ip }}'
