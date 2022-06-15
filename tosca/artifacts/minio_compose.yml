@@ -86,7 +86,7 @@
           data4-2:
       dest: /opt/minio/docker-compose.yaml
 
-  - name: Create docker-compose file
+  - name: Create nginx.conf file
     copy:
       content: |
         user  nginx;
