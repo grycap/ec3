@@ -1,7 +1,23 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+    docker_compose_folder: "{{ compose_folder | default('') }}"
+    git_version: "{{ repo_branch | default('master') }}"
   roles:
     - role: 'grycap.docker'
-
-
+  tasks:
+    - block:
+      - package:
+          name: git
+          state: present
+        ignore_errors: yes
+      - git:
+          repo: '{{ docker_compose_git }}'
+          dest: /opt/docker_compose
+          version: "{{ git_version }}"
+      - name: docker-compose up
+        docker_compose:
+          project_src: "/opt/docker_compose/{{docker_compose_folder}}"
+          state: present
+      when: docker_compose_git is defined
