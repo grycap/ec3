@@ -40,5 +40,16 @@
           KUBECONFIG: /etc/kubernetes/admin.conf
         async: 600
         poll: 5
+        ignore_errors: yes
+        register: helm_install
+
+      - name: Undeploy {{ helm_app_name }} app
+        command: helm uninstall --namespace {{ namespace }} {{ helm_app_name | lower }} 
+        when: helm_install is failed
+
+      - name: Undeploy {{ helm_app_name }} app
+        fail:
+          msg: "Error installing {{ helm_app_name }} helm chat"
+        when: helm_install is failed
 
     when: deployed.rc == 1
