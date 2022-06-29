@@ -55,6 +55,11 @@
       args:
         chdir: /opt/openbiomaps
 
+    - name: OBM compose restart
+      command: docker-compose restart
+      args:
+        chdir: /opt/openbiomaps
+
     when: obm_compute_node_ip is defined and obm_compute_node_ip != ""
 
   - name: OBM post install
