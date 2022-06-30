@@ -26,14 +26,12 @@
 
   - name: Download monitoring-subsystem git repo
     git:
-      repo: "https://{{ githubuser | urlencode }}:{{ githubpassword | urlencode }}@gitlab.polimi.it/ai-sprint/monitoring-subsystem.git"
+      repo: "https://{{ GITLAB_REPO_TOKEN }}:{{ GITLAB_REPO_TOKEN }}@gitlab.polimi.it/ai-sprint/monitoring-subsystem.git"
       dest: /opt/monitoring-subsystem
       version: master
 
   - name: Install Helm Chart
-    command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} --set elasticsearch.volumeClaimTemplate.storageClassName=null
+    command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} --set elasticsearch.volumeClaimTemplate.storageClassName=null --set influxdb.auth.admin.username={{  admin_username }} --set influxdb.auth.admin.password={{ admin_password }} --set influxdb.auth.admin.token={{ admin_token }} --set influxdb.auth.admin.org={{ org_name }} --set influxdb.auth.admin.bucket={{ bucket_name }} --set influxdb.influxdb.service.nodePorts.http="8086"
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
     chdir: /opt/monitoring-subsystem/deliverables
-
-
