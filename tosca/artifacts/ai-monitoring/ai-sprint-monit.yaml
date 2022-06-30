@@ -32,6 +32,8 @@
 
   - name: Install Helm Chart
     command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} --set elasticsearch.volumeClaimTemplate.storageClassName=null --set influxdb.auth.admin.username={{  admin_username }} --set influxdb.auth.admin.password={{ admin_password }} --set influxdb.auth.admin.token={{ admin_token }} --set influxdb.auth.admin.org={{ org_name }} --set influxdb.auth.admin.bucket={{ bucket_name }} --set influxdb.influxdb.service.nodePorts.http="8086"
+    args:
+      chdir: /opt/monitoring-subsystem/deliverables
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
-    chdir: /opt/monitoring-subsystem/deliverables
+
