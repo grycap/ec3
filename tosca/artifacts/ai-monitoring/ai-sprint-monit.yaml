@@ -1,0 +1,39 @@
+- hosts: local
+  connection: local
+  vars:
+    NAMESPACE: ai-sprint-monitoring
+    REGISTRY: https://registry.gitlab.polimi.it
+  tasks:
+  - name: Create the ai-sprint-monitoring ns file spec
+    copy:
+      content: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{NAMESPACE}}
+      dest: /tmp/ai_ns.yml
+
+  - name: Create ai-sprint-monitoring ns
+    command: kubectl apply -f /tmp/argo_ns.yml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Create registry credentials
+    command: kubectl create secret docker-registry registry-credentials --docker-server={{ REGISTRY }} --docker-username={{ GITLAB_REGISTRY_TOKEN }} --docker-password={{ GITLAB_REGISTRY_TOKEN }} --docker-email={{ GITLAB_REGISTRY_EMAIL }} --namespace={{ NAMESPACE }}
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    ignore_errors: yes
+
+  - name: Download monitoring-subsystem git repo
+    git:
+      repo: "https://{{ githubuser | urlencode }}:{{ githubpassword | urlencode }}@gitlab.polimi.it/ai-sprint/monitoring-subsystem.git"
+      dest: /opt/monitoring-subsystem
+      version: master
+
+  - name: Install Helm Chart
+    command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} --set elasticsearch.volumeClaimTemplate.storageClassName=null
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    chdir: /opt/monitoring-subsystem/deliverables
+
+
