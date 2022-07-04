@@ -122,7 +122,7 @@ class RefreshToken:
                                                          access_token, token_scopes)
             headers = dict()
             headers['content-type'] = 'application/x-www-form-urlencoded'
-            resp = requests.request("POST", conf["userinfo_endpoint"], data=payload, headers=headers, verify=False)
+            resp = requests.request("POST", conf["token_endpoint"], data=payload, headers=headers, verify=False)
             if resp.status_code == 200:
                 info = resp.json()
                 refresh_token = info["refresh_token"]
@@ -152,7 +152,7 @@ class RefreshToken:
                                                 token_scopes, refresh_token)
             headers = dict()
             headers['content-type'] = 'application/x-www-form-urlencoded'
-            resp = requests.request("POST", conf["userinfo_endpoint"], data=payload, headers=headers, verify=False)
+            resp = requests.request("POST", conf["token_endpoint"], data=payload, headers=headers, verify=False)
             if resp.status_code == 200:
                 info = resp.json()
                 access_token = info["access_token"]
