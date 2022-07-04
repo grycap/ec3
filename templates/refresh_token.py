@@ -97,21 +97,32 @@ class RefreshToken:
         except:
             return None
 
+    def get_openid_configuration(iss, verify_ssl=False):
+        try:
+            url = "%s/.well-known/openid-configuration" % iss
+            resp = requests.request("GET", url, verify=verify_ssl)
+            if resp.status_code != 200:
+                return {"error": "Code: %d. Message: %s." % (resp.status_code, resp.text)}
+            return resp.json()
+        except Exception as ex:
+            return {"error": str(ex)}
+
     def get_refresh_token(self, access_token):
         """
         Get the access_token and refresh_token of the plugin client
         """
         try:
             decoded_token = JWT().get_info(access_token)
+            conf = self.get_openid_configuration(decoded_token['iss'])
+
             token_scopes = "openid profile offline_access eduperson_entitlement"
-            url = "%s/token" % decoded_token['iss']
             payload = ("client_id=%s&client_secret=%s&grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Atoken-exchange&"
                         "audience=tokenExchange&subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
                         "subject_token=%s&scope=%s") % (self._client_id, self._client_secret,
                                                          access_token, token_scopes)
             headers = dict()
             headers['content-type'] = 'application/x-www-form-urlencoded'
-            resp = requests.request("POST", url, data=payload, headers=headers, verify=False)
+            resp = requests.request("POST", conf["userinfo_endpoint"], data=payload, headers=headers, verify=False)
             if resp.status_code == 200:
                 info = resp.json()
                 refresh_token = info["refresh_token"]
@@ -132,14 +143,15 @@ class RefreshToken:
         """
         try:
             decoded_token = JWT().get_info(access_token)
-            token_scopes = "openid profile offline_access email eduperson_entitlement"
-            url = "%s/token" % decoded_token['iss']
+            conf = self.get_openid_configuration(decoded_token['iss'])
+
+            token_scopes = "openid profile offline_access eduperson_entitlement"
             payload = ("client_id=%s&client_secret=%s&grant_type=refresh_token&scope=%s"
                         "&refresh_token=%s") % (self._client_id, self._client_secret,
                                                 token_scopes, refresh_token)
             headers = dict()
             headers['content-type'] = 'application/x-www-form-urlencoded'
-            resp = requests.request("POST", url, data=payload, headers=headers, verify=False)
+            resp = requests.request("POST", conf["userinfo_endpoint"], data=payload, headers=headers, verify=False)
             if resp.status_code == 200:
                 info = resp.json()
                 access_token = info["access_token"]
