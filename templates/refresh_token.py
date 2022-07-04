@@ -97,7 +97,7 @@ class RefreshToken:
         except:
             return None
 
-    def get_openid_configuration(iss, verify_ssl=False):
+    def get_openid_configuration(self, iss, verify_ssl=False):
         try:
             url = "%s/.well-known/openid-configuration" % iss
             resp = requests.request("GET", url, verify=verify_ssl)
