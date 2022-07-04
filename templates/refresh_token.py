@@ -146,6 +146,7 @@ class RefreshToken:
             conf = self.get_openid_configuration(decoded_token['iss'])
 
             token_scopes = "openid profile offline_access eduperson_entitlement"
+
             payload = ("client_id=%s&client_secret=%s&grant_type=refresh_token&scope=%s"
                         "&refresh_token=%s") % (self._client_id, self._client_secret,
                                                 token_scopes, refresh_token)
