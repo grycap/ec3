@@ -3,6 +3,7 @@
   vars:
     NAMESPACE: ai-sprint-monitoring
     REGISTRY: https://registry.gitlab.polimi.it
+    DNS_BASE_NAME: "{{ dns_name | default('ai-sprint.local') }}"
   tasks:
   - name: Create the ai-sprint-monitoring ns file spec
     copy:
@@ -34,7 +35,15 @@
     copy:
       dest: /tmp/ai-values.yml
       content: |
+        grafana:
+          ingress:
+            enabled: true
+            hosts:
+              - grafana.{{ DNS_BASE_NAME }}
         influxdb:
+          ingress:
+            enabled: true
+            hostname: influxdb.{{ DNS_BASE_NAME }}
           influxdb:
             service:
               nodePorts:
@@ -47,8 +56,22 @@
               org: {{ org_name }}
               bucket: {{ bucket_name }}
         elasticsearch:
+          ingress:
+            enabled: true
+            hosts:
+              - host: elasticsearch.{{ DNS_BASE_NAME }}
+                paths:
+                  - path: /
           volumeClaimTemplate:
             storageClassName: null
+        kibana:
+          ingress:
+            enabled: true
+            hosts:
+              - host: kibana.{{ DNS_BASE_NAME }}
+                paths:
+                  - path: /
+
 
   - name: Install Helm Chart
     command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} -f /tmp/ai-values.yml
