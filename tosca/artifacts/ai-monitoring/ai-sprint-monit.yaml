@@ -85,7 +85,12 @@
               - secretName: kibana.{{ DNS_BASE_NAME }}
                 hosts:
                   - kibana.{{ DNS_BASE_NAME }}
-
+            telegraf-ds
+              config:
+                outputs:
+                  - influxdb:
+                      urls:
+                        - "http://influxdb.{{NAMESPACE}}.svc:8086"
  
   - name: Install Helm Chart
     command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} -f /tmp/ai-values.yml
