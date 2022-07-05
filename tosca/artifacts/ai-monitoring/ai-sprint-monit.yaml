@@ -93,4 +93,11 @@
       chdir: /opt/monitoring-subsystem/deliverables
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
-
+    async: 600
+    poll: 5
+    ignore_errors: yes
+    register: helm_install
+  
+  - name: Install Helm Chart
+    command: helm uninstall --namespace {{ NAMESPACE }} ai-sprint-monit-chart
+    when: helm_install is failed
