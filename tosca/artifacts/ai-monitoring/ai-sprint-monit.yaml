@@ -85,7 +85,7 @@
               - secretName: kibana.{{ DNS_BASE_NAME }}
                 hosts:
                   - kibana.{{ DNS_BASE_NAME }}
-            telegraf-ds
+            telegraf-ds:
               config:
                 outputs:
                   - influxdb:
