@@ -40,22 +40,18 @@
             enabled: true
             hosts:
               - grafana.{{ DNS_BASE_NAME }}
-            tls: []
-            #  - secretName: chart-example-tls
-            #    hosts:
-            #      - chart-example.local
+            tls:
+              - secretName: grafana.{{ DNS_BASE_NAME }}
+                hosts:
+                  - grafana.{{ DNS_BASE_NAME }}
         influxdb:
           ingress:
             enabled: true
             hostname: influxdb.{{ DNS_BASE_NAME }}
-            ## extraTls:
-            ## - hosts:
-            ##     - influxdb.local
-            ##   secretName: influxdb.local-tls
-          influxdb:
-            service:
-              nodePorts:
-                http: 8086
+            extraTls:
+             - hosts:
+                 - influxdb.{{ DNS_BASE_NAME }
+               secretName: influxdb.{{ DNS_BASE_NAME }
           auth:
             admin:
               username: {{ admin_username }}
@@ -70,7 +66,10 @@
               - host: elasticsearch.{{ DNS_BASE_NAME }}
                 paths:
                   - path: /
-            tls: []
+            tls:
+              - secretName: elasticsearch.{{ DNS_BASE_NAME }}
+                hosts:
+                  - elasticsearch.{{ DNS_BASE_NAME }}
           volumeClaimTemplate:
             storageClassName: null
         kibana:
@@ -80,8 +79,12 @@
               - host: kibana.{{ DNS_BASE_NAME }}
                 paths:
                   - path: /
-            tls: []
+            tls:
+              - secretName: kibana.{{ DNS_BASE_NAME }}
+                hosts:
+                  - kibana.{{ DNS_BASE_NAME }}
 
+ 
   - name: Install Helm Chart
     command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} -f /tmp/ai-values.yml
     args:
