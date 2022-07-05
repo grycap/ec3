@@ -92,17 +92,27 @@
                       urls:
                         - "http://influxdb.{{NAMESPACE}}.svc:8086"
  
-  - name: Install Helm Chart
-    command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} -f /tmp/ai-values.yml
-    args:
-      chdir: /opt/monitoring-subsystem/deliverables
-    environment:
-      KUBECONFIG: /etc/kubernetes/admin.conf
-    async: 600
-    poll: 5
+  - name: Check if chart is installed
+    command: helm status ai-sprint-monit-chart -n {{ NAMESPACE }}
+    register: helm_status
     ignore_errors: yes
-    register: helm_install
+    changed_when: false
+ 
+  - block:
   
-  - name: Install Helm Chart
-    command: helm uninstall --namespace {{ NAMESPACE }} ai-sprint-monit-chart
-    when: helm_install is failed
+    - name: Install Helm Chart
+      command: helm install ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz -n {{ NAMESPACE }} -f /tmp/ai-values.yml
+      args:
+        chdir: /opt/monitoring-subsystem/deliverables
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      async: 600
+      poll: 5
+      ignore_errors: yes
+      register: helm_install
+
+    - name: Install Helm Chart
+      command: helm uninstall --namespace {{ NAMESPACE }} ai-sprint-monit-chart
+      when: helm_install is failed
+
+    when: helm_status.rc != 0
