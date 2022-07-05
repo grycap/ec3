@@ -36,6 +36,7 @@
       dest: /tmp/ai-values.yml
       content: |
         grafana:
+          adminPassword: {{ grafana_admin_pass }}
           ingress:
             ingressClassName: nginx
             enabled: true
