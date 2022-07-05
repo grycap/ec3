@@ -50,7 +50,7 @@
             hostname: influxdb.{{ DNS_BASE_NAME }}
             extraTls:
              - hosts:
-                 - influxdb.{{ DNS_BASE_NAME }
+                 - influxdb.{{ DNS_BASE_NAME }}
                secretName: influxdb.{{ DNS_BASE_NAME }}
           auth:
             admin:
