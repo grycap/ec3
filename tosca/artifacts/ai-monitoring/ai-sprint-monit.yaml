@@ -37,6 +37,7 @@
       content: |
         grafana:
           ingress:
+            ingressClassName: nginx
             enabled: true
             hosts:
               - grafana.{{ DNS_BASE_NAME }}
@@ -46,6 +47,7 @@
                   - grafana.{{ DNS_BASE_NAME }}
         influxdb:
           ingress:
+            ingressClassName: nginx
             enabled: true
             hostname: influxdb.{{ DNS_BASE_NAME }}
             extraTls:
