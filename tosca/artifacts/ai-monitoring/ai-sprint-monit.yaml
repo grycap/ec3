@@ -31,7 +31,27 @@
       version: master
 
   - name: Install Helm Chart
-    command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} --set elasticsearch.volumeClaimTemplate.storageClassName=null --set influxdb.auth.admin.username={{  admin_username }} --set influxdb.auth.admin.password={{ admin_password }} --set influxdb.auth.admin.token={{ admin_token }} --set influxdb.auth.admin.org={{ org_name }} --set influxdb.auth.admin.bucket={{ bucket_name }} --set influxdb.influxdb.service.nodePorts.http="8086"
+    copy:
+      dest: /tmp/ai-values.yml
+      content: |
+        influxdb:
+          influxdb:
+            service:
+              nodePorts:
+                http: 8086
+          auth:
+            admin:
+              username: {{ admin_username }}
+              password: {{ admin_password }}
+              token: {{ admin_token }}
+              org: {{ org_name }}
+              bucket: {{ bucket_name }}
+        elasticsearch:
+          volumeClaimTemplate:
+            storageClassName: null
+
+  - name: Install Helm Chart
+    command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} -f /tmp/ai-values.yml
     args:
       chdir: /opt/monitoring-subsystem/deliverables
     environment:
