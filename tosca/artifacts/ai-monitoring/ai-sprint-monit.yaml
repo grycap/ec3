@@ -36,10 +36,12 @@
       dest: /tmp/ai-values.yml
       content: |
         grafana:
-          adminPassword: {{ grafana_admin_pass }}
+          adminPassword: {{ grafana_admin_password }}
           ingress:
             ingressClassName: nginx
             enabled: true
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
             hosts:
               - grafana.{{ DNS_BASE_NAME }}
             tls:
@@ -51,6 +53,8 @@
             ingressClassName: nginx
             enabled: true
             hostname: influxdb.{{ DNS_BASE_NAME }}
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
             extraTls:
              - hosts:
                  - influxdb.{{ DNS_BASE_NAME }}
