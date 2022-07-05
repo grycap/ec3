@@ -15,7 +15,7 @@
       dest: /tmp/ai_ns.yml
 
   - name: Create ai-sprint-monitoring ns
-    command: kubectl apply -f /tmp/argo_ns.yml
+    command: kubectl apply -f /tmp/ai_ns.yml
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
 
@@ -40,10 +40,18 @@
             enabled: true
             hosts:
               - grafana.{{ DNS_BASE_NAME }}
+            tls: []
+            #  - secretName: chart-example-tls
+            #    hosts:
+            #      - chart-example.local
         influxdb:
           ingress:
             enabled: true
             hostname: influxdb.{{ DNS_BASE_NAME }}
+            ## extraTls:
+            ## - hosts:
+            ##     - influxdb.local
+            ##   secretName: influxdb.local-tls
           influxdb:
             service:
               nodePorts:
@@ -62,6 +70,7 @@
               - host: elasticsearch.{{ DNS_BASE_NAME }}
                 paths:
                   - path: /
+            tls: []
           volumeClaimTemplate:
             storageClassName: null
         kibana:
@@ -71,7 +80,7 @@
               - host: kibana.{{ DNS_BASE_NAME }}
                 paths:
                   - path: /
-
+            tls: []
 
   - name: Install Helm Chart
     command: helm upgrade ai-sprint-monit-chart AI-Sprint-Monitoring-1.0.0.tgz --install -n {{ NAMESPACE }} -f /tmp/ai-values.yml
