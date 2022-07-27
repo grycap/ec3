@@ -1422,6 +1422,7 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/ansible_tasks.yml
           inputs:
             ansible_tasks: { get_property: [ SELF, tasks ] }
+            ansible_name: { get_attribute: [ SELF, tosca_name ] }
 
 policy_types:
 
