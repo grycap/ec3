@@ -10,4 +10,4 @@
 
   - name: Include tasks
     include_tasks:
-      file: "{{ tempfile.path }}"
+      file: /tmp/{{ansible_name}}_tasks.yaml
