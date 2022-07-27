@@ -1,0 +1,18 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Create temporary file
+    tempfile:
+      state: file
+      suffix: yaml
+    register: tempfile
+
+  - name: Copy ansible tasks
+    copy:
+      content: "{{ ansible_tasks }}"
+      dest: "{{ tempfile.path }}"
+
+  - name: Include tasks
+    include_tasks:
+      file: "{{ tempfile.path }}"

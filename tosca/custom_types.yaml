@@ -1406,6 +1406,23 @@ node_types:
           node: tosca.nodes.indigo.OSCAR
           occurrences: [0, 1]
 
+  tosca.nodes.indigo.AnsibleRecipe:
+    derived_from: tosca.nodes.ec3.Application
+    properties:
+      tasks:
+        type: list
+        entry_schema:
+          type: map
+        description: The YAML Ansible task list
+        required: true
+        default: []
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/ansible_tasks.yml
+          inputs:
+            ansible_tasks: { get_property: [ SELF, tasks ] }
+
 policy_types:
 
   tosca.policies.indigo.Placement:
