@@ -5,12 +5,17 @@
   - name: Create temporary file
     tempfile:
       state: file
-      suffix: yaml
+      suffix: .yaml
     register: tempfile
+
+  - name: Change temporary file permissions
+    file:
+      path: "{{ tempfile.path }}"
+      mode: 0644
 
   - name: Copy ansible tasks
     copy:
-      content: "{{ ansible_tasks }}"
+      content: "{{ ansible_tasks | to_nice_yaml }}"
       dest: "{{ tempfile.path }}"
 
   - name: Include tasks
