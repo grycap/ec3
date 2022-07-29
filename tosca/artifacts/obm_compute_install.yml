@@ -33,4 +33,4 @@
         {{ compute_name }}:
           - {{ compute_id }}
           - {{ compute_key }}
-      dest: /var/www/html/clients.yml
+      dest: /var/www/html/compute/clients.yml
