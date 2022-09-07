@@ -1399,6 +1399,12 @@ node_types:
       storage_providers:
         type: tosca.datatypes.oscar.StorageProviders
         required: false
+      image_pull_secrets:
+        type: list
+        entry_schema:
+          type: string
+        default: []
+        required: false
     requirements:
       - host:
           capability: tosca.capabilities.Container
