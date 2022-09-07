@@ -1424,6 +1424,46 @@ node_types:
             ansible_tasks: { get_property: [ SELF, tasks ] }
             ansible_name: { get_attribute: [ SELF, tosca_name ] }
 
+  tosca.nodes.indigo.KubernetesSecretRegistry:
+    derived_from: tosca.nodes.Root
+    properties:
+      name:
+        type: string
+        description: Name of the secret
+        required: true
+      server:
+        type: string
+        description: Docker Registry FQDN
+        required: true
+      username:
+        type: string
+        description: Docker registry username
+        required: true
+      password:
+        type: string
+        description: Docker registry password
+        required: true
+      email:
+        type: string
+        description: Docker registry email
+        required: false
+        default: "jhondoe@server.com"
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.indigo.LRMS.FrontEnd.Kubernetes
+          relationship: tosca.relationships.HostedOn
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/k8s_secret_registry.yml
+          inputs:
+            k8s_secret_name: { get_property: [ SELF, name ] }
+            k8s_secret_server: { get_property: [ SELF, server ] }
+            k8s_secret_username: { get_property: [ SELF, username ] }
+            k8s_secret_password: { get_property: [ SELF, password ] }
+            k8s_secret_email: { get_property: [ SELF, email ] }
+
 policy_types:
 
   tosca.policies.indigo.Placement:
