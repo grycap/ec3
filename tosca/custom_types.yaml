@@ -1437,6 +1437,11 @@ node_types:
         type: string
         description: Name of the secret
         required: true
+      namespace:
+        type: string
+        description: Namespace of the secret
+        required: false
+        default: default
       server:
         type: string
         description: Docker Registry FQDN
@@ -1465,6 +1470,7 @@ node_types:
           implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/k8s_secret_registry.yml
           inputs:
             k8s_secret_name: { get_property: [ SELF, name ] }
+            k8s_secret_namespace: { get_property: [ SELF, namespace ] }
             k8s_secret_server: { get_property: [ SELF, server ] }
             k8s_secret_username: { get_property: [ SELF, username ] }
             k8s_secret_password: { get_property: [ SELF, password ] }
