@@ -117,7 +117,7 @@ class RefreshToken:
 
             token_scopes = "openid profile offline_access eduperson_entitlement"
             payload = ("client_id=%s&client_secret=%s&grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Atoken-exchange&"
-                        "audience=tokenExchange&subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
+                        "subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
                         "subject_token=%s&scope=%s") % (self._client_id, self._client_secret,
                                                          access_token, token_scopes)
             headers = dict()
