@@ -844,6 +844,23 @@ node_types:
         description: Cert-manager issuer to automatically assign TLS certificates
         required: false
         default: "letsencrypt-prod"
+      oidc_enable:
+        type: boolean
+        description: Parameter to enable OpenID Connect support
+        required: false
+        default: false
+      oidc_subject:
+        type: string
+        description: OpenID Connect Subject (user identifier)
+        required: false
+        default: "letsencrypt-prod"
+      oidc_groups:
+        type: list
+        entry_schema:
+          type: string
+        description: OpenID group list to grant access in the cluster.
+        required: false
+        default: []
     artifacts:
       minio_role:
         file: grycap.kubeminio
@@ -871,6 +888,9 @@ node_types:
             dns_host: { get_property: [ SELF, dns_host ] }
             minio_dns_host: { get_property: [ SELF, minio_dns_host ] }
             minio_dns_host_console: { get_property: [ SELF, minio_dns_host_console ] }
+            oidc_enable: { get_property: [ SELF, oidc_enable ] }
+            oidc_subject: { get_property: [ SELF, oidc_subject ] }
+            oidc_groups: { get_property: [ SELF, oidc_groups ] }
     requirements:
       - host:
           capability: tosca.capabilities.Container
