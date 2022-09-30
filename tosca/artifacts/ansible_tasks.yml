@@ -5,7 +5,7 @@
 
   - name: Copy ansible tasks
     copy:
-      content: "{{ ansible_tasks | to_nice_yaml }}"
+      content: "{{ ansible_tasks }}"
       dest: /tmp/{{ansible_name}}_tasks.yaml
 
   - name: Include tasks
