@@ -7,8 +7,7 @@
 
   - name: Add apt KIT repository key ubuntu
     apt_key:
-      id: ACDFB08FDC962044D87FF00B512839863D487A87
-      url: hkp://pgp.surfnet.nl
+      url: https://repo.data.kit.edu/repo-data-kit-edu-key.gpg
       state: present
     when: ansible_distribution == "Ubuntu"
 
