@@ -5,8 +5,15 @@
 
   - name: Copy ansible tasks
     copy:
-      content: "{{ ansible_tasks | to_nice_yaml }}"
+      content: "{{ ansible_tasks }}"
       dest: /tmp/{{ansible_name}}_tasks.yaml
+    when: ansible_tasks is defined and ansible_tasks != ""
+
+  - name: Download ansible tasks
+    get_url:
+      url: "{{ ansible_url }}"
+      dest: /tmp/{{ansible_name}}_tasks.yaml
+    when: ansible_url is defined and ansible_url != ""
 
   - name: Include tasks
     include_tasks:
