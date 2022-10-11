@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+    command_env: {}
   tasks:
 
   - name: Add apt KIT repository key ubuntu
@@ -67,6 +69,16 @@
       state: directory
       mode: '0755'
 
+  - name: set SSH_AUTHORISE_OTHERS_IN_MY_VO
+    set_fact:
+      command_env: "{{ command_env | combine ({ SSH_AUTHORISE_OTHERS_IN_MY_VO : 1 }) }}"
+    when: ssh_oidc_my_vo
+
+  - name: set SSH_AUTHORISE_VOS
+    set_fact:
+      command_env: "{{ command_env | combine ({ SSH_AUTHORISE_VOS : ['urn:mace:egi.eu:group:{{ssh_oidc_other_vos}}:role=member#aai.egi.eu'] }) }}"
+    when: ssh_oidc_other_vos != ''
+
   - name: Execute contextualise_ssh_server command
     command: contextualise_ssh_server {{IM_INFRASTRUCTURE_AUTH}}
     args:
@@ -74,6 +86,7 @@
       creates: /opt/motley_cue/motley_cue.conf
     when: IM_INFRASTRUCTURE_AUTH is defined and IM_INFRASTRUCTURE_AUTH is not search(":")
     register: contextualise_ssh_server
+    environment: "{{command_env}}"
 
   - name: Copy conf files to /etc
     copy:
