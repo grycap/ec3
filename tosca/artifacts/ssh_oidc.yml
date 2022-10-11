@@ -1,0 +1,86 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+
+  - name: Add apt KIT repository key ubuntu
+    apt_key:
+      id: ACDFB08FDC962044D87FF00B512839863D487A87
+      url: hkp://pgp.surfnet.nl
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Add apt KIT repository key debian
+    get_url:
+      url: https://repo.data.kit.edu/repo-data-kit-edu-key.gpg
+      dest: /etc/apt/trusted.gpg.d/kitrepo-archive.gpg
+    when: ansible_distribution == "Debian"
+
+  - name: Add apt KIT repository
+    apt_repository:
+      repo: deb https://repo.data.kit.edu/ubuntu/{{ansible_distribution_version}} ./
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Add apt KIT repository
+    apt_repository:
+      repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.gpg] https://repo.data.kit.edu/debian/{{ansible_distribution_release}} ./
+      state: present
+    when: ansible_distribution == "Debian"
+
+  - name: Add yum KIT repository
+    get_url:
+      url: https://repo.data.kit.edu/data-kit-edu-centos{{ansible_distribution_major_version}}.repo
+    when: ansible_distribution == "CentOS"
+
+  - name: Install motley-cue and pam-ssh-oidc
+    package:
+      name:
+        - motley-cue
+        - pam-ssh-oidc
+
+  - name: Ensure EPEL is installed.
+    package:
+      name: epel-release
+      state: present
+    when: ansible_distribution == "CentOS"
+
+  - name: Ensure Pip is installed.
+    package:
+      name: python3-pip
+      state: present
+
+  - name: Install contextualise_ssh_server
+    pip:
+      name: contextualise_ssh_server
+
+  - name: Enable OIDC in PAM
+    lineinfile:
+      path: /etc/pam.d/sshd
+      regexp: 'pam_oidc_token.so'
+      line: auth   sufficient pam_oidc_token.so config=/etc/pam.d/pam-ssh-oidc-config.ini
+      create: yes
+
+  - name: Create a directory /opt/motley_cue
+    ansible.builtin.file:
+      path: /opt/motley_cue
+      state: directory
+      mode: '0755'
+
+  - name: Execute contextualise_ssh_server command
+    command: contextualise_ssh_server {{IM_INFRASTRUCTURE_AUTH}}
+    args:
+      chdir: /opt/motley_cue
+      creates: /opt/motley_cue/motley_cue.conf
+    when: IM_INFRASTRUCTURE_AUTH is defined and IM_INFRASTRUCTURE_AUTH is not search(":")
+    register: contextualise_ssh_server
+
+  - name: Copy conf files to /etc
+    copy:
+      src: /opt/motley_cue/{{item}}
+      dest: /etc/motley_cue/{{item}}
+      remote_src: yes
+    loop:
+      - motley_cue.conf
+      - feudal_adapter.conf
+    when: contextualise_ssh_server is changed
