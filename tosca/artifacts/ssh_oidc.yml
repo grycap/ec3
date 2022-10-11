@@ -17,13 +17,13 @@
       dest: /etc/apt/trusted.gpg.d/kitrepo-archive.gpg
     when: ansible_distribution == "Debian"
 
-  - name: Add apt KIT repository
+  - name: Add apt KIT repository ubuntu
     apt_repository:
       repo: deb https://repo.data.kit.edu/ubuntu/{{ansible_distribution_version}} ./
       state: present
     when: ansible_distribution == "Ubuntu"
 
-  - name: Add apt KIT repository
+  - name: Add apt KIT repository debian
     apt_repository:
       repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.gpg] https://repo.data.kit.edu/debian/{{ansible_distribution_release}} ./
       state: present
