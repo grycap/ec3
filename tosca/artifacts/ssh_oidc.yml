@@ -96,3 +96,9 @@
       - motley_cue.conf
       - feudal_adapter.conf
     when: contextualise_ssh_server is changed
+
+  - name: Restart motley-cue
+    service:
+      name: motley-cue
+      state: restarted
+    when: contextualise_ssh_server is changed
