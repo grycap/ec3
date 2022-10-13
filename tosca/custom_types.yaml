@@ -401,6 +401,16 @@ node_types:
         description: Kubernetes admoin token
         default: ""
         required: false
+      kube_wn_cpus:
+        type: int
+        description: Kubernetes WNs CPUs
+        default: 2
+        required: false
+      kube_wn_mem:
+        type: scalar-unit.size
+        description: Kubernetes WNs Memory
+        default: 4 GB
+        required: false
     artifacts:
       clues_role:
         file: grycap.clues
@@ -421,6 +431,8 @@ node_types:
             clues_git_branch: im_rest
             clues_config_options: { get_property: [ SELF, config_options] }
             clues_kube_token: { get_property: [ SELF, kube_token] }
+            KUBERNETES_NODE_MEMORY: { get_property: [ SELF, kube_wn_mem ] }
+            KUBERNETES_NODE_SLOTS: { get_property: [ SELF, kube_wn_cpus ] }
     requirements:
       - wn:
           capability: tosca.capabilities.Scalable
