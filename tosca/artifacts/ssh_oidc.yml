@@ -63,15 +63,6 @@
       create: yes
       insertbefore: BOF
 
-  - name: Enable PAM in SSHD
-    lineinfile:
-      path: /etc/ssh/sshd_config
-      regexp: '{{item}}'
-      line: '{{item}} yes'
-    loop:
-      - ChallengeResponseAuthentication
-      - UsePAM
-
   - name: Create a directory /opt/motley_cue
     ansible.builtin.file:
       path: /opt/motley_cue
@@ -106,6 +97,22 @@
       - motley_cue.conf
       - feudal_adapter.conf
     when: contextualise_ssh_server is changed
+
+  - name: Enable PAM in SSHD
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '{{item}}'
+      line: '{{item}} yes'
+    loop:
+      - ChallengeResponseAuthentication
+      - UsePAM
+    register: configure_pam_sshd
+
+  - name: Restart sshd
+    service:
+      name: sshd
+      state: restarted
+    when: configure_pam_sshd is changed
 
   - name: Restart motley-cue
     service:
