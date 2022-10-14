@@ -34,16 +34,6 @@
       url: https://repo.data.kit.edu/data-kit-edu-centos{{ansible_distribution_major_version}}.repo
     when: ansible_distribution == "CentOS"
 
-  - name: Enable PAM in SSHD
-    lineinfile:
-      path: /etc/ssh/sshd_config
-      regexp: '{{item}}'
-      line: '{{item}} yes'
-    loop:
-      - ChallengeResponseAuthentication
-      - UsePAM
-    register: configure_pam_sshd
-
   - name: Install motley-cue and pam-ssh-oidc
     package:
       name:
@@ -109,11 +99,31 @@
       - feudal_adapter.conf
     when: contextualise_ssh_server is changed
 
+  - name: Enable PAM in SSHD
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '{{item}}'
+      state: absent
+    loop:
+      - 'ChallengeResponseAuthentication no'
+      - 'UsePAM no'
+    register: configure_pam_sshd_remove
+
+  - name: Enable PAM in SSHD
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '{{item}}'
+      line: '{{item}} yes'
+    loop:
+      - ChallengeResponseAuthentication
+      - UsePAM
+    register: configure_pam_sshd_add
+
   - name: Restart sshd
     service:
       name: sshd
       state: restarted
-    when: configure_pam_sshd is changed
+    when: configure_pam_sshd_remove is changed and configure_pam_sshd_add is changed
 
   - name: Restart motley-cue
     service:
