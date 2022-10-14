@@ -39,6 +39,7 @@
       name:
         - motley-cue
         - pam-ssh-oidc
+        - pam-ssh-oidc-autoconfig
 
   - name: Ensure EPEL is installed.
     package:
