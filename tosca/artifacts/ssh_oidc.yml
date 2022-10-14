@@ -63,6 +63,15 @@
       create: yes
       insertbefore: BOF
 
+  - name: Enable PAM in SSHD
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '{{item}}'
+      line: '{{item}} yes'
+    loop:
+      - ChallengeResponseAuthentication
+      - UsePam
+
   - name: Create a directory /opt/motley_cue
     ansible.builtin.file:
       path: /opt/motley_cue
