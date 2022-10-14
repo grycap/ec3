@@ -44,6 +44,7 @@
   - name: Install pyyaml in CentOS 8
     yum:
       name: https://cbs.centos.org/kojifiles/packages/PyYAML/5.4.1/2.el8/x86_64/python3-pyyaml-5.4.1-2.el8.x86_64.rpm
+      disable_gpg_check: yes
     when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "8"
 
   - name: Install motley-cue and pam-ssh-oidc
