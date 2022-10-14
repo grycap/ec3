@@ -61,6 +61,7 @@
       regexp: 'pam_oidc_token.so'
       line: auth   sufficient pam_oidc_token.so config=/etc/pam.d/pam-ssh-oidc-config.ini
       create: yes
+      insertbefore: BOF
 
   - name: Create a directory /opt/motley_cue
     ansible.builtin.file:
