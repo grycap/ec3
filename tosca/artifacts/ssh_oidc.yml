@@ -29,11 +29,17 @@
       state: present
     when: ansible_distribution == "Debian"
 
-  - name: Add yum KIT repository
+  - name: Add yum KIT repository CentOS
     get_url:
       url: https://repo.data.kit.edu/data-kit-edu-centos{{ansible_distribution_major_version}}.repo
       dest: /etc/yum.repos.d/data-kit-edu-centos{{ansible_distribution_major_version}}.repo
-    when: ansible_os_family == "RedHat"
+    when: ansible_distribution == "CentOS" and distribution_release != "Stream"
+
+  - name: Add yum KIT repository CentOS Stream
+    get_url:
+      url: https://repo.data.kit.edu/data-kit-edu-centos-stream.repo
+      dest: /etc/yum.repos.d/data-kit-edu-centos-stream.repo
+    when: ansible_distribution == "CentOS" and distribution_release == "Stream"
 
   - name: Install motley-cue and pam-ssh-oidc
     package:
