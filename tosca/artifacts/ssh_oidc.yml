@@ -14,7 +14,7 @@
   - name: Add apt KIT repository key debian
     get_url:
       url: https://repo.data.kit.edu/repo-data-kit-edu-key.gpg
-      dest: /etc/apt/trusted.gpg.d/kitrepo-archive.gpg
+      dest: /etc/apt/trusted.gpg.d/kitrepo-archive.asc
     when: ansible_distribution == "Debian"
 
   - name: Add apt KIT repository ubuntu
@@ -25,9 +25,9 @@
 
   - name: Add apt KIT repository debian
     apt_repository:
-      repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.gpg] https://repo.data.kit.edu/debian/{{ansible_distribution_release}} ./
+      repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.asc] https://repo.data.kit.edu/debian/bookworm ./
       state: present
-    when: ansible_distribution == "Debian"
+    when: ansible_distribution == "Debian" and ansible_distribution_major_version|int >= 11
 
   - name: Add yum KIT repository CentOS
     get_url:
