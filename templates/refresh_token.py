@@ -225,7 +225,7 @@ class RefreshToken:
                 new_auth += line + "\n"
 
         with open(auth_file, 'w') as f:
-            f.write(new_auth)
+            f.write(new_auth.strip())
 
 if __name__ == "__main__":
     client_id = sys.argv[1]
