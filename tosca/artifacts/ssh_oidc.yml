@@ -23,11 +23,17 @@
       state: present
     when: ansible_distribution == "Ubuntu"
 
-  - name: Add apt KIT repository debian
+  - name: Add apt KIT repository debian 11+
     apt_repository:
       repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.asc] https://repo.data.kit.edu/debian/bookworm ./
       state: present
     when: ansible_distribution == "Debian" and ansible_distribution_major_version|int >= 11
+
+  - name: Add apt KIT repository debian OLD
+    apt_repository:
+      repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.asc] https://repo.data.kit.edu/debian/srable ./
+      state: present
+    when: ansible_distribution == "Debian" and ansible_distribution_major_version|int < 11
 
   - name: Add yum KIT repository CentOS
     get_url:
