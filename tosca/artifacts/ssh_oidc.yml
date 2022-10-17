@@ -60,7 +60,7 @@
         - pam-ssh-oidc
         - pam-ssh-oidc-autoconfig
 
-  - name: Install motley-cue and pam-ssh-oidc
+  - name: Install oidc-agent-cli
     package:
       name: oidc-agent-cli
     ignore_errors: yes
