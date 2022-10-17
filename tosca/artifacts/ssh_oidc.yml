@@ -59,6 +59,7 @@
         - motley-cue
         - pam-ssh-oidc
         - pam-ssh-oidc-autoconfig
+        - oidc-agent-cli
 
   - name: Ensure EPEL is installed.
     package:
