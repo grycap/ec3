@@ -96,7 +96,7 @@
   - name: Enable contextualise_ssh_server in CentOS 7
     file:
       src: /opt/rh/rh-python38/root/usr/local/bin/contextualise_ssh_server
-      dest: /usr/local/bin/contextualise_ssh_server
+      dest: /usr/bin/contextualise_ssh_server
       state: link
     when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
 
