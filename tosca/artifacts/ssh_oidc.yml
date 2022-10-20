@@ -53,18 +53,6 @@
       disable_gpg_check: yes
     when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "8"
 
-  - name: Install motley-cue and pam-ssh-oidc
-    package:
-      name:
-        - motley-cue
-        - pam-ssh-oidc
-        - pam-ssh-oidc-autoconfig
-
-  - name: Install oidc-agent-cli
-    package:
-      name: oidc-agent-cli
-    ignore_errors: yes
-
   - name: Install centos-release-scl in CentOS 7
     yum:
       name: centos-release-scl
@@ -82,6 +70,18 @@
       state: link
       force: yes
     when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+  - name: Install motley-cue and pam-ssh-oidc
+    package:
+      name:
+        - motley-cue
+        - pam-ssh-oidc
+        - pam-ssh-oidc-autoconfig
+
+  - name: Install oidc-agent-cli
+    package:
+      name: oidc-agent-cli
+    ignore_errors: yes
 
   - name: Ensure Pip is installed.
     package:
