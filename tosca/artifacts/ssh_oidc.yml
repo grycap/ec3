@@ -29,6 +29,12 @@
       state: present
     when: ansible_distribution == "Debian"
 
+  - name: Ensure EPEL is installed.
+    package:
+      name: epel-release
+      state: present
+    when: ansible_os_family == "RedHat" and ansible_distribution != "Fedora" and ansible_distribution_major_version|int < 9
+
   - name: Add yum KIT repository CentOS
     get_url:
       url: https://repo.data.kit.edu/data-kit-edu-centos{{ansible_distribution_major_version}}.repo
@@ -58,12 +64,6 @@
     package:
       name: oidc-agent-cli
     ignore_errors: yes
-
-  - name: Ensure EPEL is installed.
-    package:
-      name: epel-release
-      state: present
-    when: ansible_os_family == "RedHat" and ansible_distribution != "Fedora" and ansible_distribution_major_version|int < 9
 
   - name: Install centos-release-scl in CentOS 7
     yum:
