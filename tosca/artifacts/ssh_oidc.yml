@@ -25,7 +25,7 @@
 
   - name: Add apt KIT repository debian
     apt_repository:
-      repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.asc] https://repo.data.kit.edu/debian/{{distribution}} ./
+      repo: deb [signed-by=/etc/apt/trusted.gpg.d/kitrepo-archive.asc] https://repo.data.kit.edu/debian/{{ansible_distribution_version}} ./
       state: present
     when: ansible_distribution == "Debian"
 
@@ -47,11 +47,6 @@
       disable_gpg_check: yes
     when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "8"
 
-  - name: Install centos-release-scl in CentOS 7
-    yum:
-      name: centos-release-scl
-    when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
-    
   - name: Install motley-cue and pam-ssh-oidc
     package:
       name:
@@ -70,11 +65,30 @@
       state: present
     when: ansible_os_family == "RedHat" and ansible_distribution != "Fedora" and ansible_distribution_major_version|int < 9
 
+  - name: Install centos-release-scl in CentOS 7
+    yum:
+      name: centos-release-scl
+    when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+  - name: Install python38 in CentOS 7
+    yum:
+      name: rh-python38
+    when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+  - name: Enable python38 pip in CentOS 7
+    file:
+      src: /opt/rh/rh-python38/root/usr/bin/pip
+      dest: /usr/bin/pip
+      state: link
+      force: yes
+    when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
   - name: Ensure Pip is installed.
     package:
       name: python3-pip
       state: present
-
+    when: not (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+   
   - name: Install contextualise_ssh_server
     pip:
       name: contextualise_ssh_server
