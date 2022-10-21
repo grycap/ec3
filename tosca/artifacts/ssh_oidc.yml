@@ -65,8 +65,8 @@
 
   - name: Enable python38 pip in CentOS 7
     file:
-      src: /opt/rh/rh-python38/root/usr/bin/pip
-      dest: /usr/bin/pip
+      src: /opt/rh/rh-python38/root/usr/bin/pip3
+      dest: /usr/bin/pip3
       state: link
       force: yes
     when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
@@ -92,6 +92,7 @@
   - name: Install contextualise_ssh_server
     pip:
       name: contextualise_ssh_server
+      executable: pip3
 
   - name: Enable contextualise_ssh_server in CentOS 7
     file:
