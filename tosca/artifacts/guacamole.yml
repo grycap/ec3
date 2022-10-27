@@ -4,6 +4,8 @@
   vars:
     username: 'guacamole'
     ssh_user: "{{ guacamole_ssh_user | default('cloudadm') }}"
+  roles:
+  - role: grycap.docker 
   tasks:
   - set_fact:
       password: "{{ lookup('password', '/opt/guacamole/passwordfile chars=ascii_letters,digits length=15') }}"
