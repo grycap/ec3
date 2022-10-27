@@ -1,0 +1,119 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    username: 'guacamole'
+    ssh_user: "{{ guacamole_ssh_user | default('cloudadm') }}"
+  tasks:
+  - set_fact:
+      password: "{{ lookup('password', '/opt/guacamole/passwordfile chars=ascii_letters,digits length=15') }}"
+  
+  # to return in in the TOSCA outputs
+  - name: guacamole_password
+    debug:
+      msg: "{{ password }}"
+    
+  - name: Create guacamole dir
+    file:
+      path: /opt/guacamole
+      state: directory
+
+  - name: Create caddy dir
+    file:
+      path: /opt/guacamole/caddy
+      state: directory
+
+  - name: generate SSH key
+    openssh_keypair:
+      path: "/opt/guacamole/ssh"
+      type: rsa
+      size: 4096
+      state: present
+      force: no
+
+  - name: Set authorized key
+    authorized_key:
+      user: "{{ssh_user}}"
+      state: present
+      key: "{{ lookup('file', '/opt/guacamole/ssh.pub') }}"
+
+  - name: Create docker-compose file
+    copy: 
+      dest: /opt/guacamole/docker-compose.yml
+      content: | 
+        version: '3.9'
+        networks:
+          web:
+          internal:
+        services:
+          guacd:
+            container_name: guacd
+            image: guacamole/guacd
+            restart: unless-stopped
+            networks:
+              - internal
+          guacamole:
+            container_name: guacamole
+            image: 'guacamole/guacamole:latest'
+            restart: unless-stopped
+            volumes:
+              - './user-mapping.xml:/etc/guacamole/user-mapping.xml'
+            ports:
+              - '8080'
+            environment:
+              GUACD_HOSTNAME: "guacd"
+              GUACAMOLE_HOME: '/etc/guacamole'
+            depends_on:
+              - guacd
+            networks:
+              - internal
+          caddy:
+            container_name: caddy
+            image: 'caddy:latest'
+            restart: unless-stopped
+            ports:
+              - "80:80"
+              - "443:443"
+            volumes:
+              - './Caddyfile:/etc/caddy/Caddyfile'
+              - './caddy/data:/data'
+              - './caddy/config:/config'
+            depends_on:
+              - guacamole
+            networks:
+              - web
+              - internal
+
+  - name: Create user-mapping.xml file
+    copy: 
+      dest: /opt/guacamole/user-mapping.xml
+      content: | 
+        <user-mapping>
+            <!-- Per-user authentication and config information -->
+            <authorize username="{{username}}" password="{{password}}">
+                <protocol>ssh</protocol>
+                <param name="hostname">{{ node_address }}</param>
+                <param name="port">22</param>
+                <param name="username">{{ssh_user}}</param>
+                <param name="private-key">"{{ lookup('file', '/opt/guacamole/ssh') }}"</param>
+            </authorize>
+        </user-mapping>
+
+  - name: Create caddy configuration file
+    copy: 
+      dest: /opt/guacamole/Caddyfile
+      content: | 
+        {
+          default_sni {{ node_address }}
+        }
+        {{ node_address }} {
+            reverse_proxy guacamole:8080 {
+                trusted_proxies private_ranges
+                flush_interval -1
+            }
+            tls internal
+        }
+
+  - name: Create and start services
+    docker_compose:
+      project_src: /opt/guacamole
