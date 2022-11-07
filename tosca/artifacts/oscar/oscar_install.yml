@@ -10,7 +10,8 @@
   - set_fact:
       minio_enable_ingress: true
       oscar_minio_endpoint: 'https://{{ minio_dns_host }}'
-      oscar_minio_tls_verify: true
+      #oscar_minio_tls_verify: true
+      oscar_minio_tls_verify: false
     when: minio_dns_host != "''" and minio_dns_host != ""
   roles:
   
