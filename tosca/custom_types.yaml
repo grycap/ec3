@@ -402,7 +402,7 @@ node_types:
         default: ""
         required: false
       kube_wn_cpus:
-        type: int
+        type: integer
         description: Kubernetes WNs CPUs
         default: 2
         required: false
