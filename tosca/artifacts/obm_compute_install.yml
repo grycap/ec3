@@ -43,6 +43,11 @@
                     Require all granted
         </Directory>
 
+  - name: Restart apache2
+    service:
+      name: apache2
+      state: reloaded
+
   - name: create client.yaml
     copy:
       content: |
