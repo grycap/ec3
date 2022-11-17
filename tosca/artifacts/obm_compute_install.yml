@@ -27,6 +27,22 @@
       version: master
       update: no
 
+  - name: Set DocumentRoot
+    lineinfile:
+      path: /etc/apache2/sites-enabled/000-default.conf
+      regexp: 'DocumentRoot'
+      line: DocumentRoot /var/www/html/compute
+
+  - name: Insert Directory /var/www/html/comput
+    blockinfile:
+      path: /etc/apache2/sites-enabled/000-default.conf
+      block: |
+        <Directory /var/www/html/compute>
+                    Options -Indexes
+                    AllowOverride All
+                    Require all granted
+        </Directory>
+
   - name: create client.yaml
     copy:
       content: |
