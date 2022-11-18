@@ -551,6 +551,10 @@ node_types:
         required: no
         type: boolean
         default: true
+      install_yunikorn:
+        required: no
+        type: boolean
+        default: false
       version:
         required: no
         type: string
@@ -630,6 +634,7 @@ node_types:
             kube_cert_manager_challenge_dns01_ak: { get_property: [ SELF, cert_manager_challenge_dns01_ak ] }
             kube_cert_manager_challenge_dns01_sk: { get_property: [ SELF, cert_manager_challenge_dns01_sk ] }
             kube_cri_runtime: { get_property: [ SELF, cri_runtime ] }
+            kube_install_yunikorn: { get_property: [ SELF, install_yunikorn ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
