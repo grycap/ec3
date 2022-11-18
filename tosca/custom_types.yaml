@@ -884,6 +884,11 @@ node_types:
         description: Parameter to enable OpenID Connect support
         required: false
         default: false
+      yunikorn_enable:
+        type: boolean
+        description: Parameter to enable Apache YuniKorn support
+        required: false
+        default: false
       oidc_subject:
         type: string
         description: OpenID Connect Subject (user identifier)
@@ -926,6 +931,7 @@ node_types:
             oidc_enable: { get_property: [ SELF, oidc_enable ] }
             oidc_subject: { get_property: [ SELF, oidc_subject ] }
             oidc_groups: { get_property: [ SELF, oidc_groups ] }
+            yunikorn_enable:  { get_property: [ SELF, yunikorn_enable ] }
     requirements:
       - host:
           capability: tosca.capabilities.Container
