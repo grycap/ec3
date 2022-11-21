@@ -13,7 +13,7 @@
     package: name=git
 
   - name: Apache | Make sure the Apache packages are installed
-    apt: name=apache2,php,libapache2-mod-php update_cache=yes
+    apt: name=apache2,php,libapache2-mod-php,php-yaml update_cache=yes
     when: ansible_os_family == "Debian"
     
   - name: Apache | Make sure the Apache packages are installed
@@ -26,6 +26,20 @@
       dest: /var/www/html/compute
       version: master
       update: no
+
+  - name: Set Compute pass
+    command: ./setup.sh
+    args:
+      chdir: /var/www/html/compute
+    register: compute_setup
+
+  - name: Get Compute pass value
+    set_fact: compute_pass={{ item }}
+    when: '"Admin password:" in item '
+    loop: "{{ compute_setup.stdout_lines }}"
+
+  - name: compute_pass
+    debug: msg={{ compute_pass[16:] }}
 
   - name: Set DocumentRoot
     lineinfile:
