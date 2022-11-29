@@ -1478,6 +1478,9 @@ node_types:
           relationship: tosca.relationships.HostedOn
           node: tosca.nodes.indigo.OSCAR
           occurrences: [0, 1]
+    capabilities:
+      scalable:
+        type: tosca.capabilities.indigo.Scalable
 
   tosca.nodes.indigo.AnsibleRecipe:
     derived_from: tosca.nodes.ec3.Application
