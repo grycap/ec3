@@ -69,7 +69,7 @@ data_types:
       endpoint:
         type: string
         required: true
-      veryfy:
+      verify:
         type: boolean
         required: false
         default: false
@@ -591,6 +591,10 @@ node_types:
         required: no
         type: string
         default: ""
+      cert_manager_wildcard_cert_dns_name:
+        required: no
+        type: string
+        default: ""
       cri_runtime:
         required: no
         type: string
@@ -633,6 +637,7 @@ node_types:
             kube_cert_manager_challenge_dns01_domain: { get_property: [ SELF, cert_manager_challenge_dns01_domain ] }
             kube_cert_manager_challenge_dns01_ak: { get_property: [ SELF, cert_manager_challenge_dns01_ak ] }
             kube_cert_manager_challenge_dns01_sk: { get_property: [ SELF, cert_manager_challenge_dns01_sk ] }
+            kube_cert_manager_wildcard_cert_dns_name: { get_property: [ SELF, cert_manager_wildcard_cert_dns_name ] }
             kube_cri_runtime: { get_property: [ SELF, cri_runtime ] }
             kube_install_yunikorn: { get_property: [ SELF, install_yunikorn ] }
 
