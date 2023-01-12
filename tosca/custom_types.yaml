@@ -547,6 +547,10 @@ node_types:
         required: no
         type: boolean
         default: true
+      nfs_client_path:
+        required: no
+        type: string
+        default: '/pv'
       install_ingress:
         required: no
         type: boolean
@@ -627,6 +631,7 @@ node_types:
             kube_install_kubeapps: { get_property: [ SELF, install_kubeapps ] }
             kube_install_metrics:  { get_property: [ SELF, install_metrics ] }
             kube_install_nfs_client:  { get_property: [ SELF, install_nfs_client ] }
+            kube_nfs_path:  { get_property: [ SELF, nfs_client_path ] }
             kube_install_ingress:  { get_property: [ SELF, install_ingress ] }
             kube_version:  { get_property: [ SELF, version ] }
             kube_nvidia_support:  { get_property: [ SELF, nvidia_support ] }
