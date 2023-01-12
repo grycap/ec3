@@ -5,10 +5,11 @@
      vnode_prefix: vnode-
      export_hosts: "*.localdomain"
      export_line: "(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"
+     nfs_path: "{{ kube_nfs_path | default('/pv') }}"
 
   pre_tasks:
   - name: Create dir for the NFS PV
-    file: path=/pv state=directory mode=755
+    file: path={{ nfs_path }} state=directory mode=755
   - name: Create auth file dir
     file: path=/etc/kubernetes/pki state=directory mode=755 recurse=yes
   - name: Create auth data file with an admin user
@@ -26,7 +27,7 @@
   roles:
   - role: grycap.nfs
     nfs_mode: 'front'
-    nfs_exports: [{path: "/pv", export: '{{ export_hosts }}{{ export_line }}'}]
+    nfs_exports: [{path: '{{ nfs_path }}', export: '{{ export_hosts }}{{ export_line }}'}]
   - role: grycap.kubernetes
     kube_server: '{{ kube_front_end_ip }}'
     kube_api_server: '{{ kube_front_end_ip }}'
