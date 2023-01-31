@@ -555,6 +555,10 @@ node_types:
         required: no
         type: boolean
         default: true
+      install_dashboard:
+        required: no
+        type: boolean
+        default: true
       install_yunikorn:
         required: no
         type: boolean
@@ -645,6 +649,7 @@ node_types:
             kube_cert_manager_wildcard_cert_dns_name: { get_property: [ SELF, cert_manager_wildcard_cert_dns_name ] }
             kube_cri_runtime: { get_property: [ SELF, cri_runtime ] }
             kube_install_yunikorn: { get_property: [ SELF, install_yunikorn ] }
+            kube_deploy_dashboard: { get_property: [ SELF, install_dashboard ] }
 
   tosca.nodes.indigo.LRMS.WorkerNode.Slurm:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
