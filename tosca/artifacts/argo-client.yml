@@ -26,6 +26,6 @@
     command: kubectl get secret -n {{ARGO_NS}} {{ secret.stdout }} -o=jsonpath='{.data.token}'
     register: argo_token
 
-  - name: Show ARGO Token
+  - name: argo_token
     debug:
       msg: "Bearer {{ argo_token.stdout | b64decode  }}"
