@@ -4,6 +4,7 @@
   vars: 
     VERSION: 3.4.3
     ARGO_NS: argo
+    SA_NAME: argo-workflow
   tasks:
 
   - name: download argo-client
@@ -19,7 +20,7 @@
     ignore_errors: yes
 
   - name: Get secret name
-    command: kubectl get sa -n {{ARGO_NS}} default -o=jsonpath='{.secrets[0].name}'
+    command: kubectl get sa -n {{ARGO_NS}} {{SA_NAME}} -o=jsonpath='{.secrets[0].name}'
     register: secret
   
   - name: Get ARGO Token
