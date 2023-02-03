@@ -3,8 +3,8 @@
   connection: local
   vars: 
     VERSION: 3.4.3
-    ARGO_NS: argo
-    SA_NAME: argo-workflow
+    ARGO_NS: "{{ argo_namespace | default('argo') }}"
+    SA_NAME: "{{ argo_sa_name | default('argo-workflow') }}"
   tasks:
 
   - name: download argo-client
