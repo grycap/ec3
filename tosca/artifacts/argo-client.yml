@@ -1,0 +1,31 @@
+---
+- hosts: localhost
+  connection: local
+  vars: 
+    VERSION: 3.4.3
+    ARGO_NS: argo
+  tasks:
+
+  - name: download argo-client
+    get_url:
+      url: https://github.com/argoproj/argo-workflows/releases/download/v{{VERSION}}/argo-linux-amd64.gz
+      dest: /usr/local/bin/argo-linux-amd64.gz
+    ignore_errors: yes
+
+  - name: extract argo-client
+    shell: gunzip /usr/local/bin/argo-linux-amd64.gz && mv /usr/local/bin/argo-linux-amd64 /usr/local/bin/argo && chmod +x /usr/local/bin/argo
+    args:
+      creates: /usr/local/bin/argo
+    ignore_errors: yes
+
+  - name: Get secret name
+    command: kubectl get sa -n {{ARGO_NS}} default -o=jsonpath='{.secrets[0].name}'
+    register: secret
+  
+  - name: Get ARGO Token
+    command: kubectl get secret -n {{ARGO_NS}} {{ secret.stdout }} -o=jsonpath='{.data.token}'
+    register: argo_token
+
+  - name: Show ARGO Token
+    debug:
+      msg: "Bearer {{ argo_token.stdout | b64decode  }}"
