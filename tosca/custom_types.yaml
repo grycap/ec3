@@ -1450,6 +1450,10 @@ node_types:
         type: float
         required: false
         default: 1.0
+      enable_gpu:
+        type: boolean
+        required: false
+        default: false
       image:
         type: string
         required: true
