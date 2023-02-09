@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    VERSION: "{{ kubeflow_manifests_version | default('v1.6.1') }}"
+  tasks:
+  - name: Install Git
+    package: name=git
+
+  - name: Git clone kubeflow manifests repo
+    git:
+      repo: https://github.com/kubeflow/manifests
+      dest: /tmp/kubeflow
+      version: {{ VERSION }}
+      update: no
+
+  - name: Install kustomize 3.2.0
+    get_url:
+      url: https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64
+      dest: /opt/kustomize
+      mode: '0777'
+
+  - name: Build kubeflow yaml
+    command: kustomize build example > kubeflow.yaml
+    args:
+      chdir: /tmp/kubeflow
+      creates: /tmp/kubeflow/kubeflow.yaml
+
+  - name: Deploy kubeflow
+    command: kubectl apply -f kubeflow.yaml
+    args:
+      chdir: /tmp/kubeflow
+    register: kresult
+    until: "kresult is not failed"
+    retries: 10
+    delay: 10
