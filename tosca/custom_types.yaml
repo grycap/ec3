@@ -295,6 +295,10 @@ artifact_types:
     derived_from: tosca.artifacts.Root
     description: Ansible Galaxy role to be deployed in the target node
 
+  tosca.artifacts.AnsibleGalaxy.collection:
+    derived_from: tosca.artifacts.Root
+    description: Ansible Galaxy collection to be installed in the target node
+
 relationship_types:
 
   tosca.relationships.indigo.Manages:
