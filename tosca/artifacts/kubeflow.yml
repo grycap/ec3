@@ -21,7 +21,7 @@
       mode: '0777'
 
   - name: Build kubeflow yaml
-    command: kustomize build example > kubeflow.yaml
+    shell: /opt/kustomize build example > kubeflow.yaml
     args:
       chdir: /tmp/kubeflow
       creates: /tmp/kubeflow/kubeflow.yaml
@@ -30,6 +30,8 @@
     command: kubectl apply -f kubeflow.yaml
     args:
       chdir: /tmp/kubeflow
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
     register: kresult
     until: "kresult is not failed"
     retries: 10
