@@ -11,7 +11,7 @@
     git:
       repo: https://github.com/kubeflow/manifests
       dest: /tmp/kubeflow
-      version: {{ VERSION }}
+      version: "{{ VERSION }}"
       update: no
 
   - name: Install kustomize 3.2.0
