@@ -84,7 +84,6 @@
                       number: 80
                 pathType: Prefix
 
-
   - name: Deploy kubeflow
     command: kubectl apply -f kubeflow.yaml
     args:
@@ -95,3 +94,8 @@
     until: "kresult is not failed"
     retries: 10
     delay: 10
+
+  - name: Create serviceaccount default-editor
+    command: kubectl -n kubeflow-user create serviceaccount default-editor
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
