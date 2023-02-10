@@ -40,7 +40,7 @@
       chdir: /tmp/kubeflow
       creates: /tmp/kubeflow/kubeflow.yaml
 
-  - name: Create kubeflow-user RoleBinding
+  - name: Add kubeflow-user RoleBinding + Ingress
     blockinfile:
       path: /tmp/kubeflow/kubeflow.yaml
       marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
@@ -64,6 +64,26 @@
         - apiGroup: rbac.authorization.k8s.io
           kind: User
           name: {{ USER_MAIL }}
+        ---
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: istio-ingressgateway
+          namespace: istio-system
+          annotations:
+            kubernetes.io/ingress.class: nginx
+        spec:
+          rules:
+          - http:
+              paths:
+              - path: /
+                backend:
+                  service:
+                    name: istio-ingressgateway
+                    port:
+                      number: 80
+                pathType: Prefix
+
 
   - name: Deploy kubeflow
     command: kubectl apply -f kubeflow.yaml
