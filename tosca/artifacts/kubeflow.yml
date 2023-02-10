@@ -3,7 +3,7 @@
   connection: local
   vars:
     VERSION: "{{ kubeflow_manifests_version | default('v1.6.1') }}"
-    USER_MAIL: "{{ kubeflow_user | default('user@example.com') }}"
+    USER_MAIL: "{{ kubeflow_user | default('user') }}"
     USER_PASS: "{{ kubeflow_pass | default('$2y$12$4K/VkmDd1q1Orb3xAt82zu8gk7Ad6ReFR4LCP9UeYE90NLiN9Df72') }}"
   tasks:
   - name: Install Git
