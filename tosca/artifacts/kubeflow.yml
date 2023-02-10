@@ -43,7 +43,7 @@
   - name: Add kubeflow-user RoleBinding + Ingress
     blockinfile:
       path: /tmp/kubeflow/kubeflow.yaml
-      marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+      marker: "#-- {mark} ANSIBLE MANAGED BLOCK --"
       block: |
         ---
         apiVersion: v1
