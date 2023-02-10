@@ -3,7 +3,7 @@
   connection: local
   vars:
     VERSION: "{{ kubeflow_manifests_version | default('v1.6.1') }}"
-    USER_MAIL: "{{ kubeflow_user | default('user') }}"
+    USER_MAIL: "{{ kubeflow_user | default('user@example.com') }}"
     USER_PASS: "{{ kubeflow_pass | default('$2y$12$4K/VkmDd1q1Orb3xAt82zu8gk7Ad6ReFR4LCP9UeYE90NLiN9Df72') }}"
   tasks:
   - name: Install Git
@@ -95,7 +95,7 @@
     retries: 10
     delay: 10
 
-  - name: Create serviceaccount default-editor
-    command: kubectl -n kubeflow-user create serviceaccount default-editor
+  - name: Create serviceaccount default-editor in kubeflow-user ns
+    shell: kubectl get sa -n kubeflow-user default-editor || kubectl -n kubeflow-user create serviceaccount default-editor
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
