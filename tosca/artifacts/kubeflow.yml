@@ -3,6 +3,8 @@
   connection: local
   vars:
     VERSION: "{{ kubeflow_manifests_version | default('v1.6.1') }}"
+    USER_MAIL: "{{ kubeflow_user | default('user@example.com') }}"
+    USER_PASS: "{{ kubeflow_pass | default('$2y$12$4K/VkmDd1q1Orb3xAt82zu8gk7Ad6ReFR4LCP9UeYE90NLiN9Df72') }}"
   tasks:
   - name: Install Git
     package: name=git
@@ -13,6 +15,18 @@
       dest: /tmp/kubeflow
       version: "{{ VERSION }}"
       update: no
+
+  - name: Set kubeflow user
+    lineinfile: 
+      path: /tmp/kubeflow/common/dex/base/config-map.yaml
+      regexp: '    - email: '
+      line: '    - email: {{ USER_MAIL }}'
+
+  - name: Set kubeflow pass
+    lineinfile: 
+      path: /tmp/kubeflow/common/dex/base/config-map.yaml
+      regexp: '      hash: '
+      line: '      hash: {{ USER_PASS }}'
 
   - name: Install kustomize 3.2.0
     get_url:
@@ -26,6 +40,50 @@
       chdir: /tmp/kubeflow
       creates: /tmp/kubeflow/kubeflow.yaml
 
+  - name: Add kubeflow-user RoleBinding + Ingress
+    blockinfile:
+      path: /tmp/kubeflow/kubeflow.yaml
+      marker: "#-- {mark} ANSIBLE MANAGED BLOCK --"
+      block: |
+        ---
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: kubeflow-user
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: kubeflow-user-edit
+          namespace: kubeflow-user
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: kubeflow-edit
+        subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: User
+          name: {{ USER_MAIL }}
+        ---
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: istio-ingressgateway
+          namespace: istio-system
+          annotations:
+            kubernetes.io/ingress.class: nginx
+        spec:
+          rules:
+          - http:
+              paths:
+              - path: /
+                backend:
+                  service:
+                    name: istio-ingressgateway
+                    port:
+                      number: 80
+                pathType: Prefix
+
   - name: Deploy kubeflow
     command: kubectl apply -f kubeflow.yaml
     args:
@@ -36,3 +94,8 @@
     until: "kresult is not failed"
     retries: 10
     delay: 10
+
+  - name: Create serviceaccount default-editor in kubeflow-user ns
+    shell: kubectl get sa -n kubeflow-user default-editor || kubectl -n kubeflow-user create serviceaccount default-editor
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
