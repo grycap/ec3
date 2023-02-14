@@ -1,0 +1,57 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    CVMFS_REPOSITORIES: "{{ cernvmfs_repositories | default('grid.cern.ch') }}"
+    CVMFS_CLIENT_PROFILE: "{{ cernvmfs_client_profile | default('single') }}"
+    CVMFS_HTTP_PROXY: "{{ cernvmfs_http_proxy | default('DIRECT') }}"
+  tasks:
+  - block:
+    - name: Install cvmfs apt repo
+      apt:
+        deb: https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest_all.deb
+      register: cvmfs_repo
+    
+    - name: Update cache
+      apt:
+        update_cache: yes
+      when: cvmfs_repo is changed
+
+    when: ansible_os_family == "Debian"
+
+  - name: Install cvmfs yum repo
+    yum:
+      name: https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm
+    when: ansible_os_family == "RedHat"
+
+  - name: Install cvmfs
+    package:
+      name: cvmfs
+
+  - name: Create autofs conf file
+    copy:
+      content: "/cvmfs /etc/auto.cvmfs"
+      dest: /etc/auto.master.d/cvmfs.autofs 
+
+  - name: Start autofs service
+    service:
+      name: autofs
+      state: started
+
+  - name: Set CVMFS_CLIENT_PROFILE
+    lineinfile:
+      path: /etc/cvmfs/default.local
+      line: "CVMFS_CLIENT_PROFILE={{CVMFS_CLIENT_PROFILE}}"
+      regexp: "CVMFS_CLIENT_PROFILE="
+    
+  - name: Set CVMFS_REPOSITORIES
+    lineinfile:
+      path: /etc/cvmfs/default.local
+      line: "CVMFS_REPOSITORIES={{CVMFS_REPOSITORIES}}"
+      regexp: "CVMFS_REPOSITORIES="
+
+  - name: Set CVMFS_HTTP_PROXY
+    lineinfile:
+      path: /etc/cvmfs/default.local
+      line: "CVMFS_HTTP_PROXY={{CVMFS_HTTP_PROXY}}"
+      regexp: "CVMFS_HTTP_PROXY="
