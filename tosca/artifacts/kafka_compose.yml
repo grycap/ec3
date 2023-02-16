@@ -71,8 +71,36 @@
               - './certificate.pem:/opt/bitnami/kafka/config/certs/kafka.truststore.pem:ro'
               - './certificate.pem:/opt/bitnami/kafka/config/certs/kafka.keystore.pem:ro'
               - './certificate.key:/opt/bitnami/kafka/config/certs/kafka.keystore.key:ro'
+          cmak:
+            image: ghcr.io/eshepelyuk/dckr/cmak-3.0.0.6:latest
+            restart: always
+            depends_on:
+              - zookeeper
+            ports:
+              - "9000:9000"
+            command:
+              - "-Dcmak.zkhosts=zookeeper:2181"
+              - "-DbasicAuthentication.enabled=true"
+              - "-DbasicAuthentication.username={{client_user}}"
+              - "-DbasicAuthentication.password={{client_pass}}"
 
   - name: docker-compose up
     docker_compose:
       project_src: /opt/kafka/
       state: present
+
+  - name: Wait cmka to start
+    wait_for:
+      port: 9000
+
+  - name: Add local kafka cluster at cmka
+    uri:
+      url: http://localhost:9000/clusters
+      method: POST
+      force_basic_auth: yes
+      user: "{{client_user}}"
+      password: "{{client_pass}}"
+      body_format: form-urlencoded
+      body: "name=local&zkHosts=zookeeper%3A2181&kafkaVersion=3.4.0&jmxUser=&jmxPass=&tuning.brokerViewUpdatePeriodSeconds=30&tuning.clusterManagerThreadPoolSize=2&tuning.clusterManagerThreadPoolQueueSize=100&tuning.kafkaCommandThreadPoolSize=2&tuning.kafkaCommandThreadPoolQueueSize=100&tuning.logkafkaCommandThreadPoolSize=2&tuning.logkafkaCommandThreadPoolQueueSize=100&tuning.logkafkaUpdatePeriodSeconds=30&tuning.partitionOffsetCacheTimeoutSecs=5&tuning.brokerViewThreadPoolSize=2&tuning.brokerViewThreadPoolQueueSize=1000&tuning.offsetCacheThreadPoolSize=2&tuning.offsetCacheThreadPoolQueueSize=1000&tuning.kafkaAdminClientThreadPoolSize=2&tuning.kafkaAdminClientThreadPoolQueueSize=1000&tuning.kafkaManagedOffsetMetadataCheckMillis=30000&tuning.kafkaManagedOffsetGroupCacheSize=1000000&tuning.kafkaManagedOffsetGroupExpireDays=7&securityProtocol=SASL_SSL&saslMechanism=PLAIN&jaasConfig=org.apache.kafka.common.security.plain.PlainLoginModule+required+username%3D%22user%22++********word%3D%22********%22+"
+      status_code: 200
+    register: login
