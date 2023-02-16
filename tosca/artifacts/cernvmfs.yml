@@ -43,15 +43,23 @@
       path: /etc/cvmfs/default.local
       line: "CVMFS_CLIENT_PROFILE={{CVMFS_CLIENT_PROFILE}}"
       regexp: "CVMFS_CLIENT_PROFILE="
+      create: yes
     
   - name: Set CVMFS_REPOSITORIES
     lineinfile:
       path: /etc/cvmfs/default.local
       line: "CVMFS_REPOSITORIES={{CVMFS_REPOSITORIES}}"
       regexp: "CVMFS_REPOSITORIES="
+    register: cvmfs_repos
 
   - name: Set CVMFS_HTTP_PROXY
     lineinfile:
       path: /etc/cvmfs/default.local
       line: "CVMFS_HTTP_PROXY={{CVMFS_HTTP_PROXY}}"
       regexp: "CVMFS_HTTP_PROXY="
+
+  - name: Start autofs service
+    service:
+      name: autofs
+      state: restarted
+    when: cvmfs_repos is changed
