@@ -1,0 +1,78 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    client_user: "{{ kafka_client_user | default('user') }}"
+    client_pass: "{{ kafka_client_pass | default('pass') }}"
+  roles:
+  - role: 'grycap.docker'
+  tasks:
+  - name:
+    file:
+      path: /opt/kafka
+      state: directory
+      mode: '0755'
+
+  - name: Create private key (RSA, 4096 bits)
+    community.crypto.openssl_privatekey:
+      path: /opt/kafka/certificate.key
+      mode: 0644
+      format: pkcs8
+
+  - name: Generate an OpenSSL Certificate Signing Request with Subject information
+    community.crypto.openssl_csr:
+      path: /opt/kafka/certificate.csr
+      privatekey_path: /opt/kafka/certificate.key
+      country_name: ES
+      organization_name: Kafka
+      common_name: Kafka
+
+  - name: Create simple self-signed certificate
+    community.crypto.x509_certificate:
+      path: /opt/kafka/certificate.pem
+      privatekey_path: /opt/kafka/certificate.key
+      provider: selfsigned
+      csr_path: /opt/kafka/certificate.csr
+
+  - name: Create docker-compose file
+    copy:
+      dest: /opt/kafka/docker-compose.yaml
+      content: |
+        version: '2'
+        services:
+          zookeeper:
+            image: zookeeper
+            environment:
+              ZOO_SERVERS: server.1=zookeeper:2888:3888;2181
+              ZOO_MY_ID: 1
+              ZOO_ENABLE_AUTH: "yes"
+              ZOO_SERVER_USERS: kafka
+              ZOO_SERVER_PASSWORDS: kafka_password
+          kafka:
+            image: bitnami/kafka
+            depends_on:
+              - zookeeper
+            ports:
+              - 9092:9092
+            environment:
+              KAFKA_BROKER_ID: 1
+              KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+              KAFKA_ZOOKEEPER_USER: kafka
+              KAFKA_ZOOKEEPER_PASSWORD: kafka_password
+              KAFKA_CLIENT_USERS: "{{client_user}}"
+              KAFKA_CLIENT_PASSWORDS: "{{client_pass}}"
+              ALLOW_PLAINTEXT_LISTENER: "yes"
+              KAFKA_CFG_LISTENERS: INTERNAL://:9093,CLIENT://:9092
+              KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,CLIENT://kafka:9092
+              KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CLIENT:SASL_SSL
+              KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+              KAFKA_TLS_TYPE: PEM
+            volumes:
+              - './certificate.pem:/opt/bitnami/kafka/config/certs/kafka.truststore.pem:ro'
+              - './certificate.pem:/opt/bitnami/kafka/config/certs/kafka.keystore.pem:ro'
+              - './certificate.key:/opt/bitnami/kafka/config/certs/kafka.keystore.key:ro'
+
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/kafka/
+      state: present
