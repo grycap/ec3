@@ -1,0 +1,114 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    client_user: "{{ kafka_client_user | default('user') }}"
+    client_pass: "{{ kafka_client_pass | default('pass') }}"
+  roles:
+  - role: 'grycap.docker'
+  tasks:
+  - name:
+    file:
+      path: /opt/kafka
+      state: directory
+      mode: '0755'
+
+  - name: Create private key (RSA, 4096 bits)
+    community.crypto.openssl_privatekey:
+      path: /opt/kafka/certificate.key
+      mode: 0644
+      format: pkcs8
+
+  - name: Generate an OpenSSL Certificate Signing Request with Subject information
+    community.crypto.openssl_csr:
+      path: /opt/kafka/certificate.csr
+      privatekey_path: /opt/kafka/certificate.key
+      country_name: ES
+      organization_name: Kafka
+      common_name: Kafka
+
+  - name: Create simple self-signed certificate
+    community.crypto.x509_certificate:
+      path: /opt/kafka/certificate.pem
+      privatekey_path: /opt/kafka/certificate.key
+      provider: selfsigned
+      csr_path: /opt/kafka/certificate.csr
+
+  - name: Create docker-compose file
+    copy:
+      dest: /opt/kafka/docker-compose.yaml
+      content: |
+        version: '2'
+        services:
+          zookeeper:
+            image: zookeeper
+            environment:
+              ZOO_SERVERS: server.1=zookeeper:2888:3888;2181
+              ZOO_MY_ID: 1
+              ZOO_ENABLE_AUTH: "yes"
+              ZOO_SERVER_USERS: kafka
+              ZOO_SERVER_PASSWORDS: kafka_password
+          kafka:
+            image: bitnami/kafka
+            depends_on:
+              - zookeeper
+            ports:
+              - 9092:9092
+            environment:
+              KAFKA_BROKER_ID: 1
+              KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+              KAFKA_ZOOKEEPER_USER: kafka
+              KAFKA_ZOOKEEPER_PASSWORD: kafka_password
+              KAFKA_CLIENT_USERS: "{{client_user}}"
+              KAFKA_CLIENT_PASSWORDS: "{{client_pass}}"
+              ALLOW_PLAINTEXT_LISTENER: "yes"
+              KAFKA_CFG_LISTENERS: INTERNAL://:9093,CLIENT://:9092
+              KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,CLIENT://kafka:9092
+              KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CLIENT:SASL_SSL
+              KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+              KAFKA_TLS_TYPE: PEM
+            volumes:
+              - './certificate.pem:/opt/bitnami/kafka/config/certs/kafka.truststore.pem:ro'
+              - './certificate.pem:/opt/bitnami/kafka/config/certs/kafka.keystore.pem:ro'
+              - './certificate.key:/opt/bitnami/kafka/config/certs/kafka.keystore.key:ro'
+          cmak:
+            image: ghcr.io/eshepelyuk/dckr/cmak-3.0.0.6:latest
+            restart: always
+            depends_on:
+              - zookeeper
+            ports:
+              - "9000:9000"
+            command:
+              - "-Dcmak.zkhosts=zookeeper:2181"
+              - "-DbasicAuthentication.enabled=true"
+              - "-DbasicAuthentication.username={{client_user}}"
+              - "-DbasicAuthentication.password={{client_pass}}"
+
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/kafka/
+      state: present
+
+  - name: "wait for cmka to come up"
+    uri:
+      url: "http://localhost:9000"
+      status_code: 200
+      force_basic_auth: yes
+      user: "{{client_user}}"
+      password: "{{client_pass}}"
+    register: result
+    until: result.status == 200
+    retries: 30
+    delay: 1
+
+  - name: Add local kafka cluster at cmka
+    uri:
+      url: http://localhost:9000/clusters
+      method: POST
+      force_basic_auth: yes
+      user: "{{client_user}}"
+      password: "{{client_pass}}"
+      body_format: form-urlencoded
+      body: "name=local&zkHosts=zookeeper%3A2181&kafkaVersion=3.1.0&jmxUser=&jmxPass=&tuning.brokerViewUpdatePeriodSeconds=30&tuning.clusterManagerThreadPoolSize=2&tuning.clusterManagerThreadPoolQueueSize=100&tuning.kafkaCommandThreadPoolSize=2&tuning.kafkaCommandThreadPoolQueueSize=100&tuning.logkafkaCommandThreadPoolSize=2&tuning.logkafkaCommandThreadPoolQueueSize=100&tuning.logkafkaUpdatePeriodSeconds=30&tuning.partitionOffsetCacheTimeoutSecs=5&tuning.brokerViewThreadPoolSize=2&tuning.brokerViewThreadPoolQueueSize=1000&tuning.offsetCacheThreadPoolSize=2&tuning.offsetCacheThreadPoolQueueSize=1000&tuning.kafkaAdminClientThreadPoolSize=2&tuning.kafkaAdminClientThreadPoolQueueSize=1000&tuning.kafkaManagedOffsetMetadataCheckMillis=30000&tuning.kafkaManagedOffsetGroupCacheSize=1000000&tuning.kafkaManagedOffsetGroupExpireDays=7&securityProtocol=SASL_SSL&saslMechanism=PLAIN&jaasConfig=org.apache.kafka.common.security.plain.PlainLoginModule+required+username%3D%22user%22++********word%3D%22********%22+"
+      status_code: 200
+    register: login
