@@ -1,12 +1,27 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+    username: user
+    password: pass
   tasks:
   - name: Get kafka cert
-    commnad: kubectl get secret kafka-0-tls --namespace kafka -o jsonpath='{.data.ca\\.crt}' | base64 -d
+    shell: kubectl get secret kafka-0-tls --namespace kafka -o jsonpath='{.data.ca\.crt}' | base64 -d
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
     register: kafka_cert
-  - name: kafka_cert
+  - name: kafka_jaas_conf
     debug:
-      msg: '{{ kafka_cert.stdout }}'
+      msg: |
+        KafkaClient {
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="user"
+        password="pass";
+        };
+  - name: client_properties
+    debug:
+      msg: |
+        security.protocol=SASL_SSL
+        sasl.mechanism=PLAIN
+        ssl.truststore.type=PEM
+        ssl.truststore.certificates={{ kafka_cert.stdout }}
