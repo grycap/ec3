@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Get kafka cert
+    commnad: kubectl get secret kafka-0-tls --namespace kafka -o jsonpath='{.data.ca\\.crt}' | base64 -d
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    register: kafka_cert
+  - name: kafka_cert
+    debug:
+      msg: '{{ kafka_cert.stdout }}'
