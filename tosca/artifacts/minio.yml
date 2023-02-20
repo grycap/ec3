@@ -4,5 +4,4 @@
   roles:
   - role: 'grycap.kubeminio'
     master_deploy: true
-    enable_tls: false
     enable_ingress: false
