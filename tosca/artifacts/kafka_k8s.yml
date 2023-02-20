@@ -1,0 +1,149 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    username: user
+    password: pass
+    public_ip: "{{ IM_NODE_PUBLIC_IP | default(ansible_default_ipv4.address) }}"
+    ssl_country: ES
+    ssl_state: Valencia
+    ssl_location: Valencia
+    ssl_organization: UPV
+    ssl_organizational_unit: GRyCAP
+  tasks:
+
+  - name: Create directory for the kafka certs
+    file:
+      path: "/opt/kafka/certs"
+      state: directory
+      recurse: yes
+
+  - name: Generate certificate requesst
+    copy:
+      dest: /opt/kafka/req.conf
+      content: |
+        [req]
+        distinguished_name = req_distinguished_name
+        x509_extensions = v3_req
+        prompt = no
+        [req_distinguished_name]
+        C = {{ssl_country}}
+        ST = {{ssl_state}}
+        L = {{ssl_location}}
+        O = {{ssl_organization}}
+        OU = {{ssl_organizational_unit}}
+        CN = kafka
+        [v3_req]
+        keyUsage = keyEncipherment, dataEncipherment
+        extendedKeyUsage = serverAuth
+        subjectAltName = @alt_names
+        [alt_names]
+        DNS.1 = kafka
+        DNS.2 = kafka.kafka.svc.cluster.local
+        DNS.3 = kafka-0.kafka-headless.kafka.svc.cluster.local
+        DNS.4 = kubeserver.localdomain
+        IP.1 = {{ public_ip }}
+
+  - name: Create the CA private key and certificate
+    command: openssl req -newkey rsa:4096 -nodes -sha256 -keyout tls.key -x509 -days 365 -out tls.crt -config /opt/kafka/req.conf -extensions 'v3_req'
+    args:
+      chdir: /opt/kafka/certs
+      creates: /opt/kafka/certs/tls.crt
+  
+  - name: Create ca.crt file
+    file: 
+      src: /opt/kafka/certs/tls.crt
+      dest: /opt/kafka/certs/ca.crt
+      state: link
+
+  - name: Create Namespace file
+    copy:
+      dest: /opt/kafka/ns.yaml
+      content: |
+        kind: Namespace
+        apiVersion: v1
+        metadata:
+          name: kafka
+          labels:
+            name: kafka
+
+  - name: Create Namespace
+    shell: kubectl apply -f /opt/kafka/ns.yaml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Save key and certs into a secret
+    shell: kubectl create secret generic kafka-0-tls --namespace=kafka --from-file=tls.crt=/opt/kafka/certs/tls.crt --from-file=tls.key=/opt/kafka/certs/tls.key  --from-file=ca.crt=/opt/kafka/certs/tls.crt  --dry-run -o yaml | kubectl apply -f -
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Add Bitnami helm repo
+    command: helm repo add bitnami https://charts.bitnami.com/bitnami
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: "Update helm repositories"
+    command: helm repo update
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Create values file
+    copy:
+      dest: /tmp/kafka-values.yaml
+      content: |
+        replicaCount: 1
+        zookeeper:
+          replicaCount: 1
+          auth:
+            enabled: true
+            serverUsers: zookeeperUser
+            serverPasswords=zookeeperPassword
+            clientUser: zookeeperUser
+            clientPassword: zookeeperPassword
+        externalAccess:
+          enabled: true
+          service:
+            type: NodePort
+            nodePorts: [9094]
+            useHostIPs: true
+            domain: {{public_ip}}
+        auth:
+          tls:
+            type: pem
+            existingSecrets: ["kafka-0-tls"]
+          clientProtocol: sasl_tls
+          sasl:
+            jaas:
+              clientUsers: ["user"]
+              clientPasswords: ["pass"]
+
+  - name: Install (or upgrade) the chart
+    command: helm upgrade kafka --install bitnami/kafka --namespace kafka --values /tmp/kafka-values.yaml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Get kafka cert
+    shell: kubectl get secret kafka-0-tls --namespace kafka -o jsonpath='{.data.tls\.crt}' | base64 -d
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    register: kafka_cert
+
+  - set_fact:
+      cert: "{{kafka_cert.stdout | replace('\n','\\n')}}"
+
+  - name: kafka_jaas_conf
+    debug:
+      msg: |
+        KafkaClient {
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="user"
+        password="pass";
+        };
+
+  - name: client_properties
+    debug:
+      msg: |
+        security.protocol=SASL_SSL
+        sasl.mechanism=PLAIN
+        ssl.truststore.type=PEM
+        ssl.truststore.certificates={{ cert }}
