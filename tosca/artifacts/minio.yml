@@ -3,5 +3,5 @@
   connection: local
   roles:
   - role: 'grycap.kubeminio'
-    master_deploy: true
+    master_deploy: false
     enable_ingress: false
