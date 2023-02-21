@@ -125,7 +125,7 @@
     register: kafka_cert
 
   - set_fact:
-      cert: "{{kafka_cert.stdout | replace('\n','\\\n')}}"
+      cert: "{{kafka_cert.stdout | replace('\n',' \\\n')}}"
 
   - name: kafka_jaas_conf
     debug:
