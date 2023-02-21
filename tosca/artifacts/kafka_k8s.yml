@@ -112,6 +112,7 @@
             type: pem
             existingSecrets: ["kafka-0-tls"]
           clientProtocol: sasl_tls
+          externalClientProtocol: sasl_tls
           sasl:
             jaas:
               clientUsers: ["user"]
