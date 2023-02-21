@@ -91,15 +91,10 @@
     copy:
       dest: /tmp/kafka-values.yaml
       content: |
+        advertisedListeners: "INTERNAL://kafka-0.kafka-headless.kafka.svc.cluster.local:9093,CLIENT://kafka-0.kafka-headless.kafka.svc.cluster.local:9092,EXTERNAL://{{public_ip}}:9094"
         replicaCount: 1
         zookeeper:
           replicaCount: 1
-          auth:
-            enabled: true
-            serverUsers: zookeeperUser
-            serverPasswords=zookeeperPassword
-            clientUser: zookeeperUser
-            clientPassword: zookeeperPassword
         externalAccess:
           enabled: true
           service:
