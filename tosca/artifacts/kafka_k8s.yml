@@ -2,14 +2,15 @@
 - hosts: localhost
   connection: local
   vars:
-    username: user
-    password: pass
+    username: "{{ kafka_jaas_user | default('user') }}"
+    password: "{{ kafka_jaas_password | default('pass') }}"
     public_ip: "{{ IM_NODE_PUBLIC_IP | default(ansible_default_ipv4.address) }}"
     ssl_country: ES
     ssl_state: Valencia
     ssl_location: Valencia
     ssl_organization: UPV
     ssl_organizational_unit: GRyCAP
+    external_dns_name: "{{ kafka_external_dns_name| default('kubeserverpublic') }}"
   tasks:
 
   - name: Create directory for the kafka certs
@@ -42,6 +43,7 @@
         DNS.2 = kafka.kafka.svc.cluster.local
         DNS.3 = kafka-0.kafka-headless.kafka.svc.cluster.local
         DNS.4 = kubeserver.localdomain
+        DNS.5 = {{ external_dns_name }}
         IP.1 = {{ public_ip }}
 
   - name: Create the CA private key and certificate
@@ -49,12 +51,6 @@
     args:
       chdir: /opt/kafka/certs
       creates: /opt/kafka/certs/tls.crt
-  
-  - name: Create ca.crt file
-    file: 
-      src: /opt/kafka/certs/tls.crt
-      dest: /opt/kafka/certs/ca.crt
-      state: link
 
   - name: Create Namespace file
     copy:
@@ -110,8 +106,8 @@
           externalClientProtocol: sasl_tls
           sasl:
             jaas:
-              clientUsers: ["user"]
-              clientPasswords: ["pass"]
+              clientUsers: ["{{username}}"]
+              clientPasswords: ["{{password}}"]
 
   - name: Install (or upgrade) the chart
     command: helm upgrade kafka --install bitnami/kafka --namespace kafka --values /tmp/kafka-values.yaml
@@ -132,8 +128,8 @@
       msg: |
         KafkaClient {
         org.apache.kafka.common.security.plain.PlainLoginModule required
-        username="user"
-        password="pass";
+        username="{{username}}"
+        password="{{password}}";
         };
 
   - name: client_properties
