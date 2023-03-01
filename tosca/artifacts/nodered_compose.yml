@@ -1,0 +1,117 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    admin_user: "{{ nodered_client_user | default('user') }}"
+    admin_pass: "{{ nodered_client_pass | default('pass') }}"
+    image: "{{ nodered_image | default('nodered/node-red') }}"
+  roles:
+  - role: 'grycap.docker'
+  tasks:
+  - name: Create opt dir
+    file:
+      path: /opt/nodered
+      state: directory
+      mode: '0755'
+
+  - name: Create data dir
+    file:
+      path: /opt/nodered/data
+      state: directory
+      mode: '0777'
+
+  - name: Create private key (RSA, 4096 bits)
+    community.crypto.openssl_privatekey:
+      path: /opt/nodered/certificate.key
+      mode: 0644
+      format: pkcs8
+
+  - name: Generate an OpenSSL Certificate Signing Request with Subject information
+    community.crypto.openssl_csr:
+      path: /opt/nodered/certificate.csr
+      privatekey_path: /opt/nodered/certificate.key
+      country_name: ES
+      organization_name: Node-RED
+      common_name: Node-RED
+
+  - name: Create simple self-signed certificate
+    community.crypto.x509_certificate:
+      path: /opt/nodered/certificate.pem
+      privatekey_path: /opt/nodered/certificate.key
+      provider: selfsigned
+      csr_path: /opt/nodered/certificate.csr
+
+  - name: Create docker-compose file
+    copy:
+      dest: /opt/nodered/data/settings.js
+      content: |
+        module.exports = {
+          flowFile: 'flows.json',
+          flowFilePretty: true,
+          uiPort: process.env.PORT || 1880,
+          https: {
+              key: require("fs").readFileSync('/certificate.key'),
+              cert: require("fs").readFileSync('/certificate.pem')
+          },
+          diagnostics: {
+              enabled: true,
+              ui: true
+          },
+          runtimeState: {
+              enabled: false,
+              ui: false
+          },
+          logging: {
+            console: {
+              level: 'info',
+              metrics: false,
+              audit: false
+            }
+          },
+          exportGlobalContextKeys: false,
+          editorTheme: {
+            projects: {
+              enabled: false,
+              workflow: {
+                mode: 'manual'
+              }
+            },
+            codeEditor: {
+              lib: 'monaco'
+            }
+          },
+          functionExternalModules: true,
+          debugMaxLength: 1000,
+          mqttReconnectTime: 15000,
+          serialReconnectTime: 15000,
+          adminAuth: {
+              type: 'credentials',
+              users: [
+                  {
+                      username: '{{admin_user}}',
+                      password: '{{admin_pass}}',
+                      permissions: '*'
+                  }
+              ]
+          }
+        }
+
+  - name: Create docker-compose file
+    copy:
+      dest: /opt/nodered/docker-compose.yaml
+      content: |
+        version: '2'
+        services:
+          nodered:
+            image: {{image}}
+            ports:
+              - 443:1880
+            volumes:
+              - './data:/data:rw'
+              - './certificate.pem:/certificate.pem:ro'
+              - './certificate.key:/certificate.key:ro'
+
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/nodered/
+      state: present
