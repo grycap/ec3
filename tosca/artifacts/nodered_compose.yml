@@ -3,7 +3,7 @@
   connection: local
   vars:
     admin_user: "{{ nodered_client_user | default('user') }}"
-    admin_pass: "{{ nodered_client_pass | default('pass') }}"
+    admin_pass: "{{ nodered_client_pass | default('$2b$08$BZqMjl9G.0itJFac/WY3mea/Oq1HCiYO3DGcQ9Uc8pldFdfVN/fvi') }}" # adminpass
     image: "{{ nodered_image | default('nodered/node-red') }}"
   roles:
   - role: 'grycap.docker'
