@@ -1,0 +1,418 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    dns_name: "{{ enes_dns_name | default('enes.localdomain') }}"
+    storage_size: "{{ enes_storage_size | default('50Gi') }}"
+    jupyterhub_crypt_key: "{{ enes_jupyterhub_crypt_key | default('c924b40b9ae0afba637e297773d27a50c3e9ba4c8a7910f0dd826df1e6c2104d') }}"
+  tasks:
+    - name: Create ENES yaml file
+      copy:
+        dest: /opt/enes_apache.yaml
+        content: |
+          ---
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: 'jhub'
+          ---
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: 'enes'
+          ---
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            namespace: enes
+            name: enes-web-claim
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            volumeMode: Filesystem
+            resources:
+              requests:
+                storage: 1Gi
+          ---
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            namespace: enes
+            name: claim-data
+          spec:
+            storageClassName: managed-nfs-storage
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:       
+                storage: {{ storage_size }}
+          ---
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            namespace: enes
+            name: ssmtp-conf-claim
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            volumeMode: Filesystem
+            resources:
+              requests:
+                storage: 1Gi
+          ---
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            namespace: enes
+            name: apache-deployment
+            labels:
+              role: webserver
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                role: webserver
+            template:
+              metadata:
+                labels:
+                  role: webserver
+              spec:
+                containers:
+                - name: frontend
+                  image: ophidiabigdata/php-apache-ssmtp:latest
+                  ports:
+                  - containerPort: 80
+                  volumeMounts:
+                  - name: enes-web
+                    mountPath: /var/www/html
+                  - name: ssmtp-conf
+                    mountPath: /etc/ssmtp
+                volumes:
+                  - name: enes-web
+                    persistentVolumeClaim:
+                      claimName: enes-web-claim
+                  - name: ssmtp-conf
+                    persistentVolumeClaim:
+                      claimName: ssmtp-conf-claim
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            namespace: enes
+            name: apache-service
+          spec:
+            selector:
+              role: webserver
+            ports:
+              - protocol: TCP
+                port: 80
+          ---
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            namespace: enes
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+            name: apache-ingress
+          spec:
+            tls:
+            - hosts:
+              - {{ dns_name }}
+              secretName: {{ dns_name }}
+            rules:
+            - host: {{ dns_name }}
+              http:
+                paths:
+                - backend:
+                    service:
+                      name: apache-service
+                      port:
+                        number: 80
+                  path: /
+                  pathType: Prefix
+
+    - command: kubectl apply -f /opt/enes_apache.yaml
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+    - name: Create Jupyter Values yaml file
+      copy:
+        dest: /opt/config_jupyter.yaml
+        content: |
+          cull:
+            enabled: true
+            timeout: 604800
+            every: 43200
+          proxy:
+            service:
+              type: NodePort
+            #    annotations:
+            #      kubernetes.io/backend-config: '{"ports": {"80":"proxy-public-backendconfig"}}'
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+              kubernetes.io/tls-acme: "true"
+            hosts:
+            - {{ dns_name }}
+            tls:
+            - hosts:
+              - {{ dns_name }}
+              secretName: {{ dns_name }}
+          singleuser:
+            memory:
+              limit: 2G
+              guarantee: 2G
+            cpu:
+              limit: 2
+              guarantee: 2
+            extraContainers:
+              - name: ophidiastack
+                image: ophidiabigdata/ophidia-backend:v1.7.1
+                volumeMounts:
+                  - mountPath: /home/jovyan/work
+                    name: vol-{username}{servername}
+                  - mountPath: /home/jovyan/data/
+                    name: vol-data
+                    readOnly: True
+            lifecycleHooks:
+              postStart:
+                exec:
+                  command: ["/bin/sh", "-c", "mkdir -p /home/jovyan/.jupyter/lab/user-settings/@jupyterlab/github/; echo '{\"baseUrl\": \"https://github.com\",\"accessToken\": \"\",\"defaultRepo\": \"ENES-Data-Space/notebooks\"}' > /home/jovyan/.jupyter/lab/user-settings/@jupyterlab/github/drive.jupyterlab-settings"]
+            extraEnv:
+              OPH_USER: "oph-test"
+              OPH_PASSWD: "abcd"
+              OPH_SERVER_HOST: "127.0.0.1"
+              HDF5_USE_FILE_LOCKING: "FALSE"
+            storage:
+              extraVolumes:
+                - name: vol-data
+                  persistentVolumeClaim:
+                    claimName: claim-data
+              extraVolumeMounts:
+                - name: vol-data
+                  mountPath: /home/jovyan/data
+                  readOnly: True
+              homeMountPath: /home/jovyan/work
+              capacity: 20Gi
+              dynamic:
+                pvcNameTemplate: claim-{username}{servername}
+                volumeNameTemplate: vol-{username}{servername}
+                storageAccessModes: ["ReadWriteMany"]
+            image:
+              name: ophidiabigdata/singleuser-enesds
+              tag: 3.0.0_2
+            startTimeout: 3600
+          hub:
+            extraEnv:
+              JUPYTERHUB_CRYPT_KEY: "{{jupyterhub_crypt_key}}"   
+            extraVolumeMounts:
+              - name: jupyterhub-config
+                mountPath: /etc/jupyterhub/jupyterhub_config_custom.py
+                subPath: jupyterhub_config_custom.py
+            extraVolumes:
+              - name: jupyterhub-config
+                configMap:
+                  name: jupyterhub-config        
+            baseUrl: /jupyter
+            config:
+              GenericOAuthenticator:
+                client_id: "{{enes_client_secret}}"
+                client_secret: "{{enes_client_id}}"
+                oauth_callback_url: "https://{{ dns_name }}/jupyter/hub/oauth_callback"
+                authorize_url: "{{enes_oidc_issuer}}/protocol/openid-connect/auth"
+                token_url: "{{enes_oidc_issuer}}/protocol/openid-connect/token"
+                userdata_url: "{{enes_oidc_issuer}}/protocol/openid-connect/userinfo"
+                scope:
+                  - openid
+                  - voperson_id
+                  - profile
+                  - eduperson_entitlement
+                login_service: "EGI Check-in"
+                username_key: "preferred_username"
+              Authenticator:
+                enable_auth_state: true
+                claim_groups_key: "eduperson_entitlement"
+                allowed_groups:
+                  - urn:mace:egi.eu:group:vo.enes.org:role=member#aai.egi.eu
+              CryptKeeper:
+                keys:
+                  - {{jupyterhub_crypt_key}}
+            extraConfig:
+              01-custom-config: |
+                config_py = open('/etc/jupyterhub/jupyterhub_config_custom.py').read()
+                exec(config_py)
+          debug:
+            enabled: true
+
+    - name: Create Jupyter Custom config file
+      copy:
+        dest: /opt/jupyterhub_config_custom.py
+        content: |
+          import os,sys
+          import socket
+          import warnings
+          import glob
+          from tornado import gen
+          import datetime
+          import kubespawner
+          c.KubeSpawner.service_account = 'default'
+          c.PAMAuthenticator.open_sessions = False
+          from oauthenticator.generic import GenericOAuthenticator
+          class LocalEnvAuthenticator(GenericOAuthenticator):
+              @gen.coroutine
+              def pre_spawn_start(self, user, spawner):
+                  auth_state = yield user.get_auth_state()
+                  #auth_state = await user.get_auth_state()
+                  if auth_state:
+                      userid=auth_state["oauth_user"]["sub"]
+                      preferred_username=auth_state["oauth_user"]["preferred_username"]
+                      now = datetime.datetime.now()
+                      login_timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+                      with open("/srv/jupyterhub/users_access.txt","a") as va_file:
+                          va_file.write(str(userid)+","+str(preferred_username)+","+str(login_timestamp)+"\n")
+                  else:
+                      self.log.info("##################### authstate is NONE for user "+str(spawner.user.name))
+          c.GenericOAuthenticator.enable_auth_state = True
+          if 'JUPYTERHUB_CRYPT_KEY' not in os.environ:
+              warnings.warn(
+                  "Need JUPYTERHUB_CRYPT_KEY env for persistent auth_state.\n"
+                  "    export JUPYTERHUB_CRYPT_KEY=$(openssl rand -hex 32)"
+              )
+              c.CryptKeeper.keys = [ os.urandom(32) ]
+          c.JupyterHub.authenticator_class = LocalEnvAuthenticator
+          c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
+          c.NotebookApp.trust_xheaders = True
+          def get_profile_list(spawner):
+              username = str(spawner.user.name)
+              profiles_list = []
+              profile = {
+                  'display_name': 'Small Data Science environment (2 cores, 2GB RAM)',
+                  'description': 'The Small notebook server (2 cores, 2GB RAM) includes Python, a number of pre-installed community libraries and a ready-to-use Ophidia HPDA framework instance for running data manipulation, analysis and visualization.',
+                  'default':True,
+              }
+              profiles_list.append(profile)
+              profile = {
+                  'display_name': 'Medium Data Science environment (4 cores, 4GB RAM)',
+                  'description': 'The Medium notebook server (4 cores, 4GB RAM) includes Python, a number of pre-installed community libraries and a ready-to-use Ophidia HPDA framework instance for running data manipulation, analysis and visualization.',
+                  'kubespawner_override': {
+                      'cpu_limit': 4,
+                      'mem_limit': '4G',
+                      'cpu_guarantee': 4,
+                      'mem_guarantee': '4G' ,
+                  }
+              }
+              profiles_list.append(profile)
+              profile = {
+                  'display_name': 'Large Data Science environment (8 cores, 8GB RAM)',
+                  'description': 'The Large (8 cores, 8GB RAM) notebook server includes Python, a number of pre-installed community libraries and a ready-to-use Ophidia HPDA framework instance for running data manipulation, analysis and visualization.',
+                  'kubespawner_override': {
+                      'cpu_limit': 8,
+                      'mem_limit': '8G',
+                      'cpu_guarantee': 8,
+                      'mem_guarantee': '8G',
+                  }
+              }
+              profiles_list.append(profile)
+              profile = {
+                  'display_name': 'CE2COAST WINTER SCHOOL (4 cores, 6GB RAM)',
+                  'description': 'Data Science environment supporting the Downscaling Climate and Ocean Change to Coastal Services CE2COAST WINTER SCHOOL (Lisbon, Portugal, 13-17 February 2023)',
+                  'kubespawner_override': {
+                      'image': 'ophidiabigdata/singleuser-enesds:ce2coast_1.0',
+                      'cpu_limit': 3.5,
+                      'mem_limit': '6G',
+                      'cpu_guarantee': 3.5,
+                      'mem_guarantee': '6G',
+                  }
+              }
+              profiles_list.append(profile)
+              ml_file = '/srv/jupyterhub/ML_staff'
+              with open(ml_file) as f_ml:
+                  ml_staff = f_ml.read().splitlines()
+              if username in ml_staff:
+                  profile = {
+                      'display_name': '1 - Small Data Science environment (16 cores, 128GB RAM) supporting ML use cases',
+                      'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
+                      'kubespawner_override': {
+                          'image': 'ophidiabigdata/singleuser-enesds:ML_3',
+                          'cpu_limit': 16,
+                          'mem_limit': '128G',
+                          'cpu_guarantee': 16,
+                          'mem_guarantee': '128G',
+                          'extra_resource_limits': {
+                              'nvidia.com/gpu': '2'
+                          },
+                          'extra_resource_guarantees': {
+                              'nvidia.com/gpu': '2'
+                          }
+                      }
+                  }
+                  profiles_list.append(profile)
+                  profile = {
+                      'display_name': '2 - Large Data Science environment (32 cores, 256GB RAM) supporting ML use cases',
+                      'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
+                      'kubespawner_override': {
+                          'image': 'ophidiabigdata/singleuser-enesds:ML_3',
+                          'cpu_limit': 32,
+                          'mem_limit': '256G',
+                          'cpu_guarantee': 32,
+                          'mem_guarantee': '256G',
+                          'extra_resource_limits': {
+                              'nvidia.com/gpu': '4'
+                          },
+                          'extra_resource_guarantees': {
+                              'nvidia.com/gpu': '4'
+                          }
+                      }
+                  }
+                  profiles_list.append(profile)
+              cerfacs_file = '/srv/jupyterhub/cerfacs_usernames'
+              with open(cerfacs_file) as f:
+                  usernames = f.read().splitlines()
+              if username in usernames:
+                  profile = {
+                          'display_name': 'Large Data Science environment (16 cores, 32GB RAM) supporting CERFACS use cases',
+                          'description': 'This is a customized environment including a large set of pre-configured science modules to address the requirements coming from the selected use case.',
+                          'default':True,
+                          'kubespawner_override': {
+                              'image': 'ophidiabigdata/singleuser-enesds:cerfacs_2.0',
+                              'cpu_limit': 15,
+                              'mem_limit': '30G',
+                              'cpu_guarantee': 15,
+                              'mem_guarantee': '30G' ,
+                              }
+                          }
+                  profiles_list.append(profile)
+              admin_file = '/srv/jupyterhub/admin_usernames'
+              with open(admin_file) as f_admin:
+                  admins = f_admin.read().splitlines()
+              if username in admins:
+                  profile = {
+                      'display_name': 'Large Default Data Science environment (16 cores, 16GB RAM) for demo',
+                      'description': 'Environment used to run demo notebooks',
+                      'kubespawner_override': {
+                          'cpu_limit': 15,
+                          'mem_limit': '15G',
+                          'cpu_guarantee': 15 ,
+                          'mem_guarantee': '15G' ,
+                      }
+                  }
+                  profiles_list.append(profile)
+              return profiles_list
+          c.KubeSpawner.profile_list = get_profile_list
+
+    - name: Add jupyterhub helm repo
+      command: helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+    - name: Add jupyterhub-config configmap
+      shell: kubectl create configmap --namespace jhub jupyterhub-config --from-file /opt/jupyterhub_config_custom.py --dry-run -o yaml | kubectl apply -f -
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+    - name: Install (or upgrade) the jupyterhub chart
+      command: helm upgrade --cleanup-on-fail --install my-jupyterhub jupyterhub/jupyterhub --namespace jhub --version=2.0.0 --values /opt/config_jupyter.yaml --timeout 15m
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
