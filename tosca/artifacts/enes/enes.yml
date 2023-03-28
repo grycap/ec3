@@ -40,7 +40,6 @@
             namespace: enes
             name: claim-data
           spec:
-            storageClassName: managed-nfs-storage
             accessModes:
               - ReadWriteMany
             resources:
@@ -416,3 +415,33 @@
       command: helm upgrade --cleanup-on-fail --install my-jupyterhub jupyterhub/jupyterhub --namespace jhub --version=2.0.0 --values /opt/config_jupyter.yaml --timeout 15m
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+    - name: Create Jupyter Custom config file
+      copy:
+        dest: /opt/load_web.yaml
+        content: |
+          apiVersion: v1
+          kind: Job
+          metadata:
+            namespace: enes
+            name: pv-load
+          spec:
+            volumes:
+              - name: enes-pv-storage
+                persistentVolumeClaim:
+                  claimName: enes-web-claim
+            containers:
+              - name: pv-load
+                image: bitnami/git
+                command:
+                - sh
+                - -c
+                - git clone https://github.com/ENES-Data-Space/web-portal /data
+                volumeMounts:
+                  - mountPath: "/data"
+                    name: enes-pv-storage
+
+    - command: kubectl apply -f /opt/load_web.yaml
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      ignore_errors: yes
