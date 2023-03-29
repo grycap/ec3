@@ -426,21 +426,23 @@
             namespace: enes
             name: pv-load
           spec:
-            volumes:
-              - name: enes-pv-storage
-                persistentVolumeClaim:
-                  claimName: enes-web-claim
-            containers:
-              - name: pv-load
-                image: bitnami/git
-                command:
-                - sh
-                - -c
-                - git clone https://github.com/ENES-Data-Space/web-portal /data
-                volumeMounts:
-                  - mountPath: "/data"
-                    name: enes-pv-storage
-            restartPolicy: Never
+            template:
+              spec:
+                volumes:
+                  - name: enes-pv-storage
+                    persistentVolumeClaim:
+                      claimName: enes-web-claim
+                containers:
+                  - name: pv-load
+                    image: bitnami/git
+                    command:
+                    - sh
+                    - -c
+                    - git clone https://github.com/ENES-Data-Space/web-portal /data
+                    volumeMounts:
+                      - mountPath: "/data"
+                        name: enes-pv-storage
+                restartPolicy: Never
 
     - shell: kubectl get job -n enes pv-load || kubectl apply -f /opt/load_web.yaml
       environment:
