@@ -135,6 +135,38 @@
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
 
+    - name: Create Job to load web page
+      copy:
+        dest: /opt/load_web.yaml
+        content: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            namespace: enes
+            name: pv-load
+          spec:
+            template:
+              spec:
+                volumes:
+                  - name: enes-pv-storage
+                    persistentVolumeClaim:
+                      claimName: enes-web-claim
+                containers:
+                  - name: pv-load
+                    image: bitnami/git
+                    command:
+                    - sh
+                    - -c
+                    - git clone https://github.com/ENES-Data-Space/web-portal /data
+                    volumeMounts:
+                      - mountPath: "/data"
+                        name: enes-pv-storage
+                restartPolicy: Never
+
+    - shell: kubectl get job -n enes pv-load || kubectl apply -f /opt/load_web.yaml
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+
     - name: Create Jupyter Values yaml file
       copy:
         dest: /opt/config_jupyter.yaml
@@ -416,34 +448,3 @@
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
 
-    - name: Create Jupyter Custom config file
-      copy:
-        dest: /opt/load_web.yaml
-        content: |
-          apiVersion: batch/v1
-          kind: Job
-          metadata:
-            namespace: enes
-            name: pv-load
-          spec:
-            template:
-              spec:
-                volumes:
-                  - name: enes-pv-storage
-                    persistentVolumeClaim:
-                      claimName: enes-web-claim
-                containers:
-                  - name: pv-load
-                    image: bitnami/git
-                    command:
-                    - sh
-                    - -c
-                    - git clone https://github.com/ENES-Data-Space/web-portal /data
-                    volumeMounts:
-                      - mountPath: "/data"
-                        name: enes-pv-storage
-                restartPolicy: Never
-
-    - shell: kubectl get job -n enes pv-load || kubectl apply -f /opt/load_web.yaml
-      environment:
-        KUBECONFIG: "/etc/kubernetes/admin.conf"
