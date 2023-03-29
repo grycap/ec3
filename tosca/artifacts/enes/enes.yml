@@ -420,7 +420,7 @@
       copy:
         dest: /opt/load_web.yaml
         content: |
-          apiVersion: v1
+          apiVersion: batch/v1
           kind: Job
           metadata:
             namespace: enes
@@ -440,8 +440,8 @@
                 volumeMounts:
                   - mountPath: "/data"
                     name: enes-pv-storage
+            restartPolicy: Never
 
-    - command: kubectl apply -f /opt/load_web.yaml
+    - shell: kubectl get job -n enes pv-load || kubectl apply -f /opt/load_web.yaml
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
-      ignore_errors: yes
