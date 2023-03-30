@@ -249,8 +249,8 @@
             baseUrl: /jupyter
             config:
               GenericOAuthenticator:
-                client_id: "{{enes_client_secret}}"
-                client_secret: "{{enes_client_id}}"
+                client_id: "{{enes_client_id}}"
+                client_secret: "{{enes_client_secret}}"
                 oauth_callback_url: "https://{{ dns_name }}/jupyter/hub/oauth_callback"
                 authorize_url: "{{enes_oidc_issuer}}/protocol/openid-connect/auth"
                 token_url: "{{enes_oidc_issuer}}/protocol/openid-connect/token"
