@@ -358,51 +358,73 @@
                   }
               }
               profiles_list.append(profile)
-              ml_file = '/srv/jupyterhub/ML_staff'
-              with open(ml_file) as f_ml:
-                  ml_staff = f_ml.read().splitlines()
-              if username in ml_staff:
-                  profile = {
-                      'display_name': '1 - Small Data Science environment (16 cores, 128GB RAM) supporting ML use cases',
-                      'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
-                      'kubespawner_override': {
-                          'image': 'ophidiabigdata/singleuser-enesds:ML_3',
-                          'cpu_limit': 16,
-                          'mem_limit': '128G',
-                          'cpu_guarantee': 16,
-                          'mem_guarantee': '128G',
-                          'extra_resource_limits': {
-                              'nvidia.com/gpu': '2'
-                          },
-                          'extra_resource_guarantees': {
-                              'nvidia.com/gpu': '2'
+              try:
+                  ml_file = '/srv/jupyterhub/ML_staff'
+                  with open(ml_file) as f_ml:
+                      ml_staff = f_ml.read().splitlines()
+                      if username in ml_staff:
+                          profile = {
+                          'display_name': '1 - Small Data Science environment (16 cores, 128GB RAM) supporting ML use cases',
+                          'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
+                          'kubespawner_override': {
+                              'image': 'ophidiabigdata/singleuser-enesds:ML_3c',
+                              'cpu_limit': 8,
+                              'mem_limit': '64G',
+                              'cpu_guarantee': 8,
+                              'mem_guarantee': '64G',
+                              'extra_resource_limits': {
+                                  'nvidia.com/gpu': '1'
+                              },
+                              'extra_resource_guarantees': {
+                                  'nvidia.com/gpu': '1'
+                              }
                           }
-                      }
-                  }
-                  profiles_list.append(profile)
-                  profile = {
-                      'display_name': '2 - Large Data Science environment (32 cores, 256GB RAM) supporting ML use cases',
-                      'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
-                      'kubespawner_override': {
-                          'image': 'ophidiabigdata/singleuser-enesds:ML_3',
-                          'cpu_limit': 32,
-                          'mem_limit': '256G',
-                          'cpu_guarantee': 32,
-                          'mem_guarantee': '256G',
-                          'extra_resource_limits': {
-                              'nvidia.com/gpu': '4'
-                          },
-                          'extra_resource_guarantees': {
-                              'nvidia.com/gpu': '4'
                           }
-                      }
-                  }
-                  profiles_list.append(profile)
-              cerfacs_file = '/srv/jupyterhub/cerfacs_usernames'
-              with open(cerfacs_file) as f:
-                  usernames = f.read().splitlines()
-              if username in usernames:
-                  profile = {
+                          profiles_list.append(profile)
+                          profile = {
+                          'display_name': '2 - Medium Data Science environment (2 GPUs, 16 cores, 128GB RAM) supporting ML use cases',
+                          'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
+                          'kubespawner_override': {
+                              'image': 'ophidiabigdata/singleuser-enesds:ML_3c',
+                              'cpu_limit': 16,
+                              'mem_limit': '128G',
+                              'cpu_guarantee': 16,
+                              'mem_guarantee': '128G',
+                              'extra_resource_limits': {
+                                  'nvidia.com/gpu': '2'
+                              },
+                              'extra_resource_guarantees': {
+                                  'nvidia.com/gpu': '2'
+                              }
+                          }
+                          }
+                          profiles_list.append(profile)
+                          profile = {
+                          'display_name': '3 - Large Data Science environment (4 GPUs, 32 cores, 256GB RAM) supporting ML use cases',
+                          'description': 'This notebook server includes Python, a number of pre-installed community libraries for running data manipulation, analysis and visualization, a ready-to-use Ophidia HPDA framework instance and in addition a set of libraries targeting ML/AI use cases.',
+                          'kubespawner_override': {
+                              'image': 'ophidiabigdata/singleuser-enesds:ML_3c',
+                              'cpu_limit': 32,
+                              'mem_limit': '256G',
+                              'cpu_guarantee': 32,
+                              'mem_guarantee': '256G',
+                              'extra_resource_limits': {
+                                  'nvidia.com/gpu': '4'
+                              },
+                              'extra_resource_guarantees': {
+                                  'nvidia.com/gpu': '4'
+                              }
+                          }
+                          }
+                          profiles_list.append(profile)
+              except:
+                  pass
+              try:
+                  cerfacs_file = '/srv/jupyterhub/cerfacs_usernames'
+                  with open(cerfacs_file) as f:
+                      usernames = f.read().splitlines()
+                  if username in usernames:
+                      profile = {
                           'display_name': 'Large Data Science environment (16 cores, 32GB RAM) supporting CERFACS use cases',
                           'description': 'This is a customized environment including a large set of pre-configured science modules to address the requirements coming from the selected use case.',
                           'default':True,
@@ -414,24 +436,43 @@
                               'mem_guarantee': '30G' ,
                               }
                           }
-                  profiles_list.append(profile)
+                      profiles_list.append(profile)
+              except:
+                  pass
               admin_file = '/srv/jupyterhub/admin_usernames'
-              with open(admin_file) as f_admin:
-                  admins = f_admin.read().splitlines()
-              if username in admins:
-                  profile = {
-                      'display_name': 'Large Default Data Science environment (16 cores, 16GB RAM) for demo',
-                      'description': 'Environment used to run demo notebooks',
-                      'kubespawner_override': {
-                          'cpu_limit': 15,
-                          'mem_limit': '15G',
-                          'cpu_guarantee': 15 ,
-                          'mem_guarantee': '15G' ,
+              try:
+                  with open(admin_file) as f_admin:
+                      admins = f_admin.read().splitlines()
+                  if username in admins:
+                      profile = {
+                          'display_name': 'Large Default Data Science environment (16 cores, 16GB RAM) for demo',
+                          'description': 'Environment used to run demo notebooks',
+                          'kubespawner_override': {
+                              'cpu_limit': 15,
+                              'mem_limit': '15G',
+                              'cpu_guarantee': 15 ,
+                              'mem_guarantee': '15G' ,
+                          }
                       }
-                  }
-                  profiles_list.append(profile)
+                      profiles_list.append(profile)
+                      profile = {
+                          'display_name': 'TEST ENV',
+                          'description': 'Env to test new images',
+                          'kubespawner_override': {
+                              'image': 'ophidiabigdata/singleuser-enesds:3.0.0_3test',
+                              'cpu_limit': 2,
+                              'mem_limit': '2G',
+                              'cpu_guarantee': 2,
+                              'mem_guarantee': '2G',
+                          }
+                      }
+                      profiles_list.append(profile)
+              except:
+                  pass
               return profiles_list
           c.KubeSpawner.profile_list = get_profile_list
+          c.JupyterHub.template_vars = {'announcement_spawn': 'DO NOT STORE ANYTHING OUTSIDE THE WORK DIRECTORY: this is your persistent working dir'}
+
 
     - name: Add jupyterhub helm repo
       command: helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
