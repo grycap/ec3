@@ -448,3 +448,26 @@
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
 
+    - name: Wait the chart to create elements
+      pause:
+        seconds: 5
+
+    - name: Get jhub/hub-db-dir PV name
+      command: kubectl get pvc -n jhub hub-db-dir -o jsonpath="{.spec.volumeName}"
+      register: pv_name
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+    - name: Create PV patch file
+      copy:
+        dest: /opt/jhub_pv_patch.yaml
+        content: |
+          spec:
+            mountOptions:
+            - nfsvers=4
+            - nolock
+
+    - name: Patch jhub db PV with nolock option
+      command: kubectl patch pv {{pv_name.stdout}} --patch-file /opt/jhub_pv_patch.yaml
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
