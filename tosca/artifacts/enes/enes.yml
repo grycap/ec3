@@ -5,6 +5,9 @@
     dns_name: "{{ enes_dns_name | default('enes.localdomain') }}"
     storage_size: "{{ enes_storage_size | default('50Gi') }}"
     jupyterhub_crypt_key: "{{ enes_jupyterhub_crypt_key | default('c924b40b9ae0afba637e297773d27a50c3e9ba4c8a7910f0dd826df1e6c2104d') }}"
+    admin_email: "{{ enes_admin_email | default('jhondoe@server.com') }}"
+    mailhub: "{{ enes_mailhub | default('smtp.gmail.com:587') }}"
+    email_pass: "{{ enes_email_pass | default('pass') }}"
   tasks:
     - name: Create ENES yaml file
       copy:
@@ -164,6 +167,46 @@
                 restartPolicy: Never
 
     - shell: kubectl get job -n enes pv-load || kubectl apply -f /opt/load_web.yaml
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+    - name: Create Job to set ssmtp-conf
+      copy:
+        dest: /opt/load_ssmtp.yaml
+        content: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            namespace: enes
+            name: pv-load-ssmtp
+          spec:
+            template:
+              spec:
+                volumes:
+                  - name: enes-pv-storage
+                    persistentVolumeClaim:
+                      claimName: ssmtp-conf-claim
+                containers:
+                  - name: pv-load-ssmtp
+                    image: bitnami/git
+                    command:
+                    - sh
+                    - -c
+                    - >-
+                      echo 'root={{admin_email}}' > /ssmtp/ssmtp.conf
+                      echo 'normaluser={{admin_email}}' >> /ssmtp/ssmtp.conf
+                      echo 'www-data={{admin_email}}' >> /ssmtp/ssmtp.conf
+                      echo 'mailhub={{mailhub}}' >> /ssmtp/ssmtp.conf
+                      echo 'AuthUser={{admin_email}}' >> /ssmtp/ssmtp.conf
+                      echo 'AuthPass={{email_pass}}' >> /ssmtp/ssmtp.conf
+                      echo 'UseTLS=YES' >> /ssmtp/ssmtp.conf
+                      echo 'UseSTARTTLS=YES' >> /ssmtp/ssmtp.conf
+                    volumeMounts:
+                      - mountPath: "/ssmtp"
+                        name: enes-pv-storage
+                restartPolicy: Never
+
+    - shell: kubectl get job -n enes pv-load-ssmtp || kubectl apply -f /opt/load_ssmtp.yaml
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
 
