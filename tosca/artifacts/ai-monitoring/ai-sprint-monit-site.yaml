@@ -1,0 +1,128 @@
+- hosts: local
+  connection: local
+  vars:
+    NAMESPACE: ai-sprint-monitoring
+    REGISTRY: https://registry.gitlab.polimi.it
+    GITLAB_REGISTRY_EMAIL: "{{ registry_email | default('johndoe@server.com') }}"
+  tasks:
+  - name: Create the ai-sprint-monitoring ns file spec
+    copy:
+      content: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{NAMESPACE}}
+      dest: /tmp/ai_ns.yml
+
+  - name: Create ai-sprint-monitoring ns
+    command: kubectl apply -f /tmp/ai_ns.yml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Create dir /opt/monitoring-subsystem 
+    file: path=/opt/monitoring-subsystem state=directory mode=755
+
+  - name: Download monitoring chart
+    get_url:
+      url: https://gist.github.com/msoczewka/4e3065d061ee2ee5c25f304464e83f53/raw/7b1c9edaa4e09f0ceb8aeeef5575501b7a818f43/ai-sprint-monit-chart.tar.gz
+      dest: /opt/monitoring-subsystem/ai-sprint-monit-chart.tar.gz
+
+  - name: Create Helm Chart values
+    copy:
+      dest: /tmp/ai-values.yml
+      content: |
+        grafana:
+          ingress:
+            enabled: false
+        influxdb:
+          ingress:
+            enabled: false
+ 
+  - name: Check if chart is installed
+    command: helm status ai-sprint-monit-chart -n {{ NAMESPACE }}
+    register: helm_status
+    ignore_errors: yes
+    changed_when: false
+  
+  - name: Install Helm ai-sprint-monit-chart
+    command: helm install ai-sprint-monit-chart ai-sprint-monit-chart.tar.gz -n {{ NAMESPACE }} -f /tmp/ai-values.yml --wait
+    args:
+      chdir: /opt/monitoring-subsystem/
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    when: helm_status.rc != 0
+
+  - name: Create AMS core config file
+    copy:
+      dest: /opt/monitoring-subsystem/monitoring.yaml
+      content: |
+        monitoring:
+          metrics:
+            mem: {}
+            cpu: {}
+            system: {}
+            processes: {}
+            swap: {}
+            kernel: {}
+            disk:
+              ignore_fs: "[\"hostfs\", \"tmpfs\", \"devtmpfs\", \"devfs\", \"iso9660\", \"overlay\", \"aufs\", \"squashfs\"]"
+            diskio: {}
+            kubernetes: {}
+          time_period: 20s
+          parameters:
+            performance_metrics_time_window_width: 120s
+            default_notification_endpoint: http://ai-sprint-monit-notification-server:5000/constraint
+          alerts: {}
+
+  - name: Get AMS manager pod name
+    command: kubectl get pods -n {{ NAMESPACE }} -l=app=ai-sprint-monit-manager -o jsonpath='{.items[0].metadata.name}'
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    register: amm_pod_name
+
+  - name: Copy AMS core config file
+    command: kubectl cp monitoring.yaml -n {{ NAMESPACE }} {{ amm_pod_name.stdout }}:/home/templates/monitoring_setup.yaml
+    args:
+      chdir: /opt/monitoring-subsystem/
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Setup AMS core
+    command: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_monitoring.sh
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+
+  - name: Create App QoS Constraints file
+    copy:
+      dest: /opt/monitoring-subsystem/qos_constraints.yaml
+      content: "{{ QOS_CONSTRAINTS }}"
+
+  - name: Copy AMS App QoS Constraints file
+    command: kubectl cp qos_constraints.yaml -n {{ NAMESPACE }} {{ amm_pod_name.stdout }}:/home/templates/qos_constraints.yaml
+    args:
+      chdir: /opt/monitoring-subsystem/
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != ''
+
+  - name: Create the App ns file spec
+    copy:
+      content: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{ APP_NAME }}
+      dest: /tmp/app_ns.yml
+    when: QOS_CONSTRAINTS is defined and APP_NAME is defined and QOS_CONSTRAINTS != ''
+
+  - name: Create App ns
+    command: kubectl apply -f /tmp/app_ns.yml
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    when: QOS_CONSTRAINTS is defined and APP_NAME is defined and QOS_CONSTRAINTS != ''
+
+  - name: Setup AMS app
+    command: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh
+    environment:
+      KUBECONFIG: /etc/kubernetes/admin.conf
+    when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != ''
