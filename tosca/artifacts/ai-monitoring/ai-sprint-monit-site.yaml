@@ -2,8 +2,6 @@
   connection: local
   vars:
     NAMESPACE: ai-sprint-monitoring
-    REGISTRY: https://registry.gitlab.polimi.it
-    GITLAB_REGISTRY_EMAIL: "{{ registry_email | default('johndoe@server.com') }}"
   tasks:
   - name: Create the ai-sprint-monitoring ns file spec
     copy:
