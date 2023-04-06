@@ -193,13 +193,13 @@
                     - sh
                     - -c
                     - >-
-                      echo 'root={{admin_email}}' > /ssmtp/ssmtp.conf
-                      echo 'normaluser={{admin_email}}' >> /ssmtp/ssmtp.conf
-                      echo 'www-data={{admin_email}}' >> /ssmtp/ssmtp.conf
-                      echo 'mailhub={{mailhub}}' >> /ssmtp/ssmtp.conf
-                      echo 'AuthUser={{admin_email}}' >> /ssmtp/ssmtp.conf
-                      echo 'AuthPass={{email_pass}}' >> /ssmtp/ssmtp.conf
-                      echo 'UseTLS=YES' >> /ssmtp/ssmtp.conf
+                      echo 'root={{admin_email}}' > /ssmtp/ssmtp.conf;
+                      echo 'normaluser={{admin_email}}' >> /ssmtp/ssmtp.conf;
+                      echo 'www-data={{admin_email}}' >> /ssmtp/ssmtp.conf;
+                      echo 'mailhub={{mailhub}}' >> /ssmtp/ssmtp.conf;
+                      echo 'AuthUser={{admin_email}}' >> /ssmtp/ssmtp.conf;
+                      echo 'AuthPass={{email_pass}}' >> /ssmtp/ssmtp.conf;
+                      echo 'UseTLS=YES' >> /ssmtp/ssmtp.conf;
                       echo 'UseSTARTTLS=YES' >> /ssmtp/ssmtp.conf
                     volumeMounts:
                       - mountPath: "/ssmtp"
