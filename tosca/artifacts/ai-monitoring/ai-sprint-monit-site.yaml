@@ -2,8 +2,8 @@
   connection: local
   vars:
     NAMESPACE: ai-sprint-monitoring
-    INFLUX_ORG: "{{ SYNC_INFLUX_ORG | default('aisprint') }}"
-    INFLUX_BUCKET: "{{ SYNC_INFLUX_BUCKET | default('bucket') }}"
+    INFLUX_ORG: "{{ REMOTE_INFLUX_ORG | default('aisprint') }}"
+    INFLUX_BUCKET: "{{ REMOTE_INFLUX_BUCKET | default('bucket') }}"
   tasks:
   - name: Create the ai-sprint-monitoring ns file spec
     copy:
@@ -136,9 +136,9 @@
         dest: /opt/monitoring-subsystem/sync.yaml
         content: |
           remote:
-            url: {{ INFLUX_URL }}
+            url: {{ REMOTE_INFLUX_URL }}
             org: {{ INFLUX_ORG }}
-            token: {{ INFLUX_TOKEN }}
+            token: {{ REMOTE_INFLUX_TOKEN }}
             bucket: {{ INFLUX_BUCKET }}
 
     - name: Copy AMS sync file
@@ -151,4 +151,4 @@
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
 
-    when: INFLUX_URL is defined and INFLUX_URL != ''
+    when: REMOTE_INFLUX_URL is defined and REMOTE_INFLUX_URL != ''
