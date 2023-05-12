@@ -151,4 +151,4 @@
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
 
-    when: REMOTE_INFLUX_URL is defined and REMOTE_INFLUX_URL != ''
+    when: REMOTE_INFLUX_URL is defined and REMOTE_INFLUX_URL != '' and REMOTE_INFLUX_TOKEN is defined and REMOTE_INFLUX_TOKEN  != ''
