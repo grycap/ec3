@@ -127,8 +127,8 @@
       KUBECONFIG: /etc/kubernetes/admin.conf
     when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != '' and qos_file is changed
 
-  - name: Setup AMS app
-    command: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh
+  - name: Setup AMS app (execute it twice as workaround)
+    shell: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh; sleep 1; kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
     when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != '' and qos_file is changed
