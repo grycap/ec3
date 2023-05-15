@@ -96,22 +96,6 @@
   - debug:
       var: mon_out.stdout_lines
 
-  - name: Create the App ns file spec
-    copy:
-      content: |
-          apiVersion: v1
-          kind: Namespace
-          metadata:
-            name: {{ APP_NAME }}
-      dest: /tmp/app_ns.yml
-    when: APP_NAME is defined and APP_NAME != ''
-
-  - name: Create App ns
-    command: kubectl apply -f /tmp/app_ns.yml
-    environment:
-      KUBECONFIG: /etc/kubernetes/admin.conf
-    when: APP_NAME is defined and APP_NAME != ''
-
   - name: Create App QoS Constraints file
     copy:
       dest: /opt/monitoring-subsystem/qos_constraints.yaml
@@ -128,7 +112,7 @@
     when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != '' and qos_file is changed
 
   - name: Setup AMS app (execute it twice as workaround)
-    shell: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh; sleep 1; kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh
+    shell: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh -n oscar-svc; sleep 1; kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_app.sh  -n oscar-svc
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
     when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != '' and qos_file is changed
