@@ -91,6 +91,10 @@
     command: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_monitoring.sh
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
+    register: mon_out
+
+  - debug:
+      var: mon_out.stdout_lines
 
   - name: Create the App ns file spec
     copy:
@@ -128,6 +132,11 @@
     environment:
       KUBECONFIG: /etc/kubernetes/admin.conf
     when: QOS_CONSTRAINTS is defined and QOS_CONSTRAINTS != '' and qos_file is changed
+    register: app_out
+
+  - debug:
+      var: app_out.stdout_lines
+    when: app_out is defined
 
   - block:
 
@@ -150,5 +159,9 @@
       command: kubectl exec -n {{ NAMESPACE }} {{ amm_pod_name.stdout }} -- ./setup_sync.sh
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
+      register: sys_out
+
+    - debug:
+        var: sys_out.stdout_lines
 
     when: REMOTE_INFLUX_URL is defined and REMOTE_INFLUX_URL != '' and REMOTE_INFLUX_TOKEN is defined and REMOTE_INFLUX_TOKEN  != ''
