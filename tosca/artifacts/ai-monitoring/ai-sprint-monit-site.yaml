@@ -37,6 +37,26 @@
         influxdb:
           ingress:
             enabled: false
+    when: LOCAL_INFLUX_HOSTNAME is not defined or LOCAL_INFLUX_HOSTNAME == '' 
+
+  - name: Create Helm Chart values
+    copy:
+      dest: /tmp/ai-values.yml
+      content: |
+        grafana:
+          ingress:
+            enabled: false
+        influxdb:
+          auth:
+            password: "{{ LOCAL_INFLUX_PASS | default('aisprintPASS') }}"
+            token: "{{ LOCAL_INFLUX_TOKEN | default('aisprintTOKEN') }}"
+          ingress:
+            enabled: true
+            hostname: "{{ LOCAL_INFLUX_HOSTNAME | default('') }}"
+            tls: true
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    when: LOCAL_INFLUX_HOSTNAME is defined and LOCAL_INFLUX_HOSTNAME != '' 
  
   - name: Check if chart is installed
     command: helm status ai-sprint-monit-chart -n {{ NAMESPACE }}
