@@ -159,6 +159,7 @@
             org: {{ INFLUX_ORG }}
             token: {{ REMOTE_INFLUX_TOKEN }}
             bucket: {{ INFLUX_BUCKET }}
+      register: sync_file
 
     - name: Copy AMS sync file
       command: kubectl cp /opt/monitoring-subsystem/sync.yaml -n {{ NAMESPACE }} {{ amm_pod_name.stdout }}:remote_influx_sync.yaml
@@ -170,6 +171,7 @@
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
       register: sys_out
+      when: sync_file is changed
 
     - debug:
         var: sys_out.stdout_lines
