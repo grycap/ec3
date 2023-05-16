@@ -5,6 +5,7 @@
     helm_params: ''
     default_namespace: "{{ helm_app_name | lower }}"
     namespace: "{{ helm_namespace | default(default_namespace) }}"
+    timeout: "{{ helm_timeout | default('900'}}"
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
@@ -35,10 +36,10 @@
         command: >
           helm upgrade {{ helm_app_name | lower }} --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
           --namespace {{ namespace }} --create-namespace -f /tmp/{{helm_namespace}}_{{helm_app_name}}_values.yml
-          --set {{ helm_params }}
+          --set {{ helm_params }} --timeout {{ timeout }}
         environment:
           KUBECONFIG: /etc/kubernetes/admin.conf
-        async: 600
+        async: 900
         poll: 5
         ignore_errors: yes
         register: helm_install
