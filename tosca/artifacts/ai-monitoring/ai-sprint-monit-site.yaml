@@ -54,8 +54,9 @@
             enabled: false
         influxdb:
           auth:
-            password: "{{ LOCAL_INFLUX_PASS | default('aisprintPASS') }}"
-            token: "{{ LOCAL_INFLUX_TOKEN | default('aisprintTOKEN') }}"
+            admin:
+              password: "{{ LOCAL_INFLUX_PASS | default('aisprintPASS') }}"
+              token: "{{ LOCAL_INFLUX_TOKEN | default('aisprintTOKEN') }}"
           ingress:
             enabled: true
             hostname: "{{ LOCAL_INFLUX_HOSTNAME | default('') }}"
