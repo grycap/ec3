@@ -60,7 +60,9 @@
             enabled: true
             hostname: "{{ LOCAL_INFLUX_HOSTNAME | default('') }}"
             tls: true
+            certManager: true
             annotations:
+              kubernetes.io/ingress.class: nginx
               cert-manager.io/cluster-issuer: "letsencrypt-prod"
     when: LOCAL_INFLUX_HOSTNAME is defined and LOCAL_INFLUX_HOSTNAME != '' 
  
