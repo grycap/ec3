@@ -5,9 +5,15 @@
     INFLUX_ORG: "{{ REMOTE_INFLUX_ORG | default('aisprint') }}"
     INFLUX_BUCKET: "{{ REMOTE_INFLUX_BUCKET | default('bucket') }}"
   tasks:
-  - name: Create the ai-sprint-monitoring ns file spec
+  - name: Create the ai-sprint-monitoring and oscar-svc ns file spec
     copy:
       content: |
+          ---
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: oscar-svc
+          ---
           apiVersion: v1
           kind: Namespace
           metadata:
