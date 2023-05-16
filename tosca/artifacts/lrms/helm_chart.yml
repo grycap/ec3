@@ -5,7 +5,7 @@
     helm_params: ''
     default_namespace: "{{ helm_app_name | lower }}"
     namespace: "{{ helm_namespace | default(default_namespace) }}"
-    timeout: "{{ helm_timeout | default('900'}}"
+    timeout: "{{ helm_timeout | default('900') }}"
   tasks:
 
   - name: "Check if {{ helm_app_name }} is already deployed"
