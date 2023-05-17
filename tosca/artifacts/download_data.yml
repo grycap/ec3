@@ -1,0 +1,23 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    poll_time: 5
+    max_time: "{{ max_download_time | default(1800) }}"
+  tasks:
+  - name: Create "{{ local_path }}" if needed
+    file: 
+      path: "{{ local_path }}"
+      state: directory
+      recurse: yes
+
+  - set_fact:
+      poll_time: 0
+    when: wait_to_download | bool
+
+  - name: Download "{{ data_url }}"
+    get_url: 
+      url: "{{ data_url }}"
+      dest: "{{ local_path }}"
+    async: "{{ max_time }}"
+    poll: "{{ poll_time }}}"
