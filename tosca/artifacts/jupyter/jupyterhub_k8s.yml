@@ -40,6 +40,9 @@
             annotations: { kubernetes.io/ingress.class: nginx }
             enabled: true
           singleuser:
+            image:
+              name: jupyterhub/k8s-singleuser-sample
+              tag: 2.0.0
             cpu:
               limit: 1
               guarantee: 1
@@ -57,13 +60,14 @@
                   mem_limit: '2G'
                   cpu_guarantee: 2
                   mem_guarantee': '2G'
-              - display_name: '4CPU 4GB 1GPU environment'
-                description: '4CPU 4GB 1GPU environment'
+              - display_name: '2CPU 4GB 1GPU environment'
+                description: '2CPU 4GB 1GPU environment'
                 kubespawner_override:
+                  image: 'grycap/k8s-singleuser-sample-gpu:latest'
                   cpu_limit: 2
-                  mem_limit: '2G'
+                  mem_limit: '4G'
                   cpu_guarantee: 2
-                  mem_guarantee': '2G'
+                  mem_guarantee': '4G'
                   extra_resource_limits:
                     nvidia.com/gpu: 1
                   extra_resource_guarantees:
