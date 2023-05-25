@@ -6,6 +6,7 @@
     jup_auth_class: "{{ authenticator_class | default('dummy') }}"
     jup_dummy_pass: "{{ dummy_pass | default('dummy_pass') }}"
     jup_admin_user: "{{ admin_user | default('admin') }}"
+    dns_name: "{{ kube_public_dns_name | default('') }}"
   tasks:
   - name: Add jupyterhub helm repo
     command: helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
@@ -16,6 +17,26 @@
     command: helm repo update
     environment:
       KUBECONFIG: "{{ kubeconfig_path }}"
+
+  - name: "Set ingress values"
+    set_fact:
+      ingress: |
+          ingress:
+            annotations: { kubernetes.io/ingress.class: nginx }
+            enabled: true
+    when: dns_name = ''
+
+  - name: "Set ingress values with TLS"
+    set_fact:
+      ingress: |
+          ingress:
+            annotations: { kubernetes.io/ingress.class: nginx, cert-manager.io/cluster-issuer: "letsencrypt-prod" }
+            enabled: true
+            hosts: [{{dns_name}}]
+            tls:
+              secretName: {{dns_name}}
+              - hosts: [{{dns_name}}]
+    when: dns_name != ''
 
   - name: "Create values file"
     copy:
@@ -36,9 +57,7 @@
           proxy:
             service:
               type: ClusterIP
-          ingress:
-            annotations: { kubernetes.io/ingress.class: nginx }
-            enabled: true
+          {{ ingress }}
           singleuser:
             image:
               name: jupyterhub/k8s-singleuser-sample
