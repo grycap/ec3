@@ -61,7 +61,7 @@
                   cpu_guarantee: 2
                   mem_guarantee': '2G'
               - display_name: '2CPU 4GB 1GPU environment'
-                description: '2CPU 4GB 1GPU environment'
+                description: '2CPU 4GB 1GPU environment (only use it if some of the K8s WNs has GPU support)'
                 kubespawner_override:
                   image: 'grycap/k8s-singleuser-sample-gpu:latest'
                   cpu_limit: 2
