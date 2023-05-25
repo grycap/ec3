@@ -34,8 +34,8 @@
             enabled: true
             hosts: [{{dns_name}}]
             tls:
-              secretName: {{dns_name}}
               - hosts: [{{dns_name}}]
+                secretName: {{dns_name}}
     when: dns_name != ''
 
   - name: "Create values file"
