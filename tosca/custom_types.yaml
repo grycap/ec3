@@ -177,6 +177,9 @@ capability_types:
       sgx_epc_size:
         type: scalar-unit.size
         required: no
+      disk_type:
+        type: string
+        required: no
 
   tosca.capabilities.indigo.LRMS:
     derived_from: tosca.capabilities.Container
