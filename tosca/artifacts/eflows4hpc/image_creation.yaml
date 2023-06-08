@@ -2,17 +2,6 @@
 - hosts: localhost
   connection: local
   vars:
-    HTTPS: False
-    BRANCH: main
-    WORKFLOW_REGISTRY_GIT: 'https://github.com/eflows4hpc/workflow-registry.git'
-    SOFTWARE_CATALOG_GIT: 'https://github.com/eflows4hpc/software-catalog.git'
-    CAPTCHA_SITE_KEY: ''
-    CAPTCHA_WEB_SITE_KEY: ''
-    REGISTRY_USER: ''
-    REGISTRY_TOKEN: ''
-    REGISTRY_URL: 'ghcr.io'
-    REGISTRY_PREFIX: 'ghcr.io/eflows4hpc/'
-    DNS_NAME: 'vnode-0.localdomain'
     https_params: ''
   roles:
     - role: 'grycap.docker'
@@ -78,7 +67,12 @@
       package:
         name: apache2, apache2-dev
         state: present
-    
+
+    - name: Stop apache2
+      service:
+        name: apache2
+        state: stopped
+
     - name: Pip install mod_wsgi
       pip:
         name: mod_wsgi
