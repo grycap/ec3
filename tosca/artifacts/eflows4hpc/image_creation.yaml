@@ -17,6 +17,7 @@
         repo: https://github.com/eflows4hpc/image_creation.git
         dest: /opt/image_creation
         version: "{{ BRANCH }}"
+        update: false
     
     - name: Install pip requirements
       pip:
@@ -109,4 +110,6 @@
       when: HTTPS | bool and DNS_NAME != ''
 
     - name: Launch mod_wsgi
-      shell: pgrep apache2 || mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }}
+      shell: pgrep apache2 || mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }} &
+      args:
+        chdir: /opt/image_creation
