@@ -18,7 +18,7 @@
         dest: /opt/image_creation
         version: "{{ BRANCH }}"
         update: false
-    
+
     - name: Install pip requirements
       pip:
         requirements: /opt/image_creation/requirements.txt
@@ -108,6 +108,14 @@
           https_params: "--https-port 443 --ssl-certificate-file /opt/image_creation/certificate.pem --ssl-certificate-key-file /opt/image_creation/certificate.key --server-name {{ DNS_NAME }}"
 
       when: HTTPS | bool and DNS_NAME != ''
+
+    - name: Change dir owner
+      file:
+        path: /opt/image_creation
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
 
     - name: Launch mod_wsgi
       shell: pgrep apache2 || mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }} &
