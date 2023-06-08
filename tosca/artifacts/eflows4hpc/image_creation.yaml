@@ -4,6 +4,9 @@
   vars:
     BRANCH: main
     https_params: ''
+    default_user_name: "{{ USER_NAME | default('admin') }}"
+    default_user_mail: "{{ USER_MAIL | default('admin@admin.com') }}"
+    default_user_pass: "{{ USER_PASS | default('admin') }}"
   roles:
     - role: 'grycap.docker'
   tasks:
@@ -113,9 +116,13 @@
       copy:
         dest: /opt/image_creation/init_db.py
         content: |
-          from builder_service import db
+          from builder_service import db, User
           db.drop_all()
           db.create_all()
+          user = User(username='{{ default_user_name }}', email='{{ default_user_mail }}')
+          user.hash_password('{{ default_user_pass}}')
+          db.session.add(user)
+          db.session.commit()
       register: init_db
       
     - name: Init DB
