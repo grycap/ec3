@@ -57,7 +57,7 @@
               "max_concurrent_builds" : 3,
               "singularity_sudo" : True
               }
-          database = 'sqlite:///opt/image_creation/db.sqlite'
+          database = 'sqlite:////opt/image_creation/db.sqlite'
           port = 5000
           host = '0.0.0.0'
           application_root = 'image_creation'
