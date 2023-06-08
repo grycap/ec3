@@ -1,0 +1,117 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    HTTPS: False
+    BRANCH: master
+    WORKFLOW_REGISTRY_GIT: 'https://github.com/eflows4hpc/workflow-registry.git'
+    SOFTWARE_CATALOG_GIT: 'https://github.com/eflows4hpc/software-catalog.git'
+    CAPTCHA_SITE_KEY: ''
+    CAPTCHA_WEB_SITE_KEY: ''
+    REGISTRY_USER: ''
+    REGISTRY_TOKEN: ''
+    REGISTRY_URL: 'ghcr.io'
+    REGISTRY_PREFIX: 'ghcr.io/eflows4hpc/'
+    DNS_NAME: 'vnode-0.localdomain'
+    https_params: ''
+  roles:
+    - role: 'grycap.docker'
+  tasks:
+    - name: Install git
+      package:
+        name: git
+        state: present
+
+    - name: Clone git repo
+      git:
+        repo: https://github.com/eflows4hpc/image_creation.git
+        dest: /opt/image_creation
+        version: "{{ BRANCH }}"
+    
+    - name: Install pip requirements
+      pip:
+        requirements: /opt/image_creation/requirements.txt
+        state: present
+
+    - name: Clone software catalog git repo
+      git:
+        repo: "{{ SOFTWARE_CATALOG_GIT }}"
+        dest: /opt/software-catalog
+
+    - name: Clone worflow registry git repo
+      git:
+        repo: "{{ WORKFLOW_REGISTRY_GIT }}"
+        dest: /opt/workflow-registry
+
+    - name: Create config file
+      copy:
+        dest: /opt/image_creation/config/configuration.py
+        content: |
+          registry_cfg = {
+              "url" : "{{ REGISTRY_URL }}",
+              "user": "{{ REGISTRY_USER }}",
+              "token": "{{ REGISTRY_TOKEN }}",
+              "images_prefix": "{{ REGISTRY_PREFIX }}",
+              }
+          repositories_cfg = {
+              "workflow_repository":"/opt/workflow-registry/",
+              "software_repository":"/opt/software-catalog/"
+              }
+          build_cfg = {
+              "tmp_folder":"/tmp",
+              "builder_home": "/opt/image_creation/build",
+              "base_image": "spack_base",
+              "dockerfile": "Dockerfile.spack",
+              "spack_cfg":"/opt/software-catalog/cfg",
+              "max_concurrent_builds" : 3,
+              "singularity_sudo" : True
+              }
+          database = 'sqlite:///opt/image_creation/db.sqlite'
+          port = 5000
+          host = '0.0.0.0'
+          application_root = 'image_creation'
+          secret_key = 'sjdkvb29p4ghhhsdjlvb2p94'
+          captcha_site_key = '{{ CAPTCHA_SITE_KEY }}'
+          captcha_web_site_key = '{{ CAPTCHA_WEB_SITE_KEY }}'
+
+    - name: Install apache2
+      package:
+        name: apache2, apache2-dev
+        state: present
+    
+    - name: Pip install mod_wsgi
+      pip:
+        name: mod_wsgi
+        state: present
+
+    - block:
+
+      - name: Create private key (RSA, 4096 bits)
+        community.crypto.openssl_privatekey:
+          path: /opt/image_creation/certificate.key
+          mode: 0644
+          format: pkcs8
+
+      - name: Generate an OpenSSL Certificate Signing Request with Subject information
+        community.crypto.openssl_csr:
+          path: /opt/image_creation/certificate.csr
+          privatekey_path: /opt/image_creation/certificate.key
+          country_name: ES
+          organization_name: eflows4hpc
+          common_name: "{{ DNS_NAME }}"
+
+      - name: Create simple self-signed certificate
+        community.crypto.x509_certificate:
+          path: /opt/image_creation/certificate.pem
+          privatekey_path: /opt/image_creation/certificate.key
+          provider: selfsigned
+          csr_path: /opt/image_creation/certificate.csr
+
+      - name: Set https params
+        set_fact:
+          https_params: "--https-port 443 --ssl-certificate-file /opt/image_creation/certificate.pem --ssl-certificate-key-file /opt/image_creation/certificate.key --server-name {{ DNS_NAME }}"
+
+      when: HTTPS | bool and DNS_NAME != ''
+
+    - name: Launch mod_wsgi
+      shell: pgrep apache2 || mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }}
