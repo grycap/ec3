@@ -109,6 +109,21 @@
 
       when: HTTPS | bool and DNS_NAME != ''
 
+    - name: Create db init file
+      copy:
+        dest: /opt/image_creation/init_db.py
+        content: |
+          from builder_service import db
+          db.drop_all()
+          db.create_all()
+      register: init_db
+      
+    - name: Init DB
+      command: python /opt/image_creation/init_db.py
+      args:
+        chdir: /opt/image_creation
+      when: init_db is changed
+
     - name: Change dir owner
       file:
         path: /opt/image_creation
