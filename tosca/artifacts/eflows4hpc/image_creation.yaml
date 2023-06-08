@@ -3,7 +3,7 @@
   connection: local
   vars:
     HTTPS: False
-    BRANCH: master
+    BRANCH: main
     WORKFLOW_REGISTRY_GIT: 'https://github.com/eflows4hpc/workflow-registry.git'
     SOFTWARE_CATALOG_GIT: 'https://github.com/eflows4hpc/software-catalog.git'
     CAPTCHA_SITE_KEY: ''
