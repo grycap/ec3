@@ -2,6 +2,7 @@
 - hosts: localhost
   connection: local
   vars:
+    BRANCH: main
     https_params: ''
   roles:
     - role: 'grycap.docker'
