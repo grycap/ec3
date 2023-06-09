@@ -131,6 +131,14 @@
         chdir: /opt/image_creation
       when: init_db is changed
 
+    - name: Create Launch file
+      copy:
+        dest: /opt/image_creation/launch.sh
+        content: |
+          #!/bin/bash
+          mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }} &
+        mode: 0755
+
     - name: Change dir owner
       file:
         path: /opt/image_creation
@@ -139,7 +147,7 @@
         owner: www-data
         group: www-data
 
-    - name: Launch mod_wsgi
-      shell: pgrep apache2 || mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }} &
+    - name: Launch service with mod_wsgi
+      shell: pgrep apache2 || /opt/image_creation/launch.sh
       args:
         chdir: /opt/image_creation
