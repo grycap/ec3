@@ -12,7 +12,7 @@
   tasks:
     - name: Install git
       package:
-        name: git
+        name: git, python-dev
         state: present
 
     - name: Clone git repo
