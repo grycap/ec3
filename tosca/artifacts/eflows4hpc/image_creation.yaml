@@ -147,6 +147,13 @@
         owner: www-data
         group: www-data
 
+    - name: Create dir /tmp/builds
+      file:
+        path: /tmp/builds
+        state: directory
+        owner: www-data
+        group: www-data
+
     - name: Launch service with mod_wsgi
       shell: pgrep apache2 || /opt/image_creation/launch.sh
       args:
