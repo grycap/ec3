@@ -7,13 +7,18 @@
     default_user_name: "{{ USER_NAME | default('admin') }}"
     default_user_mail: "{{ USER_MAIL | default('admin@admin.com') }}"
     default_user_pass: "{{ USER_PASS | default('admin') }}"
+    singularity_version: "3.11.3"
   roles:
     - role: 'grycap.docker'
   tasks:
-    - name: Install git
+    - name: Install requisites
       package:
-        name: git, python-dev
+        name: git, python-dev, uidmap
         state: present
+
+    - name: Install Singularity
+      apt:
+        deb: https://github.com/sylabs/singularity/releases/download/v{{singularity_version}}/singularity-ce_{{singularity_version}}-{{ansible_distribution_release}}_amd64.deb
 
     - name: Clone git repo
       git:
@@ -153,6 +158,13 @@
         state: directory
         owner: www-data
         group: www-data
+
+    - name: Adding docker group to user www-data
+      user:
+        name: www-data
+        group: www-data
+        groups: docker
+        append: yes
 
     - name: Launch service with mod_wsgi
       shell: pgrep apache2 || /opt/image_creation/launch.sh
