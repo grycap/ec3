@@ -115,9 +115,9 @@ class RefreshToken:
             decoded_token = JWT().get_info(access_token)
             conf = self.get_openid_configuration(decoded_token['iss'])
 
-            token_scopes = "openid profile offline_access eduperson_entitlement"
+            token_scopes = "openid profile offline_access eduperson_entitlement email"
             payload = ("client_id=%s&client_secret=%s&grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Atoken-exchange&"
-                        "audience=tokenExchange&subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
+                        "subject_token_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Atoken-type%%3Aaccess_token&"
                         "subject_token=%s&scope=%s") % (self._client_id, self._client_secret,
                                                          access_token, token_scopes)
             headers = dict()
@@ -145,7 +145,7 @@ class RefreshToken:
             decoded_token = JWT().get_info(access_token)
             conf = self.get_openid_configuration(decoded_token['iss'])
 
-            token_scopes = "openid profile offline_access eduperson_entitlement"
+            token_scopes = "openid profile offline_access eduperson_entitlement email"
 
             payload = ("client_id=%s&client_secret=%s&grant_type=refresh_token&scope=%s"
                         "&refresh_token=%s") % (self._client_id, self._client_secret,
@@ -225,7 +225,7 @@ class RefreshToken:
                 new_auth += line + "\n"
 
         with open(auth_file, 'w') as f:
-            f.write(new_auth)
+            f.write(new_auth.strip())
 
 if __name__ == "__main__":
     client_id = sys.argv[1]
