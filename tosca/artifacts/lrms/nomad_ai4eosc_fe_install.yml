@@ -1,0 +1,80 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    server_list: "{{ nomad_server_list | default([ansible_default_ipv4.address]) }}"
+    server_public_ip: "{{ IM_NODE_PUBLIC_IP | default(ansible_default_ipv4.address) }}"
+    server_private_ip: "{{ IM_NODE_PRIVATE_IP | default(ansible_default_ipv4.address) }}"
+  roles:
+    - role: 'grycap.consul'
+      consul_server: true
+      consul_dns: false
+      consul_join_ips: "{{ server_list }}"
+      consul_bootstrap_expect: "{{ server_list | length }}"
+      consul_advertise_addr: "{{ server_private_ip }}"
+      consul_policies:
+        - name: nomad-client-policy
+          description: Consul Nomad Client Policy
+          rules: |
+            agent_prefix "" {
+              policy = "read"
+            }
+            node_prefix "" {
+              policy = "read"
+            }
+            service_prefix "" {
+              policy = "write"
+            }
+            key_prefix "" {
+              policy = "read"
+            }
+        - name: nomad-server-policy
+          description: Consul Nomad Server Policy
+          rules: |
+            agent_prefix "" {
+              policy = "read"
+            }
+            node_prefix "" {
+              policy = "read"
+            }
+            service_prefix "" {
+              policy = "write"
+            }
+            acl = "write"
+        - name: traefik-dashboard-server-policy
+          description: Consul Traefik dashboard Policy
+          rules: |
+            key_prefix "traefik" {
+              policy = "write"
+            }
+            service "traefik" {
+              policy = "write"
+            }
+            agent_prefix "" {
+              policy = "read"
+            }
+            node_prefix "" {
+              policy = "read"
+            }
+            service_prefix "" {
+              policy = "read"
+            }
+    - role: grycap.nomad
+      nomad_name: "{{ ansible_hostname }}"
+      server_enabled: true
+      client_enabled: false
+      use_tls: true
+      tls_http: true
+      tls_rpc: true
+      generate_tls: true
+      tls_public_ip: "{{ server_public_ip }}"
+      tls_private_ip:  "{{ server_private_ip }}"
+      bind_address: "0.0.0.0"
+      use_consul: true
+      consul_address: "{{ server_private_ip }}:8500"
+      create_nomad_service: true
+      consul_ACL_token_set: true
+      consul_token: "{{ consul_tokens['nomad-server-policy'] }}"
+      server_bootstrap_expect: "{{ server_list | length }}"
+      acl_enabled: true
+      acl_bootstrap: true

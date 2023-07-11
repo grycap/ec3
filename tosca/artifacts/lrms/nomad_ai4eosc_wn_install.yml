@@ -1,0 +1,38 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    server_list: "{{ nomad_server_list | default([ansible_default_ipv4.address]) }}"
+    client_private_ip: "{{ IM_NODE_PRIVATE_IP | default(ansible_default_ipv4.address) }}"
+  roles:
+    - role: 'grycap.docker'
+    - role: 'grycap.consul'
+      consul_server: false
+      consul_dns: false
+      consul_join_ips: "{{ server_list }}"
+      consul_policies:
+        - name: nomad-client-policy
+        - name: nomad-server-policy
+    - role: grycap.nomad
+      # needed to make docker plugin work
+      nomad_user: root
+      nomad_group: root
+      nomad_name: "{{ ansible_hostname }}"
+      use_tls: true
+      tls_http: true
+      tls_rpc: true
+      generate_tls: true
+      tls_private_ip:  "{{ client_private_ip }}"
+      bind_address: "0.0.0.0"
+      server_enabled: false
+      client_enabled: true
+      use_consul: true
+      consul_address: "{{ server_list[0] }}:8500"
+      create_nomad_service: true
+      consul_ACL_token_set: true
+      consul_token: "{{ consul_tokens['nomad-client-policy'] }}"
+      nomad_plugins:
+        raw_exec:
+          enabled: "true"
+        docker:
+          allow_privileged: "true"
