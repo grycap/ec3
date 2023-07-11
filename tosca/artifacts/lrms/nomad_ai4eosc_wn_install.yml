@@ -4,6 +4,11 @@
   vars:
     server_list: "{{ nomad_server_list | default([ansible_default_ipv4.address]) }}"
     client_private_ip: "{{ IM_NODE_PRIVATE_IP | default(ansible_default_ipv4.address) }}"
+  pre_tasks:
+    - name: Convert server_list to list
+      set_fact:
+        server_list: [server_list]
+      when: server_list is string
   roles:
     - role: 'grycap.docker'
     - role: 'grycap.consul'
