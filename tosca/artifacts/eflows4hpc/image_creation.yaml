@@ -7,13 +7,18 @@
     default_user_name: "{{ USER_NAME | default('admin') }}"
     default_user_mail: "{{ USER_MAIL | default('admin@admin.com') }}"
     default_user_pass: "{{ USER_PASS | default('admin') }}"
+    singularity_version: "3.11.3"
   roles:
     - role: 'grycap.docker'
   tasks:
-    - name: Install git
+    - name: Install requisites
       package:
-        name: git
+        name: git, python-dev, uidmap
         state: present
+
+    - name: Install Singularity
+      apt:
+        deb: https://github.com/sylabs/singularity/releases/download/v{{singularity_version}}/singularity-ce_{{singularity_version}}-{{ansible_distribution_release}}_amd64.deb
 
     - name: Clone git repo
       git:
@@ -53,7 +58,7 @@
               }
           build_cfg = {
               "tmp_folder":"/tmp",
-              "builder_home": "/opt/image_creation/build",
+              "builder_home": "/opt/image_creation",
               "base_image": "spack_base",
               "dockerfile": "Dockerfile.spack",
               "spack_cfg":"/opt/software-catalog/cfg",
@@ -131,7 +136,15 @@
         chdir: /opt/image_creation
       when: init_db is changed
 
-    - name: Change dir owner
+    - name: Create Launch file
+      copy:
+        dest: /opt/image_creation/launch.sh
+        content: |
+          #!/bin/bash
+          mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }} &
+        mode: 0755
+
+    - name: Change dir owner /opt/image_creation
       file:
         path: /opt/image_creation
         state: directory
@@ -139,7 +152,29 @@
         owner: www-data
         group: www-data
 
-    - name: Launch mod_wsgi
-      shell: pgrep apache2 || mod_wsgi-express start-server --port 80 --processes=4 --enable-sendfile --url-alias /image_creation/images/download /tmp/images/ wsgi.py --user www-data --group www-data {{ https_params }} &
+    - name: Create dir /tmp/builds
+      file:
+        path: /tmp/builds
+        state: directory
+        owner: www-data
+        group: www-data
+
+    - name: Change dir owner /var/www
+      file:
+        path: /var/www
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
+
+    - name: Adding docker group to user www-data
+      user:
+        name: www-data
+        group: www-data
+        groups: docker
+        append: yes
+
+    - name: Launch service with mod_wsgi
+      shell: pgrep apache2 || /opt/image_creation/launch.sh
       args:
         chdir: /opt/image_creation

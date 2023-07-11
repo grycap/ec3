@@ -1,0 +1,78 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    image: "{{ ai4eosc_model_image | default('deephdc/deep-oc-plants-classification-tf') }}"
+  roles:
+  - role: 'grycap.docker'
+  tasks:
+  - name: Create opt dir
+    file:
+      path: /opt/ai4eosc
+      state: directory
+      mode: '0755'
+
+  - name: Create private key (RSA, 4096 bits)
+    community.crypto.openssl_privatekey:
+      path: /opt/ai4eosc/certificate.key
+      mode: 0644
+      format: pkcs8
+
+  - name: Generate an OpenSSL Certificate Signing Request with Subject information
+    community.crypto.openssl_csr:
+      path: /opt/ai4eosc/certificate.csr
+      privatekey_path: /opt/ai4eosc/certificate.key
+      country_name: ES
+      organization_name: AI4EOSC
+      common_name: AI4EOSC
+
+  - name: Create simple self-signed certificate
+    community.crypto.x509_certificate:
+      path: /opt/ai4eosc/certificate.pem
+      privatekey_path: /opt/ai4eosc/certificate.key
+      provider: selfsigned
+      csr_path: /opt/ai4eosc/certificate.csr
+
+  - name: Create nginx config file
+    copy:
+      dest: /opt/ai4eosc/nginx.conf
+      content: |
+        server {
+            listen                  443 ssl;
+            listen                  [::]:443 ssl;
+            server_name             localhost;
+            ssl_certificate         /root/ssl/cert.pem;
+            ssl_certificate_key     /root/ssl/key.pem;
+            location / {
+                proxy_pass "http://app:5000/";
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $host;
+            }
+            error_page   500 502 503 504  /50x.html;
+        }
+
+  - name: Create docker-compose file
+    copy:
+      dest: /opt/ai4eosc/docker-compose.yaml
+      content: |
+        version: "3.9"
+        services:
+          app:
+            image: {{ image }}
+          nginx:
+            image: nginx
+            volumes:
+              - ./nginx.conf:/etc/nginx/conf.d/default.conf
+              - ./certificate.pem:/root/ssl/cert.pem
+              - ./certificate.key:/root/ssl/key.pem
+            ports:
+              - "443:443"
+            depends_on:
+              - app
+
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/ai4eosc/
+      state: present
