@@ -83,6 +83,5 @@
       create_nomad_service: true
       consul_ACL_token_set: true
       consul_token: "{{ consul_tokens['nomad-server-policy'] }}"
-      server_bootstrap_expect: "{{ server_list | length }}"
       acl_enabled: true
       acl_bootstrap: true
