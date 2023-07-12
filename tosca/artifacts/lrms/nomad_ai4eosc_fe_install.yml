@@ -79,7 +79,7 @@
       use_consul: true
       consul_address: "{{ server_private_ip }}:8501"
       consul_ssl: true
-      consul_ca_file: /certs/consul-agent-ca.pem"
+      consul_ca_file: "/etc/consul/certs/consul-agent-ca.pem"
       create_nomad_service: true
       consul_ACL_token_set: true
       consul_token: "{{ consul_tokens['nomad-server-policy'] }}"
