@@ -35,6 +35,7 @@
       use_consul: true
       consul_address: "{{ server_list[0] }}:8501"
       consul_ssl: true
+      consul_verify_ssl: false
       consul_ca_file: "/etc/consul/certs/consul-agent-ca.pem"
       create_nomad_service: true
       consul_ACL_token_set: true
