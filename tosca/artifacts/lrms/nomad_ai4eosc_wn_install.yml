@@ -33,10 +33,7 @@
       server_enabled: false
       client_enabled: true
       use_consul: true
-      consul_address: "{{ server_list[0] }}:8501"
-      consul_ssl: true
-      consul_verify_ssl: false
-      consul_ca_file: "/etc/consul/certs/consul-agent-ca.pem"
+      consul_address: "127.0.0.1:8500"
       create_nomad_service: true
       consul_ACL_token_set: true
       consul_token: "{{ consul_tokens['nomad-client-policy'] }}"
