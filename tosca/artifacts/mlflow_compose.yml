@@ -15,6 +15,18 @@
       state: directory
       mode: '0755'
 
+  - name: Create mlartifacts directory
+    file:
+      path: /opt/mlflow/mlartifacts
+      state: directory
+      mode: '0755'
+
+  - name: Create db directory
+    file:
+      path: /opt/mlflow/db
+      state: directory
+      mode: '0755'
+
   - name: Create private key (RSA, 4096 bits)
     community.crypto.openssl_privatekey:
       path: /opt/mlflow/certificate.key
@@ -55,7 +67,7 @@
                     - MYSQL_PASSWORD={{ MYSQL_PASSWORD }}
                     - MYSQL_ROOT_PASSWORD={{ MYSQL_ROOT_PASSWORD }}
                 volumes:
-                    - dbdata:/var/lib/mysql
+                    - ./db:/var/lib/mysql
             web:
                 restart: always
                 build: ./mlflow
@@ -68,7 +80,7 @@
                     - backend
                 command: mlflow server --backend-store-uri mysql+pymysql://{{ MYSQL_USER }}:{{ MYSQL_PASSWORD }}@db:3306/{{ MYSQL_DATABASE }} --host 0.0.0.0 --default-artifact-root /mlartifacts
                 volumes:
-                  - mlartifacts:/mlartifacts
+                  - ./mlartifacts:/mlartifacts
             nginx:
                 restart: always
                 image: nginx
@@ -90,9 +102,6 @@
                 driver: bridge
             backend:
                 driver: bridge
-        volumes:
-            dbdata:
-            mlartifacts:
       dest: /opt/mlflow/docker-compose.yaml
 
   - name: Create nginx.conf file
