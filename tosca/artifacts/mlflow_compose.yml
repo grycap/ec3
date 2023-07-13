@@ -1,0 +1,184 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    MYSQL_DATABASE: mlflow
+    MYSQL_USER: mlflow
+    MYSQL_PASSWORD: mlflowpass
+    MYSQL_ROOT_PASSWORD: rootpass
+  roles:
+  - role: 'grycap.docker'
+  tasks:
+  - name: Create mlflow directory
+    file:
+      path: /opt/mlflow
+      state: directory
+      mode: '0755'
+
+  - name: Create private key (RSA, 4096 bits)
+    community.crypto.openssl_privatekey:
+      path: /opt/mlflow/certificate.key
+      mode: 0644
+      format: pkcs8
+
+  - name: Generate an OpenSSL Certificate Signing Request with Subject information
+    community.crypto.openssl_csr:
+      path: /opt/mlflow/certificate.csr
+      privatekey_path: /opt/mlflow/certificate.key
+      country_name: ES
+      organization_name: Node-RED
+      common_name: Node-RED
+
+  - name: Create simple self-signed certificate
+    community.crypto.x509_certificate:
+      path: /opt/mlflow/certificate.pem
+      privatekey_path: /opt/mlflow/certificate.key
+      provider: selfsigned
+      csr_path: /opt/mlflow/certificate.csr
+
+  - name: Create docker-compose file
+    copy:
+      content: |
+        version: '3.3'
+        services:
+            db:
+                restart: always
+                image: mysql/mysql-server:5.7.28
+                container_name: mlflow_db
+                expose:
+                    - "3306"
+                networks:
+                    - backend
+                environment:
+                    - MYSQL_DATABASE={{ MYSQL_DATABASE }}
+                    - MYSQL_USER={{ MYSQL_USER }}
+                    - MYSQL_PASSWORD={{ MYSQL_PASSWORD }}
+                    - MYSQL_ROOT_PASSWORD={{ MYSQL_ROOT_PASSWORD }}
+                volumes:
+                    - dbdata:/var/lib/mysql
+            web:
+                restart: always
+                build: ./mlflow
+                image: mlflow_server
+                container_name: mlflow_server
+                expose:
+                    - "5000"
+                networks:
+                    - frontend
+                    - backend
+                command: mlflow server --backend-store-uri mysql+pymysql://{{ MYSQL_USER }}:{{ MYSQL_PASSWORD }}@db:3306/{{ MYSQL_DATABASE }} --host 0.0.0.0 --default-artifact-root /mlartifacts
+                volumes:
+                  - mlartifacts:/mlartifacts
+            nginx:
+                restart: always
+                image: nginx
+                container_name: mlflow_nginx
+                ports:
+                    - "80:80"
+                    - "443:443"
+                networks:
+                    - frontend
+                depends_on:
+                    - web
+                volumes:
+                  - ./mlflow.conf:/etc/nginx/sites-enabled/mlflow.conf:ro
+                  - ./nginx.conf:/etc/nginx/nginx.conf:ro
+                  - './certificate.pem:/etc/nginx/certificate.pem:ro'
+                  - './certificate.key:/etc/nginx/certificate.key:ro'
+        networks:
+            frontend:
+                driver: bridge
+            backend:
+                driver: bridge
+        volumes:
+            dbdata:
+            mlartifacts:
+      dest: /opt/mlflow/docker-compose.yaml
+
+  - name: Create nginx.conf file
+    copy:
+      content: |
+        # Define the user that will own and run the Nginx server
+        user  nginx;
+        # Define the number of worker processes; recommended value is the number of
+        # cores that are being used by your server
+        worker_processes  1;
+        # Define the location on the file system of the error log, plus the minimum
+        # severity to log messages for
+        error_log  /var/log/nginx/error.log warn;
+        # Define the file that will store the process ID of the main NGINX process
+        pid        /var/run/nginx.pid;
+        # events block defines the parameters that affect connection processing.
+        events {
+            # Define the maximum number of simultaneous connections that can be opened by a worker process
+            worker_connections  1024;
+        }
+        # http block defines the parameters for how NGINX should handle HTTP web traffic
+        http {
+            # Include the file defining the list of file types that are supported by NGINX
+            include       /etc/nginx/mime.types;
+            # Define the default file type that is returned to the user
+            default_type  text/html;
+            # Define the format of log messages.
+            log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                              '$status $body_bytes_sent "$http_referer" '
+                              '"$http_user_agent" "$http_x_forwarded_for"';
+
+            # Define the location of the log of access attempts to NGINX
+            access_log  /var/log/nginx/access.log  main;
+            # Define the parameters to optimize the delivery of static content
+            sendfile        on;
+            tcp_nopush     on;
+            tcp_nodelay    on;
+            # Define the timeout value for keep-alive connections with the client
+            keepalive_timeout  65;
+            # Define the usage of the gzip compression algorithm to reduce the amount of data to transmit
+            #gzip  on;
+            # Include additional parameters for virtual host(s)/server(s)
+            include /etc/nginx/sites-enabled/*.conf;
+        }
+      dest: /opt/mlflow/nginx.conf
+  
+  - name: Create mlflow.conf file
+    copy:
+      content: |
+        # Define the parameters for a specific virtual host/server
+        server {
+            # Define the server name, IP address, and/or port of the server
+            listen 443 ssl;
+            ssl_certificate     /etc/nginx/certificate.pem;
+            ssl_certificate_key /etc/nginx/certificate.key;
+            ssl_protocols       TLSv1.2 TLSv1.3;
+            # Define the specified charset to the “Content-Type” response header field
+            charset utf-8;
+            # Configure NGINX to reverse proxy HTTP requests to the upstream server (uWSGI server)
+            location / {
+                # Define the location of the proxy server to send the request to
+                proxy_pass http://web:5000;
+
+                # Redefine the header fields that NGINX sends to the upstream server
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+        }
+      dest: /opt/mlflow/mlflow.conf
+
+  - name: Create mlflow image build directory
+    file:
+      path: /opt/mlflow/mlflow
+      state: directory
+      mode: '0755'
+
+  - name: Create mlflow/Dockerfile file
+    copy:
+      content: |
+        FROM python:3.7-slim-buster
+        # Install python packages
+        RUN pip install mlflow boto3 pymysql
+      dest: /opt/mlflow/mlflow/Dockerfile
+
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/mlflow/
+      state: present
