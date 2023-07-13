@@ -14,6 +14,7 @@
     - role: 'grycap.consul'
       consul_server: false
       consul_dns: false
+      consul_config_dir: /etc/consul
       consul_join_ips: "{{ server_list }}"
       consul_policies:
         - name: nomad-client-policy
@@ -32,7 +33,7 @@
       server_enabled: false
       client_enabled: true
       use_consul: true
-      consul_address: "{{ server_list[0] }}:8500"
+      consul_address: "127.0.0.1:8500"
       create_nomad_service: true
       consul_ACL_token_set: true
       consul_token: "{{ consul_tokens['nomad-client-policy'] }}"

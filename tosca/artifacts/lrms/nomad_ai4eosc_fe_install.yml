@@ -14,6 +14,7 @@
     - role: 'grycap.consul'
       consul_server: true
       consul_dns: false
+      consul_config_dir: /etc/consul
       consul_join_ips: "{{ server_list }}"
       consul_bootstrap_expect: "{{ server_list | length }}"
       consul_advertise_addr: "{{ server_private_ip }}"
@@ -76,7 +77,10 @@
       tls_private_ip:  "{{ server_private_ip }}"
       bind_address: "0.0.0.0"
       use_consul: true
-      consul_address: "{{ server_private_ip }}:8500"
+      consul_address: "127.0.0.1:8501"
+      consul_ssl: true
+      consul_verify_ssl: false
+      consul_ca_file: "/etc/consul/certs/consul-agent-ca.pem"
       create_nomad_service: true
       consul_ACL_token_set: true
       consul_token: "{{ consul_tokens['nomad-server-policy'] }}"
