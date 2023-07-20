@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    nfs_path: "{{ jmeter_nfs_path | default('/home') }}"
+    jmeter_url: "https://archive.apache.org/dist/jmeter/binaries"
+    version: "{{ jmeter_version | default('5.4.1') }}"
+  roles:
+  - role: 'grycap.ssh'
+    ssh_type_of_node: 'wn'
+    ssh_user: 'jmeter'
+  - role: grycap.nfs
+    nfs_mode: 'wn'
+    nfs_client_imports: [{ local: "{{nfs_path}}", remote: "{{nfs_path}}", server_host: "{{ jmeter_front_end_ip }}" }]
+  tasks:
+  - name: Install Java 8
+    package:
+      name: openjdk-8-jdk
+      state: present
+  - name: Download JMeter
+    get_url:
+      url: "{{ jmeter_url }}/apache-jmeter-{{ version }}.tgz"
+      dest: "/opt/apache-jmeter-{{ version }}.tgz"
+  - name: Unpack JMeter
+    unarchive:
+      src: "/opt/apache-jmeter-{{ version }}.tgz"
+      dest: "/opt/"
+      remote_src: yes

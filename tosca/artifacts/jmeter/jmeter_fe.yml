@@ -1,0 +1,35 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    export_hosts: "*.localdomain"
+    export_line: "(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"
+    nfs_path: "{{ jmeter_nfs_path | default('/home') }}"
+    jmeter_url: "https://archive.apache.org/dist/jmeter/binaries"
+    version: "{{ jmeter_version | default('5.4.1') }}"
+  pre_tasks:
+  - name: Do not use fsid=0 in Ubuntu 22.04
+    set_fact:
+      export_line: "(rw,async,no_root_squash,no_subtree_check,insecure)"
+    when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version|int >= 22
+  roles:
+  - role: 'grycap.ssh'
+    ssh_type_of_node: 'wn'
+    ssh_user: 'jmeter'
+  - role: grycap.nfs
+    nfs_mode: 'front'
+    nfs_exports: [{path: '{{ nfs_path }}', export: '{{ export_hosts }}{{ export_line }}'}]
+  tasks:
+  - name: Install Java 8
+    package:
+      name: openjdk-8-jdk
+      state: present
+  - name: Download JMeter
+    get_url:
+      url: "{{ jmeter_url }}/apache-jmeter-{{ version }}.tgz"
+      dest: "/opt/apache-jmeter-{{ version }}.tgz"
+  - name: Unpack JMeter
+    unarchive:
+      src: "/opt/apache-jmeter-{{ version }}.tgz"
+      dest: "/opt/"
+      remote_src: yes
