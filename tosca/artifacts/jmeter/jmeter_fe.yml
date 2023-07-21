@@ -14,7 +14,7 @@
     when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version|int >= 22
   roles:
   - role: 'grycap.ssh'
-    ssh_type_of_node: 'wn'
+    ssh_type_of_node: 'front'
     ssh_user: 'jmeter'
   - role: grycap.nfs
     nfs_mode: 'front'
