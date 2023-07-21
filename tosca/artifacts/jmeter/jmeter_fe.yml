@@ -33,3 +33,7 @@
       src: "/opt/apache-jmeter-{{ version }}.tgz"
       dest: "/opt/"
       remote_src: yes
+  - name: Add jmeter bin dir to system-wide $PATH.
+    copy:
+      dest: /etc/profile.d/jmeter.sh
+      content: 'PATH=$PATH:/opt/apache-jmeter-{{ version }}/bin'
