@@ -30,7 +30,8 @@
 
   - name: Download monitoring chart
     get_url:
-      url: https://gist.github.com/msoczewka/4e3065d061ee2ee5c25f304464e83f53/raw/7b1c9edaa4e09f0ceb8aeeef5575501b7a818f43/ai-sprint-monit-chart.tar.gz
+#      url: https://gist.github.com/msoczewka/4e3065d061ee2ee5c25f304464e83f53/raw/7b1c9edaa4e09f0ceb8aeeef5575501b7a818f43/ai-sprint-monit-chart.tar.gz
+      url: https://gist.github.com/msoczewka/4e3065d061ee2ee5c25f304464e83f53/raw/d540597024c863d3f895118510fe10527d4d0554/ai-sprint-monit-chart.tar.gz
       dest: /opt/monitoring-subsystem/ai-sprint-monit-chart.tar.gz
 
   - name: Create Helm Chart values
