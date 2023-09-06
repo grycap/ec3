@@ -740,6 +740,9 @@ node_types:
         required: true
         default: changeme
     artifacts:
+      posix_collection:
+        file: ansible.posix
+        type: tosca.artifacts.AnsibleGalaxy.collection
       htcondor_role:
         file: grycap.htcondor
         type: tosca.artifacts.AnsibleGalaxy.role
@@ -775,6 +778,9 @@ node_types:
         required: false
         default: -1
     artifacts:
+      posix_collection:
+        file: ansible.posix
+        type: tosca.artifacts.AnsibleGalaxy.collection
       htcondor_role:
         file: grycap.htcondor
         type: tosca.artifacts.AnsibleGalaxy.role
