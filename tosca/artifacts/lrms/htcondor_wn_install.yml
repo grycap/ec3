@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+     vnode_prefix: vnode-
+  roles:
+  - role: grycap.nfs
+    nfs_mode: 'wn'
+    nfs_client_imports: [{ local: "/home", remote: "/home", server_host: "{{ htcondor_front_end_ip }}" }]
+    when: htcondor_nfs is undefined or htcondor_nfs
+  - role: grycap.htcondor
+    htcondor_server: '{{ htcondor_front_end_ip }}'
+    htcondor_domain: 'localdomain'
+    htcondor_role_execute: true
+    htcondor_type_of_node: 'wn'
+    htcondor_password: '{{ htcondor_password }}'

@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+     vnode_prefix: vnode-
+  roles:
+  - role: grycap.nfs
+    nfs_mode: 'front'
+    nfs_exports: [{path: "/home", export: "{{ vnode_prefix }}*.localdomain(rw,async,no_root_squash,no_subtree_check,insecure,crossmnt)"}]
+    when: htcondor_nfs is undefined or htcondor_nfs
+  - role: grycap.htcondor
+    htcondor_server: '{{ front_end_ip }}'
+    htcondor_domain: 'localdomain'
+    htcondor_role_manager: true
+    htcondor_role_submit: true
+    htcondor_type_of_node: 'front'
+    htcondor_password: '{{ htcondor_password }}'

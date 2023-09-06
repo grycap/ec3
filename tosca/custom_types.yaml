@@ -210,6 +210,16 @@ capability_types:
         constraints:
           - equal: slurm
 
+  tosca.capabilities.indigo.LRMS.HTCondor:
+    derived_from: tosca.capabilities.indigo.LRMS
+    properties:
+      type:
+        type: string
+        required: true
+        default: htcondor
+        constraints:
+          - equal: htcondor
+
   tosca.capabilities.indigo.LRMS.Kubernetes:
     derived_from: tosca.capabilities.indigo.LRMS
     properties:
@@ -715,6 +725,79 @@ node_types:
             front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
             max_number_of_nodes: { get_property: [ wn_node, wn, max_instances] }
             slurm_nfs: { get_property: [ SELF, nfs ] }
+
+  tosca.nodes.indigo.LRMS.WorkerNode.HTCondor:
+    derived_from: tosca.nodes.indigo.LRMS.WorkerNode
+    properties:
+      nfs:
+        type: boolean
+        description: Install and mount NFS
+        required: false
+        default: true
+      htcondor_password:
+        type: string
+        description: Store HTCondor credentials
+        required: true
+        default: changeme
+    artifacts:
+      posix_collection:
+        file: ansible.posix
+        type: tosca.artifacts.AnsibleGalaxy.collection
+      htcondor_role:
+        file: grycap.htcondor
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/htcondor_wn_install.yml
+          inputs:
+            htcondor_front_end_ip: { get_property: [ SELF, front_end_ip ] }
+            htcondor_public_front_end_ip: { get_property: [ SELF, public_front_end_ip ] }
+            htcondor_nfs: { get_property: [ SELF, nfs ] }
+            htcondor_password: { get_property: [ SELF, htcondor_password ] }
+
+  tosca.nodes.indigo.LRMS.FrontEnd.HTCondor:
+    derived_from: tosca.nodes.indigo.LRMS.FrontEnd
+    properties:
+      nfs:
+        type: boolean
+        description: Install and mount NFS
+        required: false
+        default: true
+      htcondor_password:
+        type: string
+        description: Store HTCondor credentials
+        required: true
+        default: changeme
+      wn_num:
+        type: integer
+        description: Number of WNs
+        required: false
+        default: -1
+    artifacts:
+      posix_collection:
+        file: ansible.posix
+        type: tosca.artifacts.AnsibleGalaxy.collection
+      htcondor_role:
+        file: grycap.htcondor
+        type: tosca.artifacts.AnsibleGalaxy.role
+      nfs_role:
+        file: grycap.nfs
+        type: tosca.artifacts.AnsibleGalaxy.role
+    capabilities:
+        lrms:
+          type: tosca.capabilities.indigo.LRMS.HTCondor
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/grycap/ec3/tosca/tosca/artifacts/lrms/htcondor_fe_install.yml
+          inputs:
+            front_end_ip: { get_attribute: [ HOST, private_address, 0 ] }
+            htcondor_nfs: { get_property: [ SELF, nfs ] }
+            htcondor_password: { get_property: [ SELF, htcondor_password ] }
 
   tosca.nodes.indigo.GalaxyPortal:
     derived_from: tosca.nodes.WebServer
