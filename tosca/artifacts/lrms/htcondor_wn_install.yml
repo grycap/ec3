@@ -13,4 +13,3 @@
     htcondor_domain: 'localdomain'
     htcondor_role_execute: true
     htcondor_type_of_node: 'wn'
-    htcondor_password: '{{ htcondor_password }}'

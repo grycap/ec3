@@ -14,4 +14,3 @@
     htcondor_role_manager: true
     htcondor_role_submit: true
     htcondor_type_of_node: 'front'
-    htcondor_password: '{{ htcondor_password }}'
