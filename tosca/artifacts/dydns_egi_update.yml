@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    dydns_new_ip: "{{ new_ip | default(ansible_default_ipv4.address) }}"
+  tasks:
+  - name: Update EGI DYDNS entry
+    ansible.builtin.uri:
+      url: https://nsupdate.fedcloud.eu/nic/update?myip={{ dydns_new_ip }}
+      user: "{{ dydns_hostname }}"
+      password: "{{ dydns_secret }}"
+      method: GET
+      force_basic_auth: true
+      return_content: true
+    register: dydns_update
+    changed_when: dydns_update.content.find("good") != -1
