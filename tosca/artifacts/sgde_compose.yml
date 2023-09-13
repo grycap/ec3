@@ -1,0 +1,40 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    JWT_SECRET: "{{ sgde_jwt_secret | default('Tr8J+bw+XIf0LWIXpPQ+0Rt3h2UITT2XHM2/Vc/j1lfBeuDqqrJFcCm/f9pvTgbd') }}"
+  roles:
+  - role: 'grycap.docker'
+  tasks:
+  - name:
+    file:
+      path: /opt/sgde
+      state: directory
+      mode: '0755'
+
+  - name: Create docker-compose file
+    copy:
+      content: |
+        version: "3.3"
+        
+        services:
+          sgde:
+            image: "aarchetti/sgde-api:latest"
+            container_name: "sgde"
+            ports:
+              - "8000:8000"
+            volumes:
+              - "/opt/sgde:/instance"
+            environment:
+              - JWT_SECRET={{ JWT_SECRET }}
+              - INSTANCE_PATH=/instance
+              - DATABASE_URL=sqlite:////instance/sgde_db.db
+              - GENERATOR_PATH=/instance/generators
+              - PORT=8000
+
+      dest: /opt/sgde/docker-compose.yaml
+
+  - name: docker-compose up
+    docker_compose:
+      project_src: /opt/sgde/
+      state: present
