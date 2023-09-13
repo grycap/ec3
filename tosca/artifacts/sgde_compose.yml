@@ -19,7 +19,7 @@
         
         services:
           sgde:
-            image: "aarchetti/sgde-api:latest"
+            image: "aarchetti/sgde-api:amd64"
             container_name: "sgde"
             ports:
               - "8000:8000"
