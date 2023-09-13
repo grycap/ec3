@@ -25,7 +25,7 @@
         url: "{{ data_url }}"
         dest: "{{ local_path }}"
       async: "{{ max_time }}"
-      poll: "{{ poll_time }}}"
+      poll: "{{ poll_time }}"
 
     when: pvc_name == '' or pvc_namespace == ''
 
