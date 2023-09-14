@@ -34,7 +34,7 @@
 
     - name: Gen URL hash
       set_fact:
-        url_hash: "{{ data_url | hash('sha256') }}"
+        url_hash: "{{ data_url | hash('md5') }}"
 
     - name: Create job file
       copy:
@@ -45,10 +45,10 @@
             namespace: {{ pvc_namespace }}
             name: pv-load-{{ url_hash }}
           spec:
+            backoffLimit: 10
             template:
               spec:
                 restartPolicy: OnFailure
-                backoffLimit: 10
                 volumes:
                   - name: pv-storage
                     persistentVolumeClaim:
@@ -68,6 +68,6 @@
     - name: Create wget job
       command: kubectl apply -f /opt/wget_job_{{ url_hash }}.yaml
       environment:
-        KUBECONFIG: "{{KUBECONFIG}}"
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
 
     when: pvc_name != '' and pvc_namespace != ''
