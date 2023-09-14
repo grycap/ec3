@@ -38,7 +38,7 @@
 
     - name: Create job file
       copy:
-        contents: |
+        content: |
           apiVersion: batch/v1
           kind: Job
           metadata:
