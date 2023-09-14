@@ -47,6 +47,8 @@
           spec:
             template:
               spec:
+                restartPolicy: OnFailure
+                backoffLimit: 10
                 volumes:
                   - name: pv-storage
                     persistentVolumeClaim:
