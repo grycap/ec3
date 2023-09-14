@@ -45,7 +45,6 @@
             namespace: {{ pvc_namespace }}
             name: pv-load-{{ url_hash }}
           spec:
-            backoffLimit: 10
             template:
               spec:
                 restartPolicy: OnFailure
