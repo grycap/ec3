@@ -863,6 +863,34 @@ node_types:
           inputs:
             galaxy_front_end_ip: { get_property: [ SELF, front_end_ip ] }
 
+  tosca.nodes.indigo.Pulsar:
+    derived_from: tosca.nodes.SoftwareComponent
+    properties:
+      mq_user:
+        type: string
+        description: User name for the message queue
+        required: true
+      mq_password:
+        type: string
+        description: Password for the message queue
+        required: true
+    requirements:
+      - host:
+          capability: tosca.capabilities.Container
+          node: tosca.nodes.Compute
+          relationship: tosca.relationships.HostedOn
+      - lrms:
+          capability: tosca.capabilities.indigo.LRMS
+          node: tosca.nodes.indigo.LRMS.FrontEnd
+          relationship: tosca.relationships.HostedOn
+    interfaces:
+      Standard:
+        configure:
+          implementation: https://raw.githubusercontent.com/sebastian-luna-valero/tosca/main/artifacts/pulsar.yml
+          inputs:
+            pulsar_user: { get_property: [ SELF, mq_user ] }
+            pulsar_password: { get_property: [ SELF, mq_password ] }
+
   tosca.nodes.indigo.LRMS.WorkerNode.Mesos:
     derived_from: tosca.nodes.indigo.LRMS.WorkerNode
     properties:
