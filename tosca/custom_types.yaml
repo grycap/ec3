@@ -1544,6 +1544,16 @@ node_types:
         type: boolean
         required: false
         default: false
+      enable_sgx:
+        type: boolean
+        required: false
+        default: false
+      exposed:
+        type: map
+        entry_schema:
+          type: string
+        default: {}
+        required: false
       image:
         type: string
         required: true
