@@ -13,7 +13,7 @@
     - role: 'grycap.docker'
     - role: 'grycap.consul'
       consul_server: false
-      consul_dns: false
+      consul_dns: true
       consul_config_dir: /etc/consul
       consul_join_ips: "{{ server_list }}"
       consul_policies:
