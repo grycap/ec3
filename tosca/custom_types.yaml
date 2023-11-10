@@ -312,6 +312,10 @@ artifact_types:
     derived_from: tosca.artifacts.Root
     description: Ansible Galaxy collection to be installed in the target node
 
+  tosca.artifacts.AnsibleGalaxy.requirements:
+    derived_from: tosca.artifacts.Root
+    description: Ansible Galaxy requirements to be installed in the target node
+
 relationship_types:
 
   tosca.relationships.indigo.Manages:
