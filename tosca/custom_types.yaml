@@ -1398,14 +1398,21 @@ node_types:
   tosca.nodes.indigo.Helm.Chart:
     derived_from: tosca.nodes.ec3.Application
     properties:
+      chart_url:
+        type: string
+        description: The Helm chat file url
+        required: false
+        default: ""
       repository_name:
         type: string
         description: The Helm repository name
-        required: true
+        required: false
+        default: ""
       repository_url:
         type: string
         description: The Helm repository URL
-        required: true
+        required: false
+        default: ""
       name:
         type: string
         description: The chart name
@@ -1452,6 +1459,7 @@ node_types:
             helm_values: { get_property: [ SELF, values ] }
             helm_namespace: { get_property: [ SELF, namespace ] }
             helm_values_file: { get_property: [ SELF, values_file ] }
+            helm_chart_url: { get_property: [ SELF, chart_url ] }
 
   tosca.nodes.ec3.DNSRegistry:
     derived_from: tosca.nodes.SoftwareComponent

@@ -16,11 +16,34 @@
       KUBECONFIG: /etc/kubernetes/admin.conf
 
   - block:
-      - name: Add helm repo {{ helm_repo_name }}
-        command: helm repo add {{ helm_repo_name }} {{ helm_repo_url }}
 
-      - name: Update helm repositories
-        command: helm repo update
+      - block:
+
+        - name: Add helm repo {{ helm_repo_name }}
+          command: helm repo add {{ helm_repo_name }} {{ helm_repo_url }}
+
+        - name: Update helm repositories
+          command: helm repo update
+
+        - name: Set helm install name from repo
+          set_fact:
+            helm_install_name: "{{ helm_repo_name }}/{{ helm_app_name }}"
+
+        when: helm_repo_name is defined and helm_repo_name != "" and helm_repo_url is defined and helm_repo_url != ""
+
+
+      - block:
+
+        - name: Download chart
+          get_url:
+            url: "{{ helm_chart_url }}"
+            dest: /opt/{{ helm_app_name }}.tgz
+
+        - name: Set helm install name from chart url
+          set_fact:
+            helm_install_name: "/opt/{{ helm_app_name }}.tgz"
+
+        when: helm_chart_url is defined and helm_chart_url != ""
 
       - name: Create params fact
         set_fact:
@@ -34,7 +57,7 @@
 
       - name: Deploy {{ helm_app_name }} app
         command: >
-          helm upgrade {{ helm_app_name | lower }} --install {{ helm_repo_name }}/{{ helm_app_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
+          helm upgrade {{ helm_app_name | lower }} --install {{ helm_install_name }} {{ '' if helm_version == 'latest' else ('--version ' + helm_version) }}
           --namespace {{ namespace }} --create-namespace -f /tmp/{{helm_namespace}}_{{helm_app_name}}_values.yml
           --set {{ helm_params }} --timeout {{ timeout }}
         environment:
