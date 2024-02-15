@@ -355,7 +355,6 @@ contextualize (
 		self.assertEqual(r.get(contextualize()).options['ansible_version'].operator, '<=')
 
 		radl_json = dump_radl_json(r)
-		print(radl_json)
 		r = parse_radl_json(radl_json)
 		r.check()
 		self.assertEqual(len(r.get(contextualize()).options), 1)
