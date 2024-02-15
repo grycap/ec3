@@ -44,6 +44,9 @@
 				"items": {
 					"type": "array",
 					"items" : { "$ref": "#/definitions/contextualizeItem" }
+				},
+				"options": {
+					"type": "object"
 				}
 			},
 			"additionalProperties": false,
