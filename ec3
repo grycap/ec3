@@ -129,7 +129,7 @@ def dump_list(l, order, width=80, indent=4):
             s = s[(b+1 if b >= 0 else width0-1):]
             indented = True; width0 = width - indent
     return "\n\n".join([ "\n".join([ s for k in order for s in break_line("%s: %s" % (k, d[k].expandtabs()
-                                     .decode("string_escape"))) ]) for d in l ])
+                                     .encode('latin1').decode("unicode_escape"))) ]) for d in l ])
 
 def getPublicIP(s):
     for i in range(4):
