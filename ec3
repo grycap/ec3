@@ -115,7 +115,7 @@ def dump_table(l, order, align={}):
     widths = dict([ (f, max([ len(str(d[f])) for d in l ] + [len(f)])+2) for f in order ])
     o = [ "".join([ "{0: ^{width}}".format(f, width=widths[f]) for f in order ]) ]
     o.append("-"*sum(widths.values()))
-    o.extend([ "".join([ "{0: {a}{width}}".format(d[f], a=align.get(f, "^"), width=widths[f]) for f in order ])
+    o.extend([ "".join([ "{0: {a}{width}}".format(str(d[f]), a=align.get(f, "^"), width=widths[f]) for f in order ])
                for d in l ])
     return "\n".join(o)
 
