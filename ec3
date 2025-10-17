@@ -1829,13 +1829,10 @@ class CmdUpdate:
             sys.exit(1)
 
         # Instantiate templates
-        if options.auth_file or options.add:
-            templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
-            radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
-            for a in radl.gets(deploy): radl.delete(a)
-            radl = dump_radl(radl)
-        else:
-            radl = ""
+        templates = r.get(system("front")).getValue("ec3_templates_cmd", "").split(" ")
+        radl = CmdLaunch.generate_radl(templates, options.add if options.add else [], auth_content)
+        for a in radl.gets(deploy): radl.delete(a)
+        radl = dump_radl(radl)
 
         # Update infrastructure
         CLI.display("Updating infrastructure")
