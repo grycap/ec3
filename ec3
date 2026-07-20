@@ -28,7 +28,7 @@ try:
 
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except:
+except Exception:
     pass
 
 import yaml
@@ -50,7 +50,7 @@ from IM2.radl.radl import RADL, system, network, configure, deploy, Feature, Fea
 try:
     import ssl
     ssl._create_default_https_context = ssl._create_unverified_context
-except:
+except Exception:
     pass
 
 # EC3 client version
@@ -188,7 +188,7 @@ def apply_ec3_expressions(r):
         try:
             if not isinstance(r.get(configure(i["ec3_append"])).recipe, list): raise Exception
             return r.get(configure(i["ec3_append"])).clone().recipe
-        except:
+        except Exception:
             raise Exception("Configure '%s' does't exist or the recipe is not a list." % i["ec3_append"])
     for conf in r.gets(configure):
         if not isinstance(conf.recipe, list): continue
@@ -1537,7 +1537,7 @@ class CmdMigrate:
                     else:
                         run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " scontrol checkpoint create " + key)
                     CLI.display("Checkpointing performed successfully.")
-                except: 
+                except Exception:
                     CLI.display("Error checkpointing the job: %s" % str(key), level=logging.ERROR)
             
             # Create the credentials file with the credentials of the user to connect with S3
@@ -1546,7 +1546,7 @@ class CmdMigrate:
                     run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
                 else:
                     run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
-            except: 
+            except Exception:
                 CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
 
             # Copy the checkpoint files to a bucket in Amazon S3
@@ -1558,7 +1558,7 @@ class CmdMigrate:
                     else:
                         run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip) + " sudo aws s3 cp /var/slurm/checkpoint/" + key + ".ckpt s3://" + str(options.bucket[0]) + "/" + key + ".ckpt")
                     CLI.display("Upload performed succesfully")
-                except:
+                except Exception:
                     CLI.display("Error while uploading checkpoint files to S3", level=logging.ERROR)
 
             # Obtain the IP of the front-end of the cloned cluster
@@ -1571,7 +1571,7 @@ class CmdMigrate:
                     run_command("sshpass -p '" + str(passwd) +"' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
                 else:
                     run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'echo -e \"[default]\naws_access_key_id=" + access_key + "\naws_secret_access_key=" + secret_key + "\" > /home/ubuntu/.aws/credentials'")
-            except: 
+            except Exception:
                 CLI.display("Error creating credentials file for awscli", level=logging.ERROR)
             
             # Download checkpoint files from the bucket in Amazon S3 to the cloned cluster
@@ -1583,7 +1583,7 @@ class CmdMigrate:
                     else:
                         run_command("ssh -i '"+ str(key_pem) +"' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + str(user) + "@" + str(ip_cloned) + " 'sudo aws s3 cp s3://" + str(options.bucket[0]) + "/" + key + ".ckpt /var/slurm/checkpoint/" + key + ".ckpt'")
                     CLI.display("Download performed succesfully")
-                except:
+                except Exception:
                     CLI.display("Error while downloading checkpoint files to S3", level=logging.ERROR)
                 
             # Restart the jobs in the cloned cluster
@@ -1860,7 +1860,7 @@ def run_command(command, shell=False):
     try:
         #CLI.display("executing: %s" % command)
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    except:
+    except Exception:
         if type(command)==list: command = string.join(command)
         CLI.display('Could not execute command "%s"' %command, level=logging.ERROR)
         raise
